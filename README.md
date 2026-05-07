@@ -1,58 +1,108 @@
-# Turing Autonomous Agent
+# Leos Agent
 
-A reference design and runnable Python skeleton for a **responsible autonomous agent** inspired by the engineering principles discussed in the Hamming / Simon / Pearl / Engelbart / Brooks roundtable:
+Leos Agent is a safety-first autonomous-agent kernel designed around the requirements discussed in the Hamming / Simon / Pearl / Engelbart / Brooks roundtable:
 
-- **Hamming**: every action needs redundancy, verification, and recovery.
-- **Simon**: the agent operates under bounded rationality and seeks satisficing solutions.
-- **Pearl**: actions must be evaluated through causal and counterfactual reasoning, not correlation alone.
-- **Engelbart**: the agent should augment human and organizational intelligence, not hide complexity.
-- **Brooks**: there is no silver bullet; build narrow, auditable, testable systems with conceptual integrity.
+- **Hamming:** every action should be checked, logged, verified, and recoverable where possible.
+- **Simon:** goals must include success criteria, constraints, and stop conditions so the agent can seek satisfactory solutions instead of looping forever.
+- **Pearl:** actions need causal predictions before execution and verification after execution.
+- **Engelbart:** the agent should augment humans through transparency, memory, and approval gates instead of hiding consequential decisions.
+- **Brooks:** the system should be small, testable, modular, auditable, and explicitly engineered rather than a magical monolith.
 
-## What this repository contains
+This repository starts with a minimal Python runtime that can be extended with LLM planners, browser tools, code tools, messaging tools, or domain-specific workflows.
+
+## Core architecture
 
 ```text
-turing_agent/
-  core.py          # agent architecture and runnable reference implementation
-  demo.py          # small command-line demo
-  __init__.py
-
-docs/
-  ARCHITECTURE.md  # system design
-  SAFETY.md        # permission, verification, and human-gating policy
-
-tests/
-  test_core.py     # unit tests for core behavior
+Goal
+  -> Plan
+    -> Policy assessment
+      -> Human approval when needed
+        -> Dry run
+          -> Execute
+            -> Causal verification
+              -> Audit log / memory update / rollback on failure
 ```
 
-## Core idea
+The initial implementation includes:
 
-A real autonomous agent is not just an LLM plus tool calls. It is a long-running action system with:
-
-1. goal stack and stopping rules,
-2. explicit world/belief model,
-3. causal impact estimation,
-4. satisficing planner,
-5. tool bus with permissions,
-6. verification and rollback hooks,
-7. human collaboration gates,
-8. audit log and memory.
+- Goal objects with success criteria, constraints, and stop conditions.
+- Explicit world state split into verified facts and assumptions.
+- A causal world model for action-effect predictions and post-action verification.
+- A capability-based policy engine.
+- Human approval gates for risky or under-authorized actions.
+- Transactional plan execution with rollback support.
+- JSON/JSONL memory and audit primitives.
+- A sandboxed reversible file-write tool.
+- Unit tests covering execution, blocking, verification, and workspace escape rejection.
 
 ## Quick start
 
 ```bash
-python -m turing_agent.demo "prepare a safe implementation plan for a research assistant agent"
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+python -m unittest discover -s tests
 ```
 
-Run tests:
+Run the demo:
 
 ```bash
-python -m pytest
+leos-agent --auto-approve
 ```
 
-The package has no required runtime dependencies beyond Python 3.10+.
+Without `--auto-approve`, the file-writing action is denied because it requires explicit approval.
 
-## Design stance
+## Why this is not just another chatbot wrapper
 
-This project intentionally starts as a narrow, inspectable reference architecture rather than a magical general agent. It is meant to be extended with real LLM clients, real tools, persistent memory, and domain-specific safety policies.
+Most agent prototypes look like this:
 
-The most important constraint is: **the agent must be able to explain, verify, stop, and recover before it is allowed to act with high impact.**
+```text
+Prompt -> LLM -> Tool call -> Result -> Repeat
+```
+
+Leos Agent instead makes the action boundary explicit:
+
+1. **What goal are we serving?**
+2. **What state do we believe is true?**
+3. **What causal effect do we predict?**
+4. **What permission does this action require?**
+5. **Can we dry-run it?**
+6. **Can we verify it?**
+7. **Can we roll it back?**
+8. **What should be audited for humans?**
+
+## Extension points
+
+Add tools by implementing the `Tool` protocol:
+
+```python
+class MyTool:
+    spec = ToolSpec(
+        name="my_tool",
+        description="Do a bounded action",
+        permissions=(Permission.READ_FILES,),
+        default_risk=RiskLevel.LOW,
+        reversible=False,
+    )
+
+    def dry_run(self, arguments, state): ...
+    def execute(self, arguments, state): ...
+    def rollback(self, token, state): ...
+```
+
+Then register it:
+
+```python
+registry = ToolRegistry()
+registry.register(MyTool())
+```
+
+## Roadmap
+
+- LLM planner adapter with deterministic plan schemas.
+- Typed permission manifest per tool.
+- Stronger causal graph and counterfactual review.
+- Persistent task queue and watchdog.
+- Web/browser tool sandbox.
+- ReAct-style trace viewer for human review.
+- Policy profiles for personal, team, and production deployments.
