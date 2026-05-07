@@ -39,6 +39,22 @@ class RiskLevel(str, Enum):
     CRITICAL = "critical"
 
 
+_RISK_VALUES = {
+    RiskLevel.LOW: 1,
+    RiskLevel.MEDIUM: 2,
+    RiskLevel.HIGH: 3,
+    RiskLevel.CRITICAL: 4,
+}
+
+
+def _risk_value(risk: RiskLevel) -> int:
+    return _RISK_VALUES[risk]
+
+
+def _max_risk(risks: Iterable[RiskLevel]) -> RiskLevel:
+    return max(risks, key=_risk_value, default=RiskLevel.LOW)
+
+
 class Decision(str, Enum):
     APPROVED = "approved"
     DENIED = "denied"
@@ -88,15 +104,29 @@ class WorldState:
         }
 
 
+class CausalEffect(str, Enum):
+    CHANGES = "changes"
+    SETS = "sets"
+    PRESERVES = "preserves"
+    UNKNOWN = "unknown"
+
+
 @dataclass(frozen=True)
-class EffectPrediction:
-    """A causal prediction made before an action is taken."""
+class ActionConsequence:
+    """A predicted consequence of taking an action."""
 
     variable: str
     before: Any
     expected_after: Any
     confidence: float
     rationale: str
+    effect: CausalEffect = CausalEffect.CHANGES
+    expected_without_action: Any = None
+
+
+@dataclass(frozen=True)
+class EffectPrediction(ActionConsequence):
+    """Backward-compatible name for an action consequence."""
 
 
 @dataclass(frozen=True)
@@ -140,6 +170,20 @@ class Tool(Protocol):
         ...
 
 
+@dataclass(frozen=True)
+class CounterfactualReport:
+    """Action-vs-no-action review for a planned step."""
+
+    step_id: str
+    tool_name: str
+    action_consequences: List[ActionConsequence]
+    no_action_consequences: List[ActionConsequence]
+    risk: RiskLevel
+    expected_cost: float
+    expected_benefit: float
+    summary: Dict[str, Any] = field(default_factory=dict)
+
+
 @dataclass
 class ActionStep:
     tool_name: str
@@ -148,7 +192,8 @@ class ActionStep:
     status: StepStatus = StepStatus.PENDING
     risk: RiskLevel = RiskLevel.LOW
     required_permissions: Sequence[Permission] = ()
-    predictions: List[EffectPrediction] = field(default_factory=list)
+    predictions: List[ActionConsequence] = field(default_factory=list)
+    counterfactual_report: Optional[CounterfactualReport] = None
     step_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
 
@@ -158,6 +203,53 @@ class TransactionPlan:
     steps: List[ActionStep]
     plan_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     created_at: float = field(default_factory=time.time)
+
+
+@dataclass(frozen=True)
+class PlanProposal:
+    """A candidate way to satisfy a goal before scoring."""
+
+    steps: Sequence[ActionStep]
+    rationale: str
+    estimated_cost: float = 0.0
+    expected_benefit: float = 1.0
+    proposal_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+
+@dataclass(frozen=True)
+class PlanScore:
+    """Risk/cost/benefit score for one candidate plan."""
+
+    risk: RiskLevel
+    risk_value: int
+    estimated_cost: float
+    expected_benefit: float
+    utility: float
+    satisfies: bool
+
+
+@dataclass
+class PlanCandidate:
+    proposal: PlanProposal
+    plan: TransactionPlan
+    score: Optional[PlanScore] = None
+
+
+@dataclass
+class PlannerResult:
+    goal: Goal
+    candidates: List[PlanCandidate]
+    selected: Optional[PlanCandidate]
+
+
+@dataclass(frozen=True)
+class PlannerConfig:
+    max_risk: RiskLevel = RiskLevel.MEDIUM
+    max_cost: float = float("inf")
+    min_benefit: float = 0.0
+    benefit_weight: float = 1.0
+    cost_weight: float = 1.0
+    risk_weight: float = 0.25
 
 
 @dataclass(frozen=True)
@@ -214,8 +306,8 @@ class MemoryStore:
         return [item for item in self.items if item["key"] == key]
 
 
-class CausalWorldModel:
-    """Minimal causal model with pre-action predictions and post-action checks."""
+class CausalGraph:
+    """Action consequence model with counterfactual-friendly predictions."""
 
     def __init__(self, hypotheses: Optional[Iterable[CausalHypothesis]] = None) -> None:
         self.hypotheses: List[CausalHypothesis] = list(hypotheses or [])
@@ -223,51 +315,127 @@ class CausalWorldModel:
     def register(self, hypothesis: CausalHypothesis) -> None:
         self.hypotheses.append(hypothesis)
 
-    def predict(self, step: ActionStep, state: WorldState) -> List[EffectPrediction]:
-        predictions: List[EffectPrediction] = []
+    def predict(self, step: ActionStep, state: WorldState) -> List[ActionConsequence]:
+        consequences: List[ActionConsequence] = []
         for hypothesis in self.hypotheses:
             if hypothesis.action_name != step.tool_name:
                 continue
             for variable in hypothesis.affected_variables:
                 before = state.facts.get(variable, state.assumptions.get(variable))
                 expected = step.arguments.get(variable, "changed")
-                predictions.append(
-                    EffectPrediction(
+                effect = CausalEffect.CHANGES if expected == "changed" else CausalEffect.SETS
+                consequences.append(
+                    ActionConsequence(
                         variable=variable,
                         before=before,
                         expected_after=expected,
                         confidence=hypothesis.confidence,
                         rationale=hypothesis.rationale,
+                        effect=effect,
+                        expected_without_action=before,
                     )
                 )
-        return predictions
+        return consequences
 
-    def verify(self, predictions: Sequence[EffectPrediction], result: ToolResult) -> ToolResult:
+    def verify(self, predictions: Sequence[ActionConsequence], result: ToolResult) -> ToolResult:
         mismatches = []
-        for prediction in predictions:
-            if prediction.variable not in result.observed_state_delta:
+        for consequence in predictions:
+            if consequence.variable not in result.observed_state_delta:
                 mismatches.append(
                     {
-                        "variable": prediction.variable,
-                        "expected_after": prediction.expected_after,
+                        "variable": consequence.variable,
+                        "effect": consequence.effect.value,
+                        "expected_after": consequence.expected_after,
                         "observed": None,
                         "reason": "missing_observation",
                     }
                 )
                 continue
-            observed = result.observed_state_delta[prediction.variable]
-            if prediction.expected_after != "changed" and observed != prediction.expected_after:
+            observed = result.observed_state_delta[consequence.variable]
+            if consequence.expected_after != "changed" and observed != consequence.expected_after:
                 mismatches.append(
                     {
-                        "variable": prediction.variable,
-                        "expected_after": prediction.expected_after,
+                        "variable": consequence.variable,
+                        "effect": consequence.effect.value,
+                        "expected_after": consequence.expected_after,
                         "observed": observed,
-                        "reason": "unexpected_value",
+                        "reason": "consequence_mismatch",
                     }
                 )
         if mismatches:
-            return ToolResult(False, "Causal verification failed", {"mismatches": mismatches})
-        return ToolResult(True, "Causal verification passed")
+            return ToolResult(False, "Causal consequence verification failed", {"mismatches": mismatches})
+        return ToolResult(True, "Causal consequence verification passed")
+
+
+class CausalWorldModel(CausalGraph):
+    """Backward-compatible wrapper for the original causal model name."""
+
+    def predict(self, step: ActionStep, state: WorldState) -> List[EffectPrediction]:
+        consequences = super().predict(step, state)
+        return [
+            EffectPrediction(
+                variable=consequence.variable,
+                before=consequence.before,
+                expected_after=consequence.expected_after,
+                confidence=consequence.confidence,
+                rationale=consequence.rationale,
+                effect=consequence.effect,
+                expected_without_action=consequence.expected_without_action,
+            )
+            for consequence in consequences
+        ]
+
+
+class CounterfactualReview:
+    """Reviews intended consequences against the no-action alternative."""
+
+    def __init__(self, causal_graph: CausalGraph, audit_log: Optional[AuditLog] = None) -> None:
+        self.causal_graph = causal_graph
+        self.audit_log = audit_log
+
+    def review(
+        self,
+        step: ActionStep,
+        state: WorldState,
+        predictions: Optional[Sequence[ActionConsequence]] = None,
+    ) -> CounterfactualReport:
+        action_consequences = list(predictions) if predictions is not None else self.causal_graph.predict(step, state)
+        no_action_consequences = [
+            ActionConsequence(
+                variable=consequence.variable,
+                before=consequence.before,
+                expected_after=consequence.before,
+                confidence=consequence.confidence,
+                rationale=f"Without {step.tool_name}, {consequence.variable} is expected to remain unchanged.",
+                effect=CausalEffect.PRESERVES,
+                expected_without_action=consequence.before,
+            )
+            for consequence in action_consequences
+        ]
+        expected_benefit = sum(consequence.confidence for consequence in action_consequences)
+        expected_cost = float(_risk_value(step.risk))
+        report = CounterfactualReport(
+            step_id=step.step_id,
+            tool_name=step.tool_name,
+            action_consequences=action_consequences,
+            no_action_consequences=no_action_consequences,
+            risk=step.risk,
+            expected_cost=expected_cost,
+            expected_benefit=expected_benefit,
+            summary={
+                "action_variables": [consequence.variable for consequence in action_consequences],
+                "no_action_variables": [consequence.variable for consequence in no_action_consequences],
+            },
+        )
+        if self.audit_log:
+            self.audit_log.record(
+                "step.counterfactual_review",
+                "Reviewed action consequences against no-action alternative",
+                step_id=step.step_id,
+                tool=step.tool_name,
+                report=asdict(report),
+            )
+        return report
 
 
 class PolicyEngine:
@@ -329,6 +497,93 @@ class ToolRegistry:
         return sorted(self._tools)
 
 
+class Planner:
+    """Deterministic satisficing planner for explicit candidate proposals."""
+
+    def __init__(
+        self,
+        registry: ToolRegistry,
+        policy: PolicyEngine,
+        config: Optional[PlannerConfig] = None,
+        audit_log: Optional[AuditLog] = None,
+    ) -> None:
+        self.registry = registry
+        self.policy = policy
+        self.config = config or PlannerConfig()
+        self.audit_log = audit_log
+
+    def generate_candidates(self, goal: Goal, proposals: Sequence[PlanProposal]) -> List[PlanCandidate]:
+        if not goal.success_criteria:
+            raise ValueError("Goal must have explicit success criteria")
+        candidates = [
+            PlanCandidate(
+                proposal=proposal,
+                plan=TransactionPlan(goal=goal, steps=[self._clone_step(step) for step in proposal.steps]),
+            )
+            for proposal in proposals
+        ]
+        if self.audit_log:
+            self.audit_log.record("planner.candidates_generated", "Generated plan candidates", goal_id=goal.goal_id, count=len(candidates))
+        return candidates
+
+    def score(self, candidate: PlanCandidate) -> PlanScore:
+        risks = []
+        for step in candidate.plan.steps:
+            tool = self.registry.get(step.tool_name)
+            risks.append(self.policy.assess(tool, step.arguments))
+        risk = _max_risk(risks)
+        risk_value = _risk_value(risk)
+        estimated_cost = float(candidate.proposal.estimated_cost)
+        expected_benefit = float(candidate.proposal.expected_benefit)
+        utility = (
+            expected_benefit * self.config.benefit_weight
+            - estimated_cost * self.config.cost_weight
+            - risk_value * self.config.risk_weight
+        )
+        satisfies = (
+            risk_value <= _risk_value(self.config.max_risk)
+            and estimated_cost <= self.config.max_cost
+            and expected_benefit >= self.config.min_benefit
+        )
+        return PlanScore(
+            risk=risk,
+            risk_value=risk_value,
+            estimated_cost=estimated_cost,
+            expected_benefit=expected_benefit,
+            utility=utility,
+            satisfies=satisfies,
+        )
+
+    def select_satisfactory(self, candidates: Sequence[PlanCandidate]) -> Optional[PlanCandidate]:
+        selected = None
+        for candidate in candidates:
+            candidate.score = candidate.score or self.score(candidate)
+            if selected is None and candidate.score.satisfies:
+                selected = candidate
+        if self.audit_log:
+            self.audit_log.record(
+                "planner.selection_finished",
+                "Selected satisfactory plan candidate" if selected else "No satisfactory plan candidate found",
+                selected_proposal_id=selected.proposal.proposal_id if selected else None,
+                candidate_count=len(candidates),
+            )
+        return selected
+
+    def plan(self, goal: Goal, proposals: Sequence[PlanProposal]) -> PlannerResult:
+        candidates = self.generate_candidates(goal, proposals)
+        selected = self.select_satisfactory(candidates)
+        return PlannerResult(goal=goal, candidates=candidates, selected=selected)
+
+    @staticmethod
+    def _clone_step(step: ActionStep) -> ActionStep:
+        return ActionStep(
+            tool_name=step.tool_name,
+            arguments=dict(step.arguments),
+            reason=step.reason,
+            risk=step.risk,
+        )
+
+
 class TransactionManager:
     """Executes plan steps as reversible transactions where possible."""
 
@@ -336,15 +591,17 @@ class TransactionManager:
         self,
         registry: ToolRegistry,
         policy: PolicyEngine,
-        causal_model: CausalWorldModel,
+        causal_model: CausalGraph,
         audit_log: AuditLog,
         approval_gate: Optional[ApprovalGate] = None,
+        counterfactual_review: Optional[CounterfactualReview] = None,
     ) -> None:
         self.registry = registry
         self.policy = policy
         self.causal_model = causal_model
         self.audit_log = audit_log
         self.approval_gate = approval_gate or ApprovalGate()
+        self.counterfactual_review = counterfactual_review or CounterfactualReview(causal_model, audit_log)
 
     def execute_plan(self, plan: TransactionPlan, state: WorldState) -> TransactionPlan:
         self.audit_log.record("plan.started", "Starting transaction plan", plan_id=plan.plan_id, goal=plan.goal.description)
@@ -355,6 +612,7 @@ class TransactionManager:
             step.required_permissions = tuple(tool.spec.permissions)
             step.risk = self.policy.assess(tool, step.arguments)
             step.predictions = self.causal_model.predict(step, state)
+            step.counterfactual_report = self.counterfactual_review.review(step, state, step.predictions)
 
             decision = self.policy.decide(step)
             if decision is Decision.NEEDS_HUMAN:
@@ -414,23 +672,27 @@ class AgentKernel:
         self,
         registry: ToolRegistry,
         policy: PolicyEngine,
-        causal_model: Optional[CausalWorldModel] = None,
+        causal_model: Optional[CausalGraph] = None,
         memory: Optional[MemoryStore] = None,
         audit_log: Optional[AuditLog] = None,
         approval_gate: Optional[ApprovalGate] = None,
+        planner_config: Optional[PlannerConfig] = None,
+        counterfactual_review: Optional[CounterfactualReview] = None,
     ) -> None:
         self.registry = registry
         self.policy = policy
-        self.causal_model = causal_model or CausalWorldModel()
+        self.causal_model = causal_model or CausalGraph()
         self.memory = memory or MemoryStore()
         self.audit_log = audit_log or AuditLog()
         self.state = WorldState()
+        self.planner = Planner(registry=registry, policy=policy, config=planner_config, audit_log=self.audit_log)
         self.transactions = TransactionManager(
             registry=registry,
             policy=policy,
             causal_model=self.causal_model,
             audit_log=self.audit_log,
             approval_gate=approval_gate,
+            counterfactual_review=counterfactual_review,
         )
 
     def build_plan(self, goal: Goal, steps: Sequence[ActionStep]) -> TransactionPlan:
@@ -439,6 +701,11 @@ class AgentKernel:
         if not goal.stop_conditions:
             self.audit_log.record("goal.warning", "Goal has no stop conditions", goal_id=goal.goal_id)
         return TransactionPlan(goal=goal, steps=list(steps))
+
+    def plan(self, goal: Goal, proposals: Sequence[PlanProposal]) -> PlannerResult:
+        if not goal.stop_conditions:
+            self.audit_log.record("goal.warning", "Goal has no stop conditions", goal_id=goal.goal_id)
+        return self.planner.plan(goal, proposals)
 
     def run(self, plan: TransactionPlan) -> TransactionPlan:
         return self.transactions.execute_plan(plan, self.state)

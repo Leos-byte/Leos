@@ -27,7 +27,7 @@ The initial implementation includes:
 
 - Goal objects with success criteria, constraints, and stop conditions.
 - Explicit world state split into verified facts and assumptions.
-- A causal world model for action-effect predictions and post-action verification.
+- A causal graph for action-effect predictions, counterfactual review, and post-action verification.
 - A capability-based policy engine.
 - Human approval gates for risky or under-authorized actions.
 - Transactional plan execution with rollback support.
@@ -50,7 +50,7 @@ Run the demo:
 leos-agent --auto-approve
 ```
 
-Without `--auto-approve`, the file-writing action is denied because it requires explicit approval.
+Without `--auto-approve`, the file-writing action is denied because it lacks a write-file grant and requires explicit approval.
 
 ## Why this is not just another chatbot wrapper
 
@@ -99,9 +99,10 @@ registry.register(MyTool())
 
 ## Roadmap
 
+- Deterministic planner with candidate generation, risk/cost/benefit scoring, and satisficing selection.
 - LLM planner adapter with deterministic plan schemas.
 - Typed permission manifest per tool.
-- Stronger causal graph and counterfactual review.
+- Counterfactual review policy gates for high-impact actions.
 - Persistent task queue and watchdog.
 - Web/browser tool sandbox.
 - ReAct-style trace viewer for human review.
