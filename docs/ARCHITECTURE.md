@@ -30,17 +30,18 @@ This prevents the agent from treating guesses as ground truth.
 
 ### 3. Causal model
 
-Before action, each step can receive predictions such as:
+Before action, each step receives action-consequence predictions such as:
 
 ```text
-safe_file_write -> file_written should change to /workspace/file.txt
+safe_file_write -> file_written should become /workspace/file.txt
+no safe_file_write -> file_written should remain unchanged
 ```
 
-After execution, observed state deltas are compared against predictions. Missing or mismatched observations fail verification.
+Counterfactual review compares the action path with the no-action path before execution. After execution, observed state deltas are compared against predicted consequences. Missing or mismatched observations fail verification.
 
 ### 4. Planning and search
 
-The current implementation accepts explicit `ActionStep` objects. The intended next layer is an LLM planner that must output typed plans rather than free-form text. The runtime should remain independent from any one model vendor.
+The current implementation includes a deterministic planner that accepts explicit `PlanProposal` candidates, scores each candidate by risk, cost, and benefit, and selects the first satisfactory plan. The intended next layer is an LLM planner adapter that must output the same typed proposal schema rather than free-form text. The runtime should remain independent from any one model vendor.
 
 ### 5. Tool/action system
 
@@ -81,6 +82,7 @@ for each step:
   resolve tool
   assign permissions and risk
   predict causal effects
+  review action consequences against no-action counterfactuals
   ask policy engine
   request human approval if needed
   dry run

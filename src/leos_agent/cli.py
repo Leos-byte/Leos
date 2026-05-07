@@ -12,7 +12,6 @@ from .core import (
     CausalHypothesis,
     CausalWorldModel,
     Goal,
-    Permission,
     PolicyEngine,
     StepStatus,
     default_registry,
@@ -21,7 +20,7 @@ from .core import (
 
 def build_demo_agent(workspace: Path, auto_approve: bool) -> AgentKernel:
     registry = default_registry(workspace)
-    policy = PolicyEngine(granted_permissions={Permission.WRITE_FILES})
+    policy = PolicyEngine()
     causal = CausalWorldModel(
         [
             CausalHypothesis(
@@ -39,7 +38,7 @@ def build_demo_agent(workspace: Path, auto_approve: bool) -> AgentKernel:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run a Leos autonomous-agent kernel demo.")
     parser.add_argument("--workspace", default=".leos-workspace", help="Sandbox workspace for reversible file actions.")
-    parser.add_argument("--auto-approve", action="store_true", help="Approve medium/high-risk demo actions.")
+    parser.add_argument("--auto-approve", action="store_true", help="Approve demo actions that require human approval.")
     args = parser.parse_args()
 
     agent = build_demo_agent(Path(args.workspace), auto_approve=args.auto_approve)
