@@ -6,6 +6,7 @@ from typing import Optional, Sequence
 
 from .audit import AuditLog
 from .causal import CausalGraph, CounterfactualReview
+from .enums import GoalStatus
 from .goals import Goal
 from .memory import MemoryStore
 from .planner import Planner
@@ -51,12 +52,39 @@ class AgentKernel:
             raise ValueError("Goal must have explicit success criteria")
         if not goal.stop_conditions:
             self.audit_log.record("goal.warning", "Goal has no stop conditions", goal_id=goal.goal_id)
+        self.audit_log.record(
+            "goal.created",
+            "Goal accepted by kernel",
+            goal_id=goal.goal_id,
+            description=goal.description,
+            status=goal.status.value,
+        )
+        goal = self._transition_goal(goal, GoalStatus.PLANNING)
         return TransactionPlan(goal=goal, steps=list(steps))
 
     def plan(self, goal: Goal, proposals: Sequence[PlanProposal]) -> PlannerResult:
         if not goal.stop_conditions:
             self.audit_log.record("goal.warning", "Goal has no stop conditions", goal_id=goal.goal_id)
+        self.audit_log.record(
+            "goal.created",
+            "Goal accepted by planner",
+            goal_id=goal.goal_id,
+            description=goal.description,
+            status=goal.status.value,
+        )
+        goal = self._transition_goal(goal, GoalStatus.PLANNING)
         return self.planner.plan(goal, proposals)
 
     def run(self, plan: TransactionPlan) -> TransactionPlan:
         return self.transactions.execute_plan(plan, self.state)
+
+    def _transition_goal(self, goal: Goal, status: GoalStatus) -> Goal:
+        updated = goal.transition(status)
+        self.audit_log.record(
+            "goal.status_changed",
+            "Goal status changed",
+            goal_id=goal.goal_id,
+            from_status=goal.status.value,
+            to_status=updated.status.value,
+        )
+        return updated
