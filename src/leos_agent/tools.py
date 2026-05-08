@@ -76,6 +76,9 @@ class ToolSpec:
     def validate_input(self, arguments: Mapping[str, Any]) -> list[dict[str, Any]]:
         return validate_json_schema(arguments, self.input_schema)
 
+    def validate_output(self, output: Mapping[str, Any]) -> list[dict[str, Any]]:
+        return validate_json_schema(output, self.output_schema)
+
 
 class Tool(Protocol):
     spec: ToolSpec

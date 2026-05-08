@@ -2,13 +2,24 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 from .audit import AuditLog
 from .causal import CausalGraph, CounterfactualReview
-from .enums import Decision, Reversibility, StepStatus
-from .errors import DryRunFailed, LeosError, PolicyDenied, RollbackFailed
-from .plans import ActionStep, TransactionPlan
+from .enums import Decision, GoalStatus, Permission, Reversibility, StepStatus, _risk_value
+from .errors import (
+    BudgetExceeded,
+    DryRunFailed,
+    IdempotencyConflict,
+    LeosError,
+    PolicyDenied,
+    PostconditionFailed,
+    PreconditionFailed,
+    RollbackFailed,
+    SchemaValidationFailed,
+)
+from .goals import ResourceBudget
+from .plans import ActionStep, StateCondition, TransactionPlan
 from .policy import ApprovalGate, PolicyEngine
 from .state import TrustLevel, WorldState
 from .tools import Tool, ToolRegistry, ToolResult
@@ -39,17 +50,43 @@ class TransactionManager:
 
     def execute_plan(self, plan: TransactionPlan, state: WorldState) -> TransactionPlan:
         self.audit_log.record("plan.started", "Starting transaction plan", plan_id=plan.plan_id, goal=plan.goal.description)
+        self._transition_plan_goal(plan, GoalStatus.RUNNING)
         rollback_stack: List[tuple[Tool, Dict[str, Any], ActionStep]] = []
+        budget = plan.budget or plan.goal.budget
+        if self._budget_exceeded(plan, budget):
+            self._transition_plan_goal(plan, self._final_goal_status(plan))
+            self.audit_log.record(
+                "plan.finished",
+                "Finished transaction plan",
+                plan_id=plan.plan_id,
+                goal_status=plan.goal.status.value,
+            )
+            return plan
 
         for step in plan.steps:
             tool = self.registry.get(step.tool_name)
-            step.required_permissions = tuple(tool.spec.permissions)
-            step.risk = self.policy.assess(tool, step.arguments)
-            step.reversibility = tool.spec.reversibility or Reversibility.IRREVERSIBLE
-            step.compensation_strategy = tool.spec.compensation_strategy
-            step.rollback_reliability = tool.spec.rollback_reliability
+            self._hydrate_step_metadata(step, tool)
             step.predictions = self.causal_model.predict(step, state)
             step.counterfactual_report = self.counterfactual_review.review(step, state, step.predictions)
+
+            if self._idempotency_conflict(step, state):
+                self._rollback(rollback_stack, state)
+                break
+
+            precondition_issues = self._check_conditions((*step.preconditions, *step.invariants), state)
+            if precondition_issues:
+                step.status = StepStatus.BLOCKED
+                error = PreconditionFailed("Step preconditions failed")
+                self.audit_log.record(
+                    "step.precondition_failed",
+                    "Step preconditions failed",
+                    step_id=step.step_id,
+                    tool=step.tool_name,
+                    issues=precondition_issues,
+                    error_type=type(error).__name__,
+                )
+                self._rollback(rollback_stack, state)
+                break
 
             decision = self.policy.decide(step)
             if decision is Decision.NEEDS_HUMAN:
@@ -102,6 +139,22 @@ class TransactionManager:
             step.status = StepStatus.EXECUTED
             if result.rollback_token:
                 rollback_stack.append((tool, dict(result.rollback_token), step))
+
+            output_schema_issues = tool.spec.validate_output(result.observed_state_delta)
+            if output_schema_issues:
+                step.status = StepStatus.FAILED
+                error = SchemaValidationFailed("Output schema validation failed")
+                self.audit_log.record(
+                    "step.output_schema_failed",
+                    "Output schema validation failed",
+                    step_id=step.step_id,
+                    tool=step.tool_name,
+                    data={"schema_issues": output_schema_issues},
+                    error_type=type(error).__name__,
+                )
+                self._rollback(rollback_stack, state)
+                break
+
             state.observe(result.observed_state_delta, trust_level=TrustLevel.TOOL_REPORTED)
             self.audit_log.record(
                 "step.executed",
@@ -123,8 +176,26 @@ class TransactionManager:
                 )
                 self._rollback(rollback_stack, state)
                 break
-            step.status = StepStatus.VERIFIED
+
+            postcondition_issues = self._check_conditions((*step.postconditions, *step.invariants), state)
+            if postcondition_issues:
+                step.status = StepStatus.FAILED
+                error = PostconditionFailed("Step postconditions failed")
+                self.audit_log.record(
+                    "step.postcondition_failed",
+                    "Step postconditions failed",
+                    step_id=step.step_id,
+                    tool=step.tool_name,
+                    issues=postcondition_issues,
+                    error_type=type(error).__name__,
+                )
+                self._rollback(rollback_stack, state)
+                break
+
             state.mark_trust(result.observed_state_delta.keys(), TrustLevel.VERIFIED)
+            if step.idempotency_key:
+                self._record_idempotency_key(step, state)
+            step.status = StepStatus.VERIFIED
             self.audit_log.record(
                 "step.verified",
                 verification.message,
@@ -133,8 +204,187 @@ class TransactionManager:
                 verified_trust=TrustLevel.VERIFIED.value,
             )
 
-        self.audit_log.record("plan.finished", "Finished transaction plan", plan_id=plan.plan_id)
+        self._transition_plan_goal(plan, self._final_goal_status(plan))
+        self.audit_log.record(
+            "plan.finished",
+            "Finished transaction plan",
+            plan_id=plan.plan_id,
+            goal_status=plan.goal.status.value,
+        )
         return plan
+
+    def _transition_plan_goal(self, plan: TransactionPlan, status: GoalStatus) -> None:
+        if plan.goal.status is status:
+            return
+        if plan.goal.status is GoalStatus.CREATED and status is GoalStatus.RUNNING:
+            self._transition_plan_goal(plan, GoalStatus.PLANNING)
+        previous = plan.goal.status
+        plan.goal = plan.goal.transition(status)
+        self.audit_log.record(
+            "goal.status_changed",
+            "Goal status changed",
+            goal_id=plan.goal.goal_id,
+            from_status=previous.value,
+            to_status=plan.goal.status.value,
+        )
+
+    @staticmethod
+    def _final_goal_status(plan: TransactionPlan) -> GoalStatus:
+        if not plan.steps:
+            return GoalStatus.SUCCEEDED
+        verified = sum(1 for step in plan.steps if step.status is StepStatus.VERIFIED)
+        if verified == len(plan.steps):
+            return GoalStatus.SUCCEEDED
+        if verified:
+            return GoalStatus.PARTIALLY_DONE
+        if any(step.status is StepStatus.BLOCKED for step in plan.steps):
+            return GoalStatus.BLOCKED
+        if any(step.status in {StepStatus.FAILED, StepStatus.ROLLED_BACK} for step in plan.steps):
+            return GoalStatus.FAILED
+        return GoalStatus.FAILED
+
+    def _hydrate_step_metadata(self, step: ActionStep, tool: Tool) -> None:
+        step.required_permissions = tuple(tool.spec.permissions)
+        step.risk = self.policy.assess(tool, step.arguments)
+        step.reversibility = tool.spec.reversibility or Reversibility.IRREVERSIBLE
+        step.compensation_strategy = tool.spec.compensation_strategy
+        step.rollback_reliability = tool.spec.rollback_reliability
+
+    def _budget_exceeded(self, plan: TransactionPlan, budget: ResourceBudget) -> bool:
+        if budget.max_tool_calls is not None and len(plan.steps) > budget.max_tool_calls:
+            step = plan.steps[min(budget.max_tool_calls, len(plan.steps) - 1)]
+            self._record_budget_exceeded(
+                step,
+                "Plan exceeds maximum tool calls",
+                limit="max_tool_calls",
+                allowed=budget.max_tool_calls,
+                actual=len(plan.steps),
+            )
+            return True
+
+        file_writes = 0
+        network_requests = 0
+        for step in plan.steps:
+            tool = self.registry.get(step.tool_name)
+            self._hydrate_step_metadata(step, tool)
+
+            if _risk_value(step.risk) > _risk_value(budget.max_risk_level):
+                self._record_budget_exceeded(
+                    step,
+                    "Step exceeds maximum risk level",
+                    limit="max_risk_level",
+                    allowed=budget.max_risk_level.value,
+                    actual=step.risk.value,
+                )
+                return True
+
+            required = set(step.required_permissions)
+            if Permission.WRITE_FILES in required:
+                file_writes += 1
+                if budget.max_file_writes is not None and file_writes > budget.max_file_writes:
+                    self._record_budget_exceeded(
+                        step,
+                        "Plan exceeds maximum file writes",
+                        limit="max_file_writes",
+                        allowed=budget.max_file_writes,
+                        actual=file_writes,
+                    )
+                    return True
+
+            if Permission.NETWORK in required:
+                network_requests += 1
+                if budget.max_network_requests is not None and network_requests > budget.max_network_requests:
+                    self._record_budget_exceeded(
+                        step,
+                        "Plan exceeds maximum network requests",
+                        limit="max_network_requests",
+                        allowed=budget.max_network_requests,
+                        actual=network_requests,
+                    )
+                    return True
+
+        self.audit_log.record(
+            "budget.checked",
+            "Resource budget accepted",
+            plan_id=plan.plan_id,
+            max_tool_calls=budget.max_tool_calls,
+            max_file_writes=budget.max_file_writes,
+            max_network_requests=budget.max_network_requests,
+            max_risk_level=budget.max_risk_level.value,
+        )
+        return False
+
+    def _record_budget_exceeded(self, step: ActionStep, message: str, **payload: Any) -> None:
+        step.status = StepStatus.BLOCKED
+        error = BudgetExceeded(message)
+        self.audit_log.record(
+            "budget.exceeded",
+            message,
+            step_id=step.step_id,
+            tool=step.tool_name,
+            error_type=type(error).__name__,
+            **payload,
+        )
+
+    def _idempotency_conflict(self, step: ActionStep, state: WorldState) -> bool:
+        if not step.idempotency_key:
+            return False
+        marker = self._idempotency_marker(step.idempotency_key)
+        if marker not in state.facts:
+            return False
+        step.status = StepStatus.BLOCKED
+        error = IdempotencyConflict("Step idempotency key was already consumed")
+        self.audit_log.record(
+            "step.idempotency_duplicate",
+            "Step idempotency key was already consumed",
+            step_id=step.step_id,
+            tool=step.tool_name,
+            idempotency_key=step.idempotency_key,
+            previous=state.facts[marker],
+            error_type=type(error).__name__,
+        )
+        return True
+
+    def _record_idempotency_key(self, step: ActionStep, state: WorldState) -> None:
+        marker = self._idempotency_marker(step.idempotency_key or "")
+        record = {"step_id": step.step_id, "tool": step.tool_name}
+        state.set_fact(marker, record, trust_level=TrustLevel.VERIFIED)
+        self.audit_log.record(
+            "step.idempotency_recorded",
+            "Step idempotency key recorded",
+            step_id=step.step_id,
+            tool=step.tool_name,
+            idempotency_key=step.idempotency_key,
+        )
+
+    @staticmethod
+    def _idempotency_marker(idempotency_key: str) -> str:
+        return f"idempotency:{idempotency_key}"
+
+    def _check_conditions(self, conditions: Sequence[StateCondition], state: WorldState) -> list[Dict[str, Any]]:
+        issues = []
+        for condition in conditions:
+            present = condition.variable in state.facts
+            actual = state.facts.get(condition.variable)
+            if condition.operator == "exists" and not present:
+                issues.append({**condition.describe(), "reason": "missing_fact"})
+                continue
+            if condition.operator == "not_exists" and present:
+                issues.append({**condition.describe(), "reason": "unexpected_fact", "actual": actual})
+                continue
+            if condition.operator == "equals" and (not present or actual != condition.value):
+                issues.append({**condition.describe(), "reason": "value_mismatch", "actual": actual})
+                continue
+            if condition.trust_level is not None and state.trust.get(condition.variable) != condition.trust_level:
+                trust = state.trust.get(condition.variable)
+                issues.append(
+                    {
+                        **condition.describe(),
+                        "reason": "trust_mismatch",
+                        "actual_trust": trust.value if trust else None,
+                    }
+                )
+        return issues
 
     def _rollback(self, rollback_stack: List[tuple[Tool, Dict[str, Any], ActionStep]], state: WorldState) -> None:
         rollback_succeeded = 0

@@ -9,7 +9,35 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from .causal import ActionConsequence, CounterfactualReport
 from .enums import CompensationStrategy, Permission, Reversibility, RiskLevel, StepStatus
-from .goals import Goal
+from .goals import Goal, ResourceBudget
+from .state import TrustLevel
+
+
+@dataclass(frozen=True)
+class StateCondition:
+    """A structured state condition used for auditable step gates."""
+
+    variable: str
+    operator: str = "exists"
+    value: Any = None
+    trust_level: Optional[TrustLevel] = None
+
+    def __post_init__(self) -> None:
+        if self.operator not in {"exists", "not_exists", "equals"}:
+            raise ValueError(f"Unsupported condition operator: {self.operator}")
+        if self.trust_level is not None:
+            object.__setattr__(self, "trust_level", TrustLevel(self.trust_level))
+
+    def describe(self) -> Dict[str, Any]:
+        payload = {
+            "variable": self.variable,
+            "operator": self.operator,
+        }
+        if self.operator == "equals":
+            payload["value"] = self.value
+        if self.trust_level is not None:
+            payload["trust_level"] = self.trust_level.value
+        return payload
 
 
 @dataclass
@@ -25,6 +53,10 @@ class ActionStep:
     required_permissions: Sequence[Permission] = ()
     predictions: List[ActionConsequence] = field(default_factory=list)
     counterfactual_report: Optional[CounterfactualReport] = None
+    idempotency_key: Optional[str] = None
+    preconditions: Sequence[StateCondition] = ()
+    postconditions: Sequence[StateCondition] = ()
+    invariants: Sequence[StateCondition] = ()
     step_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
 
@@ -34,6 +66,7 @@ class TransactionPlan:
     steps: List[ActionStep]
     plan_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     created_at: float = field(default_factory=time.time)
+    budget: Optional[ResourceBudget] = None
 
 
 @dataclass(frozen=True)

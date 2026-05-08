@@ -33,3 +33,31 @@ class WorkspaceEscapeBlocked(LeosError):
 
 class SchemaValidationFailed(LeosError):
     """Raised or recorded when structured input or output validation fails."""
+
+
+class BudgetExceeded(LeosError):
+    """Raised or recorded when a goal or plan exceeds its resource budget."""
+
+
+class PreconditionFailed(LeosError):
+    """Raised or recorded when a step precondition is not satisfied."""
+
+
+class PostconditionFailed(LeosError):
+    """Raised or recorded when a step postcondition is not satisfied."""
+
+
+class IdempotencyConflict(LeosError):
+    """Raised or recorded when an idempotency key was already consumed."""
+
+
+class InvalidGoalTransition(LeosError):
+    """Raised when a goal lifecycle transition is not allowed."""
+
+
+class SecretBoundaryViolation(LeosError):
+    """Raised when a secret value attempts to cross into memory or audit state."""
+
+
+class PolicyConfigurationError(LeosError):
+    """Raised when policy-as-code configuration is invalid or unsafe."""

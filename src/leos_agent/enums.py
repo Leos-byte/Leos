@@ -57,6 +57,31 @@ class StepStatus(str, Enum):
     BLOCKED = "blocked"
 
 
+class GoalStatus(str, Enum):
+    CREATED = "created"
+    CLARIFYING = "clarifying"
+    PLANNING = "planning"
+    AWAITING_APPROVAL = "awaiting_approval"
+    RUNNING = "running"
+    PAUSED = "paused"
+    BLOCKED = "blocked"
+    FAILED = "failed"
+    PARTIALLY_DONE = "partially_done"
+    SUCCEEDED = "succeeded"
+    CANCELLED = "cancelled"
+    ARCHIVED = "archived"
+
+
+class TaskStatus(str, Enum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    PAUSED = "paused"
+    CANCELLED = "cancelled"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    TIMED_OUT = "timed_out"
+
+
 _RISK_VALUES = {
     RiskLevel.LOW: 1,
     RiskLevel.MEDIUM: 2,
