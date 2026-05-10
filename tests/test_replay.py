@@ -74,6 +74,7 @@ class ReplayEnhancementTests(unittest.TestCase):
 
     def test_replay_state_trust_escalation(self) -> None:
         audit = AuditLog()
+        audit.record("step.executed", "ok", observed={"key1": "val"})
         audit.record(
             "state.trust_escalated",
             "escalate",

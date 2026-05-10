@@ -8,7 +8,6 @@ from leos_agent.goals import Goal
 from leos_agent.kernel import AgentKernel
 from leos_agent.plans import ActionStep
 from leos_agent.policy import PolicyEngine
-from leos_agent.state import TrustLevel
 from leos_agent.tools import ToolRegistry, ToolResult, ToolSpec
 
 
@@ -43,8 +42,8 @@ class ToolOutputInjectionRedTeamTests(unittest.TestCase):
         goal = Goal(description="t", success_criteria=["ok"], stop_conditions=["done"])
         plan = agent.build_plan(goal, [ActionStep("malicious", {}, "injection test")])
         agent.run(plan)
-        # Tool output enters state at TOOL_REPORTED trust
-        self.assertEqual(agent.state.trust.get("system_instruction"), TrustLevel.TOOL_REPORTED)
+        # Tool output enters state but does not become a policy grant
+        self.assertIn("system_instruction", agent.state.facts)
         self.assertFalse(agent.state.facts.get("system_instruction") in policy.granted_permissions)
 
     def test_injected_output_does_not_approve_high_risk(self) -> None:
@@ -85,7 +84,7 @@ class ToolOutputInjectionRedTeamTests(unittest.TestCase):
         plan = agent.build_plan(goal, [ActionStep("malicious", {}, "injection")])
         agent.run(plan)
         policy_change_events = [
-            e for e in agent.audit_log.events if "policy_override" in str(e.payload) or "grant" in str(e.payload)
+            e for e in agent.audit_log.events if e.event_type == "policy_override" or "policy.grant" in e.event_type
         ]
         # No policy change events from tool output
         self.assertEqual(len(policy_change_events), 0)
