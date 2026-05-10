@@ -153,9 +153,7 @@ def serialize_plan(plan: TransactionPlan) -> str:
     try:
         encoded = json.dumps(data, ensure_ascii=False)
     except TypeError as exc:
-        raise SerializationError(
-            f"Plan contains non-JSON-serializable data: {exc}"
-        ) from exc
+        raise SerializationError(f"Plan contains non-JSON-serializable data: {exc}") from exc
     return encoded
 
 

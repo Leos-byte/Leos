@@ -67,11 +67,10 @@ class WorkspaceSubprocessSandboxRunnerTests(unittest.TestCase):
 
     def test_parent_env_not_inherited(self) -> None:
         import os
+
         os.environ["LEOS_TEST_SHOULD_NOT_LEAK"] = "secret-leak-value"
         try:
-            result = self.runner.run(
-                SandboxCommand(argv=["sh", "-c", "echo $LEOS_TEST_SHOULD_NOT_LEAK"])
-            )
+            result = self.runner.run(SandboxCommand(argv=["sh", "-c", "echo $LEOS_TEST_SHOULD_NOT_LEAK"]))
             self.assertNotIn("secret-leak-value", result.stdout)
             self.assertNotIn("secret-leak-value", result.stderr)
             self.assertNotIn("secret-leak-value", result.message)

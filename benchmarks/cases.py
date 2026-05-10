@@ -129,9 +129,7 @@ def cases() -> list[BenchmarkCase]:
             description="File write with developer_local profile succeeds",
             tags=["policy", "smoke"],
             build_goal=lambda **kw: Goal(description="Write", success_criteria=["ok"], stop_conditions=["done"]),
-            build_steps=lambda **kw: [
-                ActionStep("safe_file_write", {"path": "dev.txt", "content": "x"}, "dev write")
-            ],
+            build_steps=lambda **kw: [ActionStep("safe_file_write", {"path": "dev.txt", "content": "x"}, "dev write")],
             build_kernel=lambda **kw: AgentKernel(
                 registry=default_registry(kw.get("ws", Path("."))),
                 policy=PolicyEngine.from_profile("developer_local"),
@@ -148,7 +146,9 @@ def cases() -> list[BenchmarkCase]:
             ),
             build_steps=lambda **kw: [
                 ActionStep(
-                    "echo", {"message": "hi"}, "test",
+                    "echo",
+                    {"message": "hi"},
+                    "test",
                     postconditions=(StateCondition("last_echo", "equals", "wrong"),),
                 )
             ],
@@ -168,9 +168,7 @@ def cases() -> list[BenchmarkCase]:
                 ActionStep("rollback_fails", {}, "create rollback token"),
                 ActionStep("dry_run_fails", {}, "trigger failure"),
             ],
-            build_kernel=lambda **kw: AgentKernel(
-                registry=_rollback_failure_registry(), policy=PolicyEngine()
-            ),
+            build_kernel=lambda **kw: AgentKernel(registry=_rollback_failure_registry(), policy=PolicyEngine()),
             expected_goal_status="failed",
             expected_step_statuses=["failed", "failed"],
         ),

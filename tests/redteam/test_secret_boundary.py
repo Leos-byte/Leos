@@ -53,8 +53,11 @@ class SecretBoundaryRedTeamTests(unittest.TestCase):
 
         class _NoSecretTool:
             spec = ToolSpec(
-                name="no_secret", description="n", permissions=(),
-                default_risk=RiskLevel.LOW, secrets_allowed=False,
+                name="no_secret",
+                description="n",
+                permissions=(),
+                default_risk=RiskLevel.LOW,
+                secrets_allowed=False,
             )
 
             def dry_run(self, *a, **kw):
@@ -69,15 +72,14 @@ class SecretBoundaryRedTeamTests(unittest.TestCase):
         registry.register(_NoSecretTool())
         agent = AgentKernel(registry=registry, policy=PolicyEngine())
         goal = Goal(description="t", success_criteria=["blocked"], stop_conditions=["blocked"])
-        plan = agent.build_plan(goal, [
-            ActionStep("no_secret", {"api_key": Secret("raw-super-secret")}, "test secret leak")
-        ])
+        plan = agent.build_plan(
+            goal, [ActionStep("no_secret", {"api_key": Secret("raw-super-secret")}, "test secret leak")]
+        )
         agent.run(plan)
 
         for event in agent.audit_log.events:
             serialized = json.dumps(asdict(event), default=str)
-            self.assertNotIn("raw-super-secret", serialized,
-                             f"Secret leaked in event: {event.event_type}")
+            self.assertNotIn("raw-super-secret", serialized, f"Secret leaked in event: {event.event_type}")
 
 
 if __name__ == "__main__":

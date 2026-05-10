@@ -135,7 +135,6 @@ class TaskQueuePersistenceTests(unittest.TestCase):
             q2 = TaskQueue(path=db_path)
             self.assertEqual([t.task_id for t in q2.tasks()], ids)
 
-
     def test_watchdog_persists_timed_out_to_sqlite(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             db_path = Path(tmp) / "tasks.db"

@@ -130,12 +130,14 @@ class ConditionSchemaTests(unittest.TestCase):
     def _task_with_precondition(self, condition: dict) -> dict:
         return {
             "goal": {"description": "t", "success_criteria": ["ok"]},
-            "steps": [{
-                "tool_name": "echo",
-                "arguments": {"message": "hi"},
-                "reason": "test",
-                "preconditions": [condition],
-            }],
+            "steps": [
+                {
+                    "tool_name": "echo",
+                    "arguments": {"message": "hi"},
+                    "reason": "test",
+                    "preconditions": [condition],
+                }
+            ],
         }
 
     def test_valid_condition_passes(self) -> None:

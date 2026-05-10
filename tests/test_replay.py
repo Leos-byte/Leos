@@ -72,12 +72,14 @@ class ReplayEnhancementTests(unittest.TestCase):
         self.assertEqual(len(result.budget_events), 1)
         self.assertEqual(result.budget_events[0]["limit"], "max_tool_calls")
 
-
     def test_replay_state_trust_escalation(self) -> None:
         audit = AuditLog()
         audit.record(
-            "state.trust_escalated", "escalate",
-            keys=["key1"], from_trust="tool_reported", to_trust="verified",
+            "state.trust_escalated",
+            "escalate",
+            keys=["key1"],
+            from_trust="tool_reported",
+            to_trust="verified",
         )
         result = replay_audit_log(audit)
         self.assertEqual(result.state.trust.get("key1"), TrustLevel.VERIFIED)
@@ -104,6 +106,7 @@ class ReplayEnhancementTests(unittest.TestCase):
         records = audit.records()
         records[0]["payload"]["observed"]["key"] = "tampered"
         from leos_agent.replay import AuditReplayer
+
         result = AuditReplayer().replay_records(records, verify_integrity=False)
         self.assertTrue(result.ok)
         self.assertEqual(result.state.facts["key"], "tampered")
