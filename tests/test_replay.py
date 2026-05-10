@@ -6,6 +6,7 @@ import unittest
 
 from leos_agent.audit import AuditLog
 from leos_agent.replay import replay_audit_log
+from leos_agent.state import TrustLevel
 
 
 class ReplayEnhancementTests(unittest.TestCase):
@@ -70,6 +71,42 @@ class ReplayEnhancementTests(unittest.TestCase):
         result = replay_audit_log(audit)
         self.assertEqual(len(result.budget_events), 1)
         self.assertEqual(result.budget_events[0]["limit"], "max_tool_calls")
+
+
+    def test_replay_state_trust_escalation(self) -> None:
+        audit = AuditLog()
+        audit.record(
+            "state.trust_escalated", "escalate",
+            keys=["key1"], from_trust="tool_reported", to_trust="verified",
+        )
+        result = replay_audit_log(audit)
+        self.assertEqual(result.state.trust.get("key1"), TrustLevel.VERIFIED)
+
+    def test_planner_events_reconstructed(self) -> None:
+        audit = AuditLog()
+        audit.record("planner.candidates_generated", "gen", goal_id="g1", count=3)
+        audit.record("planner.selection_finished", "sel", selected_proposal_id="p1", candidate_count=3)
+        result = replay_audit_log(audit)
+        self.assertTrue(result.ok)
+
+    def test_task_claimed_retry_cancelled_reconstructed(self) -> None:
+        audit = AuditLog()
+        audit.record("task.enqueued", "enq", task_id="t1", plan_id="p1")
+        audit.record("task.claimed", "claim", task_id="t1", worker_id="w1")
+        audit.record("task.retry_scheduled", "retry", task_id="t1")
+        audit.record("task.cancelled", "cancel", task_id="t1")
+        result = replay_audit_log(audit)
+        self.assertIn("t1", result.tasks)
+
+    def test_verify_integrity_false_skips_verification(self) -> None:
+        audit = AuditLog()
+        audit.record("step.executed", "ok", observed={"key": "val"})
+        records = audit.records()
+        records[0]["payload"]["observed"]["key"] = "tampered"
+        from leos_agent.replay import AuditReplayer
+        result = AuditReplayer().replay_records(records, verify_integrity=False)
+        self.assertTrue(result.ok)
+        self.assertEqual(result.state.facts["key"], "tampered")
 
 
 if __name__ == "__main__":

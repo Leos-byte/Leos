@@ -13,11 +13,16 @@ if TYPE_CHECKING:
     from .task_queue import RetryPolicy, TimeoutPolicy
 
 from .enums import (
+    CompensationStrategy,
     GoalStatus,
+    Permission,
+    Reversibility,
     RiskLevel,
+    StepStatus,
 )
 from .goals import Goal, ResourceBudget
-from .plans import ActionStep, TransactionPlan
+from .plans import ActionStep, StateCondition, TransactionPlan
+from .state import TrustLevel
 
 
 class SerializationError(ValueError):
@@ -80,6 +85,25 @@ def _deserialize_budget(data: dict[str, Any]) -> ResourceBudget:
     )
 
 
+def _serialize_condition(cond: StateCondition) -> dict[str, Any]:
+    result: dict[str, Any] = {"variable": cond.variable, "operator": cond.operator}
+    if cond.value is not None:
+        result["value"] = cond.value
+    if cond.trust_level is not None:
+        result["trust_level"] = cond.trust_level.value
+    return result
+
+
+def _deserialize_condition(data: dict[str, Any]) -> StateCondition:
+    trust = data.get("trust_level")
+    return StateCondition(
+        variable=data["variable"],
+        operator=data.get("operator", "exists"),
+        value=data.get("value"),
+        trust_level=TrustLevel(trust) if trust else None,
+    )
+
+
 def _serialize_step(step: ActionStep) -> dict[str, Any]:
     return {
         "tool_name": step.tool_name,
@@ -92,17 +116,31 @@ def _serialize_step(step: ActionStep) -> dict[str, Any]:
         "rollback_reliability": step.rollback_reliability,
         "required_permissions": [p.value for p in step.required_permissions],
         "idempotency_key": step.idempotency_key,
+        "preconditions": [_serialize_condition(c) for c in step.preconditions],
+        "postconditions": [_serialize_condition(c) for c in step.postconditions],
+        "invariants": [_serialize_condition(c) for c in step.invariants],
         "step_id": step.step_id,
     }
 
 
 def _deserialize_step(data: dict[str, Any]) -> ActionStep:
-    return ActionStep(
+    step = ActionStep(
         tool_name=data["tool_name"],
         arguments=dict(data.get("arguments", {})),
         reason=data.get("reason", ""),
+        idempotency_key=data.get("idempotency_key"),
         step_id=data.get("step_id", ""),
     )
+    step.status = StepStatus(data.get("status", "pending"))
+    step.risk = RiskLevel(data.get("risk", "low"))
+    step.reversibility = Reversibility(data.get("reversibility", "irreversible"))
+    step.compensation_strategy = CompensationStrategy(data.get("compensation_strategy", "none"))
+    step.rollback_reliability = float(data.get("rollback_reliability", 0.0))
+    step.required_permissions = tuple(Permission(p) for p in data.get("required_permissions", ()))
+    step.preconditions = tuple(_deserialize_condition(c) for c in data.get("preconditions", ()))
+    step.postconditions = tuple(_deserialize_condition(c) for c in data.get("postconditions", ()))
+    step.invariants = tuple(_deserialize_condition(c) for c in data.get("invariants", ()))
+    return step
 
 
 def serialize_plan(plan: TransactionPlan) -> str:
@@ -112,7 +150,12 @@ def serialize_plan(plan: TransactionPlan) -> str:
         "plan_id": plan.plan_id,
         "budget": _serialize_budget(plan.budget) if plan.budget else None,
     }
-    encoded = json.dumps(data, ensure_ascii=False, default=str)
+    try:
+        encoded = json.dumps(data, ensure_ascii=False)
+    except TypeError as exc:
+        raise SerializationError(
+            f"Plan contains non-JSON-serializable data: {exc}"
+        ) from exc
     return encoded
 
 

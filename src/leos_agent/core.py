@@ -50,7 +50,21 @@ from .goals import Goal, ResourceBudget
 from .kernel import AgentKernel
 from .manifest import ToolManifest, validate_json_schema
 from .memory import MemoryRecord, MemorySensitivity, MemoryStore, MemoryType
-from .planner import Planner
+from .model import (  # noqa: F401
+    FakeModelClient,
+    ModelCallError,
+    ModelClient,
+    ModelRequest,
+    ModelResponse,
+    ModelUsage,
+    StructuredOutputError,
+)
+from .planner import (  # noqa: F401
+    LLMPlannerAdapter,
+    Planner,
+    StructuredLLMPlanner,
+    validate_llm_proposals,
+)
 from .plans import (
     ActionStep,
     PlanCandidate,
@@ -77,7 +91,22 @@ from .policy_manifest import (
     sign_policy,
     verify_policy_manifest,
 )
+from .prompts import (  # noqa: F401
+    DEFAULT_PROMPT_REGISTRY,
+    PromptRegistry,
+    PromptTemplate,
+)
 from .replay import AuditReplayer, ReplayResult, replay_audit_log
+from .sandbox import (  # noqa: F401
+    ContainerSandboxRunner,
+    MicroVMSandboxRunner,
+    SandboxCommand,
+    SandboxCommandTool,
+    SandboxResult,
+    SandboxRunner,
+    SandboxUnavailable,
+    WorkspaceSubprocessSandboxRunner,
+)
 from .state import TrustLevel, WorldState
 from .task_queue import (
     RetryPolicy,

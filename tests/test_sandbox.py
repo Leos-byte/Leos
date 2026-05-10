@@ -65,6 +65,19 @@ class WorkspaceSubprocessSandboxRunnerTests(unittest.TestCase):
         )
         self.assertNotIn("should-not-leak", result.stdout)
 
+    def test_parent_env_not_inherited(self) -> None:
+        import os
+        os.environ["LEOS_TEST_SHOULD_NOT_LEAK"] = "secret-leak-value"
+        try:
+            result = self.runner.run(
+                SandboxCommand(argv=["sh", "-c", "echo $LEOS_TEST_SHOULD_NOT_LEAK"])
+            )
+            self.assertNotIn("secret-leak-value", result.stdout)
+            self.assertNotIn("secret-leak-value", result.stderr)
+            self.assertNotIn("secret-leak-value", result.message)
+        finally:
+            del os.environ["LEOS_TEST_SHOULD_NOT_LEAK"]
+
     def test_env_allowed_key_is_passed(self) -> None:
         runner = WorkspaceSubprocessSandboxRunner(self.ws, allowed_env_keys=["PATH"])
         result = runner.run(SandboxCommand(argv=["sh", "-c", "echo path=$PATH"]))

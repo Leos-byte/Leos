@@ -136,5 +136,28 @@ class TaskQueuePersistenceTests(unittest.TestCase):
             self.assertEqual([t.task_id for t in q2.tasks()], ids)
 
 
+    def test_watchdog_persists_timed_out_to_sqlite(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = Path(tmp) / "tasks.db"
+            q = TaskQueue(path=db_path)
+            q.enqueue(
+                _echo_plan("timeout test"),
+                timeout_policy=TimeoutPolicy(heartbeat_timeout_seconds=1.0),
+            )
+            q.claim("w1", now=100.0)
+            w = Watchdog(q)
+            timed_out = w.check(now=999.0)
+            self.assertEqual(len(timed_out), 1)
+            self.assertEqual(timed_out[0].status, TaskStatus.TIMED_OUT)
+            self.assertIsNotNone(timed_out[0].failure_reason)
+            self.assertIsNone(timed_out[0].locked_by)
+
+            q2 = TaskQueue(path=db_path)
+            loaded = q2.get(timed_out[0].task_id)
+            self.assertEqual(loaded.status, TaskStatus.TIMED_OUT)
+            self.assertIsNotNone(loaded.failure_reason)
+            self.assertIsNone(loaded.locked_by)
+
+
 if __name__ == "__main__":
     unittest.main()

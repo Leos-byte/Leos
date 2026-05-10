@@ -69,13 +69,49 @@ TASK_FILE_SCHEMA: JSONSchema = {
                     "arguments": {"type": "object"},
                     "reason": {"type": "string", "minLength": 1},
                     "idempotency_key": {"type": "string"},
-                    "preconditions": {"type": "array"},
-                    "postconditions": {"type": "array"},
-                    "invariants": {"type": "array"},
+                    "preconditions": {
+                        "type": "array",
+                        "items": {"$ref": "#/$defs/condition"},
+                    },
+                    "postconditions": {
+                        "type": "array",
+                        "items": {"$ref": "#/$defs/condition"},
+                    },
+                    "invariants": {
+                        "type": "array",
+                        "items": {"$ref": "#/$defs/condition"},
+                    },
                 },
                 "additionalProperties": False,
             },
         },
+    },
+    "$defs": {
+        "condition": {
+            "type": "object",
+            "required": ["variable"],
+            "properties": {
+                "variable": {"type": "string", "minLength": 1},
+                "operator": {
+                    "type": "string",
+                    "enum": ["exists", "not_exists", "equals"],
+                    "default": "exists",
+                },
+                "value": {},
+                "trust_level": {
+                    "type": "string",
+                    "enum": [
+                        "verified",
+                        "observed",
+                        "user_provided",
+                        "tool_reported",
+                        "model_inferred",
+                        "untrusted_external",
+                    ],
+                },
+            },
+            "additionalProperties": False,
+        }
     },
     "additionalProperties": False,
 }

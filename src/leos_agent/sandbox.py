@@ -105,7 +105,7 @@ class WorkspaceSubprocessSandboxRunner:
                 command.argv,
                 capture_output=True,
                 cwd=str(cwd),
-                env=env if env else None,
+                env=env,
                 timeout=command.timeout_seconds,
                 text=True,
             )
