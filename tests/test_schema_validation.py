@@ -126,5 +126,45 @@ class PlanProposalSchemaTests(unittest.TestCase):
             validate_llm_proposals([data], {"echo"})
 
 
+class ConditionSchemaTests(unittest.TestCase):
+    def _task_with_precondition(self, condition: dict) -> dict:
+        return {
+            "goal": {"description": "t", "success_criteria": ["ok"]},
+            "steps": [
+                {
+                    "tool_name": "echo",
+                    "arguments": {"message": "hi"},
+                    "reason": "test",
+                    "preconditions": [condition],
+                }
+            ],
+        }
+
+    def test_valid_condition_passes(self) -> None:
+        data = self._task_with_precondition({"variable": "ready", "operator": "equals", "value": True})
+        issues = validate_task_file(data)
+        self.assertEqual(issues, [])
+
+    def test_invalid_operator_fails(self) -> None:
+        data = self._task_with_precondition({"variable": "x", "operator": "invalid_op"})
+        issues = validate_task_file(data)
+        self.assertTrue(len(issues) > 0, f"Expected issues for invalid operator, got: {issues}")
+
+    def test_invalid_trust_level_fails(self) -> None:
+        data = self._task_with_precondition({"variable": "x", "trust_level": "super_trusted"})
+        issues = validate_task_file(data)
+        self.assertTrue(len(issues) > 0, f"Expected issues for invalid trust_level, got: {issues}")
+
+    def test_missing_variable_fails(self) -> None:
+        data = self._task_with_precondition({"operator": "exists"})
+        issues = validate_task_file(data)
+        self.assertTrue(len(issues) > 0, f"Expected issues for missing variable, got: {issues}")
+
+    def test_additional_property_fails(self) -> None:
+        data = self._task_with_precondition({"variable": "x", "unknown_field": True})
+        issues = validate_task_file(data)
+        self.assertTrue(len(issues) > 0, f"Expected issues for additional property, got: {issues}")
+
+
 if __name__ == "__main__":
     unittest.main()

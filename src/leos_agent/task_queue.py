@@ -372,6 +372,7 @@ class Watchdog:
             task.finished_at = timestamp
             task.failure_reason = reason
             task.locked_by = None
+            self.queue._persist_update(task)
             timed_out.append(task)
             self.audit_log.record(
                 "task.timed_out",
