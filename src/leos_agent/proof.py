@@ -64,6 +64,10 @@ class ProofManifest:
     generated_at: str
     git: ProofGitMetadata
     environment: ProofEnvironment
+    proof_status: str = "release_grade"
+    release_grade: bool = True
+    dirty_worktree: bool | None = False
+    warnings: list[str] = field(default_factory=list)
     commands: list[ProofCommandResult] = field(default_factory=list)
     summary: dict[str, int] = field(default_factory=dict)
 
@@ -100,15 +104,26 @@ def generate_proofs(
     *,
     commands: Sequence[ProofCommand] | None = None,
     runner: Runner | None = None,
+    require_clean: bool = False,
+    allow_dirty: bool = False,
 ) -> ProofManifest:
     output_dir.mkdir(parents=True, exist_ok=True)
     selected = list(commands or default_proof_commands())
     run = runner or _run_command
-    results = [_execute(command, run) for command in selected]
+    git = _git_metadata()
+    proof_status, release_grade, warnings = _proof_status(git, require_clean=require_clean)
+    if proof_status == "failed_dirty_worktree":
+        results = [_skipped(command, "require-clean refused dirty worktree") for command in selected]
+    else:
+        results = [_execute(command, run) for command in selected]
     manifest = ProofManifest(
         generated_at=_now(),
-        git=_git_metadata(),
+        git=git,
         environment=_environment(),
+        proof_status=proof_status,
+        release_grade=release_grade,
+        dirty_worktree=git.dirty_worktree,
+        warnings=warnings,
         commands=results,
         summary=_summary(results),
     )
@@ -120,8 +135,13 @@ def generate_proofs(
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Generate Leos proof documents.")
     parser.add_argument("--output", default="docs/proofs", help="Output directory for proof documents.")
+    parser.add_argument("--require-clean", action="store_true", help="Fail if the Git worktree is dirty.")
+    parser.add_argument("--allow-dirty", action="store_true", help="Allow dirty worktree proofs for local review.")
     args = parser.parse_args(argv)
-    manifest = generate_proofs(Path(args.output))
+    manifest = generate_proofs(Path(args.output), require_clean=args.require_clean, allow_dirty=args.allow_dirty)
+    print(f"proof_status={manifest.proof_status} release_grade={manifest.release_grade}")
+    if manifest.proof_status == "failed_dirty_worktree":
+        return 2
     return 0 if manifest.summary.get("failed", 0) == 0 else 1
 
 
@@ -162,6 +182,21 @@ def _execute(command: ProofCommand, runner: Runner) -> ProofCommandResult:
     )
 
 
+def _skipped(command: ProofCommand, reason: str) -> ProofCommandResult:
+    now = _now()
+    return ProofCommandResult(
+        name=command.name,
+        command=command.display,
+        exit_code=0,
+        status="skipped",
+        started_at=now,
+        finished_at=now,
+        duration_seconds=0.0,
+        stdout="",
+        stderr=reason,
+    )
+
+
 def _run_command(command: ProofCommand) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command.argv, capture_output=True, text=True, timeout=300)  # nosec B603 - explicit argv
 
@@ -191,6 +226,17 @@ def _summary(results: Sequence[ProofCommandResult]) -> dict[str, int]:
     failed = sum(1 for result in results if result.status == "failed")
     skipped = sum(1 for result in results if result.status == "skipped")
     return {"total": len(results), "passed": passed, "failed": failed, "skipped": skipped}
+
+
+def _proof_status(git: ProofGitMetadata, *, require_clean: bool) -> tuple[str, bool, list[str]]:
+    if git.dirty_worktree is None:
+        return "git_unavailable", False, ["Git metadata unavailable; proof cannot be release-grade."]
+    if git.dirty_worktree:
+        warning = "This proof was generated from a dirty worktree and is not release-grade evidence."
+        if require_clean:
+            return "failed_dirty_worktree", False, [warning, "--require-clean refused dirty worktree."]
+        return "precommit_dirty", False, [warning]
+    return "release_grade", True, []
 
 
 def _environment() -> ProofEnvironment:
@@ -228,6 +274,10 @@ def _git_metadata() -> ProofGitMetadata:
 def _manifest_dict(manifest: ProofManifest) -> dict[str, object]:
     return {
         "generated_at": manifest.generated_at,
+        "proof_status": manifest.proof_status,
+        "release_grade": manifest.release_grade,
+        "dirty_worktree": manifest.dirty_worktree,
+        "warnings": manifest.warnings,
         "git": asdict(manifest.git),
         "environment": asdict(manifest.environment),
         "commands": [
@@ -281,13 +331,22 @@ def _proof_index(manifest: ProofManifest) -> str:
         "PRODUCTION_READINESS.md",
         "KNOWN_LIMITATIONS.md",
     ]
+    warnings = "\n".join(f"- WARNING: {warning}" for warning in manifest.warnings) or "- none"
+    if manifest.dirty_worktree:
+        warnings += (
+            "\n\n**WARNING: This proof was generated from a dirty worktree. "
+            "It is useful for local review but not release-grade evidence.**"
+        )
     return (
         "# Proof Index\n\n"
+        f"Proof status: `{manifest.proof_status}`\n\n"
+        f"Release grade: `{manifest.release_grade}`\n\n"
         f"Generated: {manifest.generated_at}\n\n"
         f"Commit: {manifest.git.commit_sha}\n\n"
         f"Branch: {manifest.git.branch}\n\n"
         f"Dirty worktree: {manifest.git.dirty_worktree}\n\n"
         f"Summary: {manifest.summary}\n\n"
+        f"## Warnings\n\n{warnings}\n\n"
         "## Documents\n\n" + "\n".join(f"- [{link}]({link})" for link in links) + "\n"
     )
 

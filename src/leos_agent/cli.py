@@ -133,6 +133,12 @@ def main() -> int:
     proof_sub = proof_parser.add_subparsers(dest="proof_command")
     proof_generate = proof_sub.add_parser("generate", help="Generate proof documents.")
     proof_generate.add_argument("--output", default="docs/proofs", help="Output directory.")
+    proof_generate.add_argument("--require-clean", action="store_true", help="Fail if the Git worktree is dirty.")
+    proof_generate.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help="Allow dirty worktree proofs for local review.",
+    )
 
     manifest_parser = sub.add_parser("manifest", help="Output registered tool manifests as JSON.")
     manifest_parser.add_argument("--workspace", default=".leos-workspace", help="Workspace root.")
@@ -177,7 +183,7 @@ def main() -> int:
         return _eval(args.suite)
     if args.command == "proof":
         if args.proof_command == "generate":
-            return _proof_generate(args.output)
+            return _proof_generate(args.output, require_clean=args.require_clean, allow_dirty=args.allow_dirty)
         print("Error: proof subcommand required", file=sys.stderr)
         return 2
     if args.command == "manifest":
@@ -606,9 +612,12 @@ def _eval(suite: str) -> int:
     return 0 if report.failed == 0 else 1
 
 
-def _proof_generate(output: str) -> int:
-    manifest = generate_proofs(Path(output))
+def _proof_generate(output: str, *, require_clean: bool = False, allow_dirty: bool = False) -> int:
+    manifest = generate_proofs(Path(output), require_clean=require_clean, allow_dirty=allow_dirty)
     print(f"Proof documents written to {output}")
+    print(f"proof_status={manifest.proof_status} release_grade={manifest.release_grade}")
+    if manifest.proof_status == "failed_dirty_worktree":
+        return 2
     return 0 if manifest.summary.get("failed", 0) == 0 else 1
 
 

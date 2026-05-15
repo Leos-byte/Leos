@@ -4,64 +4,61 @@
 
 - Command: `ruff check .`
 - Exit code: `0`
-- Status: `passed`
-- Duration seconds: `0.009`
-- Started: `2026-05-13T10:53:24Z`
-- Finished: `2026-05-13T10:53:24Z`
+- Status: `skipped`
+- Duration seconds: `0.000`
+- Started: `2026-05-15T10:19:31Z`
+- Finished: `2026-05-15T10:19:31Z`
 
 ### stdout
 
 ```text
-All checks passed!
 
 ```
 
 ### stderr
 
 ```text
-
+require-clean refused dirty worktree
 ```
 
 ## ruff_format_check
 
 - Command: `ruff format --check .`
 - Exit code: `0`
-- Status: `passed`
-- Duration seconds: `0.008`
-- Started: `2026-05-13T10:53:24Z`
-- Finished: `2026-05-13T10:53:24Z`
+- Status: `skipped`
+- Duration seconds: `0.000`
+- Started: `2026-05-15T10:19:31Z`
+- Finished: `2026-05-15T10:19:31Z`
 
 ### stdout
 
 ```text
-64 files already formatted
 
 ```
 
 ### stderr
 
 ```text
-
+require-clean refused dirty worktree
 ```
 
 ## mypy
 
 - Command: `mypy src`
 - Exit code: `0`
-- Status: `passed`
-- Duration seconds: `0.144`
-- Started: `2026-05-13T10:53:24Z`
-- Finished: `2026-05-13T10:53:24Z`
+- Status: `skipped`
+- Duration seconds: `0.000`
+- Started: `2026-05-15T10:19:31Z`
+- Finished: `2026-05-15T10:19:31Z`
 
 ### stdout
 
 ```text
-Success: no issues found in 32 source files
 
 ```
 
 ### stderr
 
 ```text
-
+require-clean refused dirty worktree
 ```
