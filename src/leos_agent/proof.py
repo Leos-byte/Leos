@@ -108,7 +108,7 @@ def generate_proofs(
     allow_dirty: bool = False,
 ) -> ProofManifest:
     output_dir.mkdir(parents=True, exist_ok=True)
-    selected = list(commands or default_proof_commands())
+    selected = list(default_proof_commands() if commands is None else commands)
     run = runner or _run_command
     git = _git_metadata()
     proof_status, release_grade, warnings = _proof_status(git, require_clean=require_clean)
