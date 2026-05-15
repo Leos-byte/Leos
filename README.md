@@ -49,6 +49,20 @@ pip install -e .
 python -m unittest discover -s tests
 ```
 
+For development and audit checks:
+
+```bash
+pip install -e ".[dev]"
+ruff check .
+ruff format --check .
+mypy src
+coverage run -m unittest discover -s tests
+coverage report --fail-under=83
+bandit -r src
+leos eval --suite safety
+python scripts/generate_proofs.py --output docs/proofs --allow-dirty
+```
+
 Run the demo:
 
 ```bash
@@ -56,6 +70,34 @@ leos-agent --auto-approve
 ```
 
 Without `--auto-approve`, the file-writing action is denied because it lacks a write-file grant and requires explicit approval.
+
+## Current capability matrix
+
+| Capability | Status |
+|---|---|
+| Workspace-scoped read/list/patch/diff tools | implemented |
+| Local test runner | opt-in, local-dev only |
+| Network fetch/browser observations | opt-in, marked `UNTRUSTED_EXTERNAL` |
+| URL SSRF checks | implemented regression guard |
+| Docker sandbox runner | initial command-construction support |
+| Safety eval suite | implemented regression suite |
+| Proof documents | generated audit aids, not formal proof |
+| Causal contracts | partial runtime enforcement |
+| Production autonomy | not ready |
+
+High-risk tools are not enabled by default. Network tools and code execution
+must be explicitly registered and policy-gated. The workspace subprocess sandbox
+is not a production isolation boundary.
+
+## Proof documents
+
+Proof documents under `docs/proofs/` bind command results to source and test file
+hashes. Dirty worktree proofs are marked `precommit_dirty` and are useful for
+local review only. After committing, generate release-grade evidence with:
+
+```bash
+python scripts/generate_proofs.py --output docs/proofs --require-clean
+```
 
 ## Why this is not just another chatbot wrapper
 

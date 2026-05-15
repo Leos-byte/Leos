@@ -64,6 +64,22 @@ def render_trace_html(records: Sequence[Mapping[str, Any]], *, title: str = "Leo
 """
 
 
+def render_trace_markdown(records: Sequence[Mapping[str, Any]]) -> str:
+    event_counts = Counter(str(record.get("event_type", "unknown")) for record in records)
+    lines = ["# Leos Trace", "", f"Total events: {len(records)}", "", "## Event Types"]
+    if event_counts:
+        for event_type, count in sorted(event_counts.items()):
+            lines.append(f"- `{event_type}`: {count}")
+    else:
+        lines.append("- none")
+    lines.extend(["", "## Timeline", "", "| # | Event | Message |", "|---:|---|---|"])
+    for index, record in enumerate(records, start=1):
+        event_type = str(record.get("event_type", "unknown")).replace("|", "\\|")
+        message = str(record.get("message", "")).replace("|", "\\|").replace("\n", " ")
+        lines.append(f"| {index} | `{event_type}` | {message} |")
+    return "\n".join(lines) + "\n"
+
+
 def _render_event_row(index: int, record: Mapping[str, Any]) -> str:
     event_type = html.escape(str(record.get("event_type", "unknown")))
     message = html.escape(str(record.get("message", "")))

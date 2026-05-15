@@ -17,7 +17,16 @@ from .causal import (
     CounterfactualReview,
     EffectPrediction,
 )
+from .causal_contract import CausalContract, safe_file_write_causal_contract
 from .conflicts import Conflict, ConflictDetector, ConflictResolutionPolicy
+from .dev_tools import (
+    GitDiffTool,
+    ListFilesTool,
+    PatchFileTool,
+    ReadFileTool,
+    RunTestsTool,
+    default_dev_registry,
+)
 from .enums import (
     CompensationStrategy,
     Decision,
@@ -47,6 +56,7 @@ from .errors import (
     VerificationFailed,
     WorkspaceEscapeBlocked,
 )
+from .eval_runner import EvalReport, format_eval_report, render_eval_report_markdown, run_safety_evals
 from .goals import Goal, ResourceBudget
 from .kernel import AgentKernel
 from .manifest import (
@@ -66,7 +76,7 @@ from .model import (  # noqa: F401
     ModelUsage,
     StructuredOutputError,
 )
-from .network_tools import BrowserReadTool, NetworkFetcher, NetworkFetchResponse, NetworkFetchTool
+from .network_tools import BrowserReadTool, NetworkFetcher, NetworkFetchResponse, NetworkFetchTool, URLSafetyPolicy
 from .planner import (  # noqa: F401
     LLMPlannerAdapter,
     Planner,
@@ -106,9 +116,11 @@ from .prompts import (  # noqa: F401
     PromptRegistry,
     PromptTemplate,
 )
+from .proof import ProofManifest, exit_code_for_manifest, generate_proofs
 from .replay import AuditReplayer, ReplayResult, replay_audit_log
 from .sandbox import (  # noqa: F401
     ContainerSandboxRunner,
+    DockerSandboxRunner,
     MicroVMSandboxRunner,
     SandboxCommand,
     SandboxCommandTool,
@@ -146,7 +158,7 @@ from .tools import (
     ToolSpec,
     default_registry,
 )
-from .trace_viewer import render_trace_html
+from .trace_viewer import render_trace_html, render_trace_markdown
 from .transactions import TransactionManager
 
 __all__ = [
@@ -162,6 +174,7 @@ __all__ = [
     "BrowserReadTool",
     "BudgetExceeded",
     "CapabilityGrant",
+    "CausalContract",
     "CausalEffect",
     "CausalGraph",
     "CausalHypothesis",
@@ -174,8 +187,10 @@ __all__ = [
     "CounterfactualReview",
     "Decision",
     "DryRunFailed",
+    "DockerSandboxRunner",
     "EchoTool",
     "EffectPrediction",
+    "EvalReport",
     "FakeBrowser",
     "FakeCalendar",
     "FakeEmailServer",
@@ -183,11 +198,13 @@ __all__ = [
     "FakeGitHubRepo",
     "FakePaymentSystem",
     "FakeShell",
+    "GitDiffTool",
     "Goal",
     "GoalStatus",
     "IdempotencyConflict",
     "InvalidGoalTransition",
     "LeosError",
+    "ListFilesTool",
     "MemoryRecord",
     "MemorySensitivity",
     "MemoryStore",
@@ -195,6 +212,7 @@ __all__ = [
     "NetworkFetcher",
     "NetworkFetchResponse",
     "NetworkFetchTool",
+    "PatchFileTool",
     "Permission",
     "PlanCandidate",
     "PlanProposal",
@@ -208,6 +226,7 @@ __all__ = [
     "PolicyIntegrityError",
     "PolicyProfile",
     "PolicyRule",
+    "ProofManifest",
     "PostconditionFailed",
     "PreconditionFailed",
     "Reversibility",
@@ -217,6 +236,7 @@ __all__ = [
     "RetryPolicy",
     "RollbackFailed",
     "RuntimeTask",
+    "RunTestsTool",
     "SafeFileWriteTool",
     "SchemaValidationFailed",
     "Secret",
@@ -225,6 +245,7 @@ __all__ = [
     "SecretLeakedToUntrustedTool",
     "SimulationEnvironment",
     "SignedPolicyManifest",
+    "ReadFileTool",
     "StateCondition",
     "StepStatus",
     "TaskQueue",
@@ -236,6 +257,7 @@ __all__ = [
     "ToolResult",
     "ToolSpec",
     "ToolTimeout",
+    "URLSafetyPolicy",
     "TransactionManager",
     "TransactionPlan",
     "TrustLevel",
@@ -244,13 +266,21 @@ __all__ = [
     "WorkspaceEscapeBlocked",
     "WorldState",
     "Watchdog",
+    "default_dev_registry",
     "default_registry",
     "build_approval_request",
+    "exit_code_for_manifest",
+    "format_eval_report",
+    "generate_proofs",
     "load_policy_from_file",
     "load_tool_manifest_file",
     "manifest_to_json",
     "replay_audit_log",
+    "render_eval_report_markdown",
     "render_trace_html",
+    "render_trace_markdown",
+    "run_safety_evals",
+    "safe_file_write_causal_contract",
     "sign_policy",
     "validate_policy_config",
     "validate_json_schema",

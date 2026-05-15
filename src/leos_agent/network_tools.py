@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping
@@ -24,6 +25,49 @@ class NetworkFetchResponse:
 
 
 NetworkFetcher = Callable[[str, float, int], NetworkFetchResponse]
+
+
+@dataclass(frozen=True)
+class URLSafetyPolicy:
+    """Default SSRF-oriented URL safety policy for network tools."""
+
+    allowed_domains: tuple[str, ...] = ()
+    denied_domains: tuple[str, ...] = ()
+    resolve_dns: bool = False
+    max_redirects: int = 0
+
+    def validate(self, url: str) -> ToolResult:
+        parsed = urlparse(url)
+        if parsed.scheme not in {"http", "https"}:
+            return ToolResult(False, "Only http and https URLs are allowed")
+        if not parsed.hostname:
+            return ToolResult(False, "URL must include a host")
+        if parsed.username or parsed.password:
+            return ToolResult(False, "Embedded credentials are not allowed in URLs")
+
+        host = parsed.hostname.rstrip(".").lower()
+        if self.denied_domains and any(host == d or host.endswith(f".{d}") for d in self.denied_domains):
+            return ToolResult(False, "Domain is denied by URL safety policy")
+        if self.allowed_domains and not any(host == d or host.endswith(f".{d}") for d in self.allowed_domains):
+            return ToolResult(False, "Domain is not in the allowed domain list")
+
+        if host == "localhost":
+            return ToolResult(False, "Localhost URLs are blocked")
+        try:
+            ip = ipaddress.ip_address(host)
+        except ValueError:
+            return ToolResult(True, "URL passed safety policy")
+        if (
+            ip.is_loopback
+            or ip.is_private
+            or ip.is_link_local
+            or ip.is_multicast
+            or ip.is_reserved
+            or ip.is_unspecified
+            or str(ip) == "169.254.169.254"
+        ):
+            return ToolResult(False, "Local, private, link-local, metadata, and reserved IPs are blocked")
+        return ToolResult(True, "URL passed safety policy")
 
 
 class NetworkFetchTool:
@@ -74,8 +118,9 @@ class NetworkFetchTool:
         },
     )
 
-    def __init__(self, fetcher: NetworkFetcher | None = None) -> None:
+    def __init__(self, fetcher: NetworkFetcher | None = None, url_policy: URLSafetyPolicy | None = None) -> None:
         self.fetcher = fetcher or _urllib_fetch
+        self.url_policy = url_policy or URLSafetyPolicy()
 
     def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
         schema_issues = self.spec.validate_input(arguments)
@@ -87,11 +132,9 @@ class NetworkFetchTool:
                 error=SchemaValidationFailed("Input schema validation failed"),
             )
         url = str(arguments["url"])
-        parsed = urlparse(url)
-        if parsed.scheme not in {"http", "https"}:
-            return ToolResult(False, "Only http and https URLs are allowed")
-        if not parsed.netloc:
-            return ToolResult(False, "URL must include a host")
+        safety = self.url_policy.validate(url)
+        if not safety.ok:
+            return safety
         return ToolResult(True, f"Would fetch {url}")
 
     def execute(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
@@ -168,9 +211,9 @@ class BrowserReadTool:
         },
     )
 
-    def __init__(self, fetcher: NetworkFetcher | None = None) -> None:
+    def __init__(self, fetcher: NetworkFetcher | None = None, url_policy: URLSafetyPolicy | None = None) -> None:
         self.fetcher = fetcher or _urllib_fetch
-        self._fetch_tool = NetworkFetchTool(fetcher=self.fetcher)
+        self._fetch_tool = NetworkFetchTool(fetcher=self.fetcher, url_policy=url_policy)
 
     def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
         return self._fetch_tool.dry_run(arguments, state)
@@ -255,7 +298,7 @@ def _parse_html(content: str) -> dict[str, Any]:
 def _urllib_fetch(url: str, timeout: float, max_bytes: int) -> NetworkFetchResponse:
     request = urllib.request.Request(url, headers={"User-Agent": "leos-agent/0.1"})
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:  # nosec B310 - scheme checked by tool
+        with urllib.request.urlopen(request, timeout=timeout) as response:  # nosec B310
             raw = response.read(max_bytes + 1)
             content = raw[:max_bytes].decode("utf-8", errors="replace")
             content_type = response.headers.get("content-type", "application/octet-stream")
