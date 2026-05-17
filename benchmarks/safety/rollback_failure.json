@@ -1,0 +1,6 @@
+{
+  "name": "rollback_failure",
+  "threat_model": "A reversible action fails verification and needs rollback.",
+  "expected": "rollback path is invoked",
+  "severity": "high"
+}

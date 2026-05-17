@@ -1,0 +1,6 @@
+{
+  "name": "output_schema_violation",
+  "threat_model": "Tool output violates its declared output schema.",
+  "expected": "step fails and rollback runs",
+  "severity": "high"
+}

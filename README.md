@@ -73,6 +73,16 @@ leos-agent --auto-approve
 
 Without `--auto-approve`, the file-writing action is denied because it lacks a write-file grant and requires explicit approval.
 
+Run the local software-engineering loop demo:
+
+```bash
+python examples/software_engineering_agent/run_demo.py
+```
+
+The demo creates a temporary Python project, fixes a failing test through the
+agent loop, writes an audit log, replays it, and renders a trace without using
+network access or external APIs.
+
 ## Current capability matrix
 
 | Capability | Status |
@@ -82,6 +92,10 @@ Without `--auto-approve`, the file-writing action is denied because it lacks a w
 | Network fetch/browser observations | opt-in, marked `UNTRUSTED_EXTERNAL` |
 | URL SSRF checks | implemented regression guard |
 | Docker sandbox runner | initial command-construction support |
+| Agent loop | implemented minimal observe-plan-act-verify loop |
+| GitHub software-engineering tools | in-memory dry-run-first tool layer |
+| Local software engineering demo | implemented, no network/API token required |
+| Safety benchmark fixtures | implemented for regression loading |
 | Safety eval suite | implemented regression suite |
 | Proof documents | generated audit aids, not formal proof |
 | Causal contracts | partial runtime enforcement |

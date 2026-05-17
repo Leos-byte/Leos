@@ -1,49 +1,67 @@
 # Threat Model — Leos Agent Runtime
 
-## Prompt Injection
-- **Attack**: Malicious text in tool output or world state treated as instruction.
-- **Mitigation**: Untrusted observations are tagged `UNTRUSTED_EXTERNAL`. The LLM planner prompt labels untrusted observations as DATA, not instructions. Model cannot declare approval.
-- **Tests**: `tests/redteam/test_prompt_injection.py`
-- **Risk**: No runtime sandbox for LLM inference itself; mitigation is prompt-level only.
+Leos is a bounded, auditable agent runtime. It is not production-ready autonomous infrastructure and this document is not a formal proof.
 
-## Secret Exfiltration
-- **Attack**: Secret value leaks through audit log, tool arguments, or memory.
-- **Mitigation**: `Secret` wrapper class; `secrets_allowed=False` by default; `_redact_secrets()` for audit; `SecretBoundaryViolation` for memory.
-- **Tests**: `tests/redteam/test_secret_boundary.py`
-- **Risk**: Secrets in `ToolResult.data` not systematically scanned.
+## Assets
+- Secrets and scoped secret references.
+- Workspace files and generated patches.
+- Audit logs, replay inputs, and proof documents.
+- Policy manifests, capability grants, and approval records.
+- User intent, task descriptions, and goal constraints.
+- External service credentials, including GitHub tokens.
 
-## Policy Manifest Tampering
-- **Attack**: Maliciously modified policy file bypasses authorization.
-- **Mitigation**: HMAC-SHA256 signed manifests (`policy_manifest.py`); `PolicyIntegrityError` on verification failure.
-- **Tests**: `tests/test_core.py` SignedPolicyManifestTests
+## Trust Boundaries
+- LLM output is untrusted until schema validation and policy checks pass.
+- Network and browser content is `UNTRUSTED_EXTERNAL` data, never instruction.
+- Tool output is tool-reported until verified.
+- Filesystem access must stay inside configured workspace roots.
+- Subprocess execution is local-dev only unless a container or stronger sandbox is enforced.
+- GitHub API data and writes cross an external-service boundary.
+- Human approval is a separate gate and cannot be declared by a model or policy file.
 
-## Audit Log Tampering
-- **Attack**: Attackers modify audit records to hide malicious activity.
-- **Mitigation**: SHA-256 hash chain; `verify_event_records()` detects tampering; `verify_integrity=True` blocks replay.
-- **Tests**: `tests/test_core.py`, `tests/test_properties.py`
+## Threats
+- Prompt injection: external text asks the agent to ignore policy or reveal secrets.
+- Tool injection: tool output attempts to alter planner, policy, or system behavior.
+- Secret exfiltration: secret values leak to audit, memory, model prompts, stdout, or tool output.
+- Workspace escape: path traversal reads or writes outside the workspace.
+- SSRF: network tools attempt localhost, private IPs, or metadata services.
+- Policy bypass: policy-as-code or model output attempts to auto-approve actions.
+- Rollback failure: a reversible or compensatable action cannot be restored.
+- Audit tampering: records are deleted, edited, or reordered.
+- Stale memory: old facts or preferences override current user intent.
+- Confused deputy: an allowed tool is used to perform a broader action than intended.
+- Duplicate external actions: retries create duplicate PRs, messages, or writes.
 
-## Workspace Escape
-- **Attack**: `safe_file_write` writes outside workspace boundary.
-- **Mitigation**: `os.path.commonpath` check in `SafeFileWriteTool._resolve()`; `SandboxPolicy.WORKSPACE` enforcement.
-- **Tests**: `tests/redteam/test_workspace_escape.py`
+## Mitigations Already Implemented
+- `PolicyEngine`, `ApprovalGate`, and `TransactionManager` gate all transaction execution.
+- Tool schemas validate inputs and observed outputs.
+- `Secret` values are denied for tools unless `secrets_allowed=True`.
+- Audit logs use append-only hash-chain integrity checks.
+- Workspace tools resolve and reject path escapes.
+- Network safety policy blocks localhost, private ranges, metadata IPs, and non-HTTP(S) schemes.
+- Safety evals cover workspace escape, prompt injection, secret exfiltration, policy bypass, rollback, SSRF, high-risk approval, and output schema violations.
+- Docker sandbox command construction uses conservative defaults, but CI does not prove full runtime isolation.
+- GitHub in-memory tools support idempotency and optimistic file update guards.
 
-## Approval Spoofing
-- **Attack**: Model declares approval has been obtained, bypassing human gate.
-- **Mitigation**: `PolicyRule` cannot directly approve; `ApprovalGate` is a separate code path; `InteractiveApprovalGate` requires TTY input.
-- **Tests**: `tests/redteam/test_policy_bypass.py`
+## Mitigations Still Missing
+- Production-grade container or microVM isolation with integration tests against a real runtime.
+- Deployment-level egress proxy and DNS rebinding defenses.
+- Complete SQLite persistence for every runtime state component.
+- Stronger secret scanning across every stdout/stderr/result path.
+- Broader adversarial benchmark coverage for long-running software engineering tasks.
+- Real GitHub API adapter hardening, rate-limit handling, and token scope verification.
 
-## Idempotency Failure
-- **Attack**: Duplicate task execution causes double-spend or double-write.
-- **Mitigation**: Two-level idempotency (task-level in `TaskQueue`, step-level in `TransactionManager`).
-- **Tests**: `tests/test_core.py`, `tests/redteam/test_policy_bypass.py`
+## Security Invariants
+- No high-risk or consequential action executes silently without policy/approval.
+- No tool may read or write outside its workspace scope.
+- Network and code execution remain opt-in.
+- Policy-as-code cannot directly approve actions.
+- Secrets must not be written to audit, memory, proof documents, or model prompts.
+- Rollback failures must be visible in audit records.
+- External observations cannot override system, developer, or policy constraints.
 
-## Sandbox Escape
-- **Attack**: High-risk tool executes outside sandbox constraints.
-- **Mitigation**: `SandboxPolicy` enforcement; `CONTAINER`/`MICROVM` default to blocking; `WorkspaceSubprocessSandboxRunner` filesystem-only.
-- **Tests**: `tests/test_sandbox.py`
-- **Risk**: Workspace subprocess sandbox is not a production isolation boundary; no network/os-level isolation.
-
-## Model Hallucination
-- **Attack**: LLM generates tool names that don't exist or harmful arguments.
-- **Mitigation**: `validate_llm_proposals()` rejects unknown tools; `PLAN_PROPOSAL_SCHEMA` validates structure; `minLength`/`minItems` constraints.
-- **Tests**: `tests/test_llm_planner.py`, `tests/test_schema_validation.py`
+## Non-Goals
+- Leos is not an AGI agent or unrestricted automation framework.
+- Workspace subprocess execution is not a production sandbox.
+- Safety evals and proof documents are audit aids, not mathematical verification.
+- The current GitHub tools are a bounded software-engineering tool layer, not full GitHub API coverage.

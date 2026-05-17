@@ -6,6 +6,7 @@ continues to work for existing callers.
 
 from __future__ import annotations
 
+from .agent_loop import AgentLoop, AgentLoopConfig, AgentLoopResult, DeterministicProposalProvider, ProposalProvider
 from .audit import AuditEvent, AuditLog
 from .causal import (
     ActionConsequence,
@@ -56,7 +57,18 @@ from .errors import (
     VerificationFailed,
     WorkspaceEscapeBlocked,
 )
-from .eval_runner import EvalReport, format_eval_report, render_eval_report_markdown, run_safety_evals
+from .eval_runner import EvalReport, format_eval_report, render_eval_report_markdown, run_eval_suite, run_safety_evals
+from .github_tools import (
+    GitHubCheckCIStatusTool,
+    GitHubClient,
+    GitHubCommentTool,
+    GitHubCreateBranchTool,
+    GitHubGetFileTool,
+    GitHubOpenPRTool,
+    GitHubReadIssueTool,
+    GitHubUpdateFileTool,
+    InMemoryGitHubClient,
+)
 from .goals import Goal, ResourceBudget
 from .kernel import AgentKernel
 from .manifest import (
@@ -76,6 +88,7 @@ from .model import (  # noqa: F401
     ModelUsage,
     StructuredOutputError,
 )
+from .model_adapters import AnthropicModelClient, LocalHTTPModelClient, OpenAIModelClient
 from .network_tools import BrowserReadTool, NetworkFetcher, NetworkFetchResponse, NetworkFetchTool, URLSafetyPolicy
 from .planner import (  # noqa: F401
     LLMPlannerAdapter,
@@ -164,7 +177,11 @@ from .transactions import TransactionManager
 __all__ = [
     "ActionConsequence",
     "ActionStep",
+    "AgentLoop",
+    "AgentLoopConfig",
+    "AgentLoopResult",
     "AgentKernel",
+    "AnthropicModelClient",
     "ApprovalGate",
     "ApprovalRequest",
     "AuditEvent",
@@ -189,6 +206,7 @@ __all__ = [
     "Decision",
     "DryRunFailed",
     "DockerSandboxRunner",
+    "DeterministicProposalProvider",
     "EchoTool",
     "EffectPrediction",
     "EvalReport",
@@ -200,19 +218,34 @@ __all__ = [
     "FakePaymentSystem",
     "FakeShell",
     "GitDiffTool",
+    "GitHubCheckCIStatusTool",
+    "GitHubClient",
+    "GitHubCommentTool",
+    "GitHubCreateBranchTool",
+    "GitHubGetFileTool",
+    "GitHubOpenPRTool",
+    "GitHubReadIssueTool",
+    "GitHubUpdateFileTool",
     "Goal",
     "GoalStatus",
     "IdempotencyConflict",
+    "InMemoryGitHubClient",
     "InvalidGoalTransition",
     "LeosError",
     "ListFilesTool",
+    "LocalHTTPModelClient",
     "MemoryRecord",
     "MemorySensitivity",
     "MemoryStore",
     "MemoryType",
+    "ModelClient",
+    "ModelRequest",
+    "ModelResponse",
+    "ModelUsage",
     "NetworkFetcher",
     "NetworkFetchResponse",
     "NetworkFetchTool",
+    "OpenAIModelClient",
     "PatchFileTool",
     "Permission",
     "PlanCandidate",
@@ -228,6 +261,7 @@ __all__ = [
     "PolicyIntegrityError",
     "PolicyProfile",
     "PolicyRule",
+    "ProposalProvider",
     "ProofManifest",
     "PostconditionFailed",
     "PreconditionFailed",
@@ -242,6 +276,8 @@ __all__ = [
     "RuntimeTask",
     "RunTestsTool",
     "SafeFileWriteTool",
+    "SandboxCommand",
+    "SandboxCommandTool",
     "SchemaValidationFailed",
     "Secret",
     "SecretBoundaryViolation",
@@ -252,6 +288,7 @@ __all__ = [
     "ReadFileTool",
     "StateCondition",
     "StepStatus",
+    "StructuredLLMPlanner",
     "TaskQueue",
     "TaskRunner",
     "TaskStatus",
@@ -261,6 +298,9 @@ __all__ = [
     "ToolResult",
     "ToolSpec",
     "ToolTimeout",
+    "SandboxResult",
+    "SandboxRunner",
+    "SandboxUnavailable",
     "URLSafetyPolicy",
     "TransactionManager",
     "TransactionPlan",
@@ -285,6 +325,7 @@ __all__ = [
     "render_trace_html",
     "render_trace_markdown",
     "run_safety_evals",
+    "run_eval_suite",
     "safe_file_write_causal_contract",
     "sign_policy",
     "safe_file_write_causal_contract",
@@ -294,3 +335,5 @@ __all__ = [
     "validate_tool_manifest",
     "verify_policy_manifest",
 ]
+
+__all__ = sorted(set(__all__))

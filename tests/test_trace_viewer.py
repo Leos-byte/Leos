@@ -49,6 +49,31 @@ class TraceViewerTests(unittest.TestCase):
 
         self.assertIn("`step.blocked`", markdown)
 
+    def test_markdown_contains_key_runtime_fields(self) -> None:
+        markdown = render_trace_markdown(
+            [
+                {
+                    "event_type": "step.blocked",
+                    "message": "blocked",
+                    "payload": {
+                        "goal_id": "goal-1",
+                        "plan_id": "plan-1",
+                        "step_id": "step-1",
+                        "risk": "high",
+                        "permissions": ["write_files"],
+                        "decision": "needs_human",
+                        "goal_status": "blocked",
+                    },
+                }
+            ]
+        )
+
+        self.assertIn("goal-1", markdown)
+        self.assertIn("plan-1", markdown)
+        self.assertIn("write_files", markdown)
+        self.assertIn("needs_human", markdown)
+        self.assertIn("Final goal status: `blocked`", markdown)
+
 
 if __name__ == "__main__":
     unittest.main()

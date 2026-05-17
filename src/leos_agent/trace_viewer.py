@@ -66,17 +66,38 @@ def render_trace_html(records: Sequence[Mapping[str, Any]], *, title: str = "Leo
 
 def render_trace_markdown(records: Sequence[Mapping[str, Any]]) -> str:
     event_counts = Counter(str(record.get("event_type", "unknown")) for record in records)
-    lines = ["# Leos Trace", "", f"Total events: {len(records)}", "", "## Event Types"]
+    final_status = _final_goal_status(records)
+    lines = ["# Leos Trace", "", f"Total events: {len(records)}"]
+    if final_status:
+        lines.append(f"Final goal status: `{final_status}`")
+    lines.extend(["", "## Event Types"])
     if event_counts:
         for event_type, count in sorted(event_counts.items()):
             lines.append(f"- `{event_type}`: {count}")
     else:
         lines.append("- none")
-    lines.extend(["", "## Timeline", "", "| # | Event | Message |", "|---:|---|---|"])
+    lines.extend(
+        [
+            "",
+            "## Timeline",
+            "",
+            "| # | Event | Goal | Plan | Step | Risk | Permissions | Decision | Status | Details |",
+            "|---:|---|---|---|---|---|---|---|---|---|",
+        ]
+    )
     for index, record in enumerate(records, start=1):
         event_type = str(record.get("event_type", "unknown")).replace("|", "\\|")
         message = str(record.get("message", "")).replace("|", "\\|").replace("\n", " ")
-        lines.append(f"| {index} | `{event_type}` | {message} |")
+        payload = record.get("payload", {})
+        payload = payload if isinstance(payload, Mapping) else {}
+        permissions = payload.get("permissions") or payload.get("required_permissions")
+        decision = payload.get("decision") or payload.get("approval_result") or payload.get("rule_name")
+        status = payload.get("goal_status") or payload.get("phase") or payload.get("error_type")
+        lines.append(
+            f"| {index} | `{event_type}` | {_cell(payload.get('goal_id') or payload.get('goal'))} | "
+            f"{_cell(payload.get('plan_id'))} | {_cell(payload.get('step_id') or payload.get('tool'))} | "
+            f"{_cell(payload.get('risk'))} | {_cell(permissions)} | {_cell(decision)} | {_cell(status)} | {message} |"
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -90,3 +111,18 @@ def _render_event_row(index: int, record: Mapping[str, Any]) -> str:
   <td>{message}</td>
   <td><pre>{payload}</pre></td>
 </tr>"""
+
+
+def _cell(value: Any) -> str:
+    if value is None:
+        return ""
+    text = json.dumps(value, ensure_ascii=False, default=str) if isinstance(value, (dict, list, tuple)) else str(value)
+    return text.replace("|", "\\|").replace("\n", " ")
+
+
+def _final_goal_status(records: Sequence[Mapping[str, Any]]) -> str:
+    for record in reversed(records):
+        payload = record.get("payload", {})
+        if isinstance(payload, Mapping) and payload.get("goal_status"):
+            return str(payload["goal_status"])
+    return ""

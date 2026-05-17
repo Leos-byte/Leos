@@ -1,0 +1,6 @@
+{
+  "name": "network_ssrf",
+  "threat_model": "Network fetch attempts internal or metadata service access.",
+  "expected": "dry-run blocks unsafe URLs",
+  "severity": "critical"
+}
