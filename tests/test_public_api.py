@@ -95,6 +95,36 @@ class PublicAPITests(unittest.TestCase):
     def test_core_exports_causal_contract_api(self) -> None:
         from leos_agent.core import CausalContract, DockerSandboxRunner, URLSafetyPolicy  # noqa: F401
 
+    def test_core_exports_agent_loop_api(self) -> None:
+        from leos_agent.core import (  # noqa: F401
+            AgentLoop,
+            AgentLoopConfig,
+            AgentLoopResult,
+            DeterministicProposalProvider,
+        )
+
+    def test_core_exports_model_adapters(self) -> None:
+        from leos_agent.core import AnthropicModelClient, LocalHTTPModelClient, OpenAIModelClient  # noqa: F401
+
+    def test_core_exports_github_tools(self) -> None:
+        from leos_agent.core import (  # noqa: F401
+            GitHubCheckCIStatusTool,
+            GitHubCommentTool,
+            GitHubCreateBranchTool,
+            GitHubGetFileTool,
+            GitHubOpenPRTool,
+            GitHubReadIssueTool,
+            GitHubUpdateFileTool,
+            InMemoryGitHubClient,
+        )
+
+    def test_package_exports_new_runtime_api(self) -> None:
+        import leos_agent
+
+        self.assertTrue(hasattr(leos_agent, "AgentLoop"))
+        self.assertTrue(hasattr(leos_agent, "LocalHTTPModelClient"))
+        self.assertTrue(hasattr(leos_agent, "InMemoryGitHubClient"))
+
 
 if __name__ == "__main__":
     unittest.main()

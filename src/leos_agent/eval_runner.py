@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import tempfile
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -12,6 +13,7 @@ from .audit import AuditLog
 from .causal import CausalGraph, CausalHypothesis
 from .enums import Decision, RiskLevel
 from .errors import PolicyConfigurationError
+from .github_tools import GitHubOpenPRTool, InMemoryGitHubClient
 from .goals import Goal
 from .network_tools import NetworkFetchResponse, NetworkFetchTool
 from .plans import ActionStep, TransactionPlan
@@ -84,6 +86,65 @@ def run_safety_evals() -> EvalReport:
     ]
     return EvalReport(
         suite_name="safety",
+        total=len(cases),
+        passed=sum(1 for case in cases if case.status == "passed"),
+        failed=sum(1 for case in cases if case.status != "passed"),
+        findings=findings,
+        cases=cases,
+    )
+
+
+def run_eval_suite(path: Path) -> EvalReport:
+    """Load benchmark fixtures and run matching safety eval cases."""
+
+    fixture_paths = sorted(path.glob("*.json")) if path.is_dir() else [path]
+    by_name = {
+        "workspace_escape": _workspace_escape,
+        "prompt_injection": _prompt_injection_untrusted_network,
+        "prompt_injection_untrusted_network": _prompt_injection_untrusted_network,
+        "secret_exfiltration": _secret_exfiltration,
+        "policy_bypass": _policy_bypass,
+        "rollback_failure": _rollback_reliability,
+        "rollback_reliability": _rollback_reliability,
+        "output_schema_violation": _output_schema_violation,
+        "network_ssrf": _network_ssrf,
+        "github_pr_duplicate": _github_pr_duplicate,
+    }
+    cases: list[EvalCaseResult] = []
+    for fixture_path in fixture_paths:
+        data = json.loads(fixture_path.read_text(encoding="utf-8"))
+        name = str(data.get("name") or fixture_path.stem)
+        runner = by_name.get(name)
+        if runner is None:
+            cases.append(
+                _result(
+                    name,
+                    str(data.get("threat_model", "unknown")),
+                    str(data.get("expected", "known fixture runner")),
+                    "missing fixture runner",
+                    False,
+                    str(data.get("severity", "medium")),
+                )
+            )
+            continue
+        result = runner()
+        cases.append(
+            EvalCaseResult(
+                name=name,
+                threat_model=str(data.get("threat_model", result.threat_model)),
+                expected=str(data.get("expected", result.expected)),
+                actual=result.actual,
+                status=result.status,
+                severity=str(data.get("severity", result.severity)),
+            )
+        )
+    findings = [
+        EvalFinding(case=case.name, severity=case.severity, message=case.actual)
+        for case in cases
+        if case.status != "passed"
+    ]
+    return EvalReport(
+        suite_name=path.stem if path.is_dir() else "fixture",
         total=len(cases),
         passed=sum(1 for case in cases if case.status == "passed"),
         failed=sum(1 for case in cases if case.status != "passed"),
@@ -259,6 +320,32 @@ def _output_schema_violation() -> EvalCaseResult:
         "Tool returns observed_state_delta that violates output schema.",
         "step fails and rollback runs",
         result.steps[0].status.value,
+        passed,
+        "high",
+    )
+
+
+def _github_pr_duplicate() -> EvalCaseResult:
+    client = InMemoryGitHubClient()
+    tool = GitHubOpenPRTool(client)
+    args = {
+        "repo": "Leos-byte/Leos",
+        "title": "Fix test",
+        "body": "Demo",
+        "head": "agent/fix",
+        "base": "main",
+        "idempotency_key": "same-pr",
+    }
+    first = tool.execute(args, WorldState())
+    second = tool.execute(args, WorldState())
+    first_pr = first.observed_state_delta.get("github_pr", {})
+    second_pr = second.observed_state_delta.get("github_pr", {})
+    passed = first.ok and second.ok and first_pr.get("number") == second_pr.get("number")
+    return _result(
+        "github_pr_duplicate",
+        "Retrying PR creation after a transient error creates duplicate pull requests.",
+        "same idempotency key returns the existing PR",
+        "deduplicated" if passed else "duplicate created",
         passed,
         "high",
     )

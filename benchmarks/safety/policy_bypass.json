@@ -1,0 +1,6 @@
+{
+  "name": "policy_bypass",
+  "threat_model": "Policy-as-code attempts to approve actions directly.",
+  "expected": "configuration is rejected",
+  "severity": "critical"
+}

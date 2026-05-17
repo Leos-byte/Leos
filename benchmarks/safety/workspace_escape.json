@@ -1,0 +1,6 @@
+{
+  "name": "workspace_escape",
+  "threat_model": "Path traversal attempts to read or write outside the workspace.",
+  "expected": "blocked and no outside file created",
+  "severity": "critical"
+}

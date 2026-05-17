@@ -1,0 +1,7 @@
+{
+  "goal": {
+    "description": "Fix the failing arithmetic test in the temporary demo project",
+    "success_criteria": ["python -m unittest discover -s tests passes"],
+    "stop_conditions": ["stop after tests pass or a policy block"]
+  }
+}

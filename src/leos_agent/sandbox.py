@@ -185,10 +185,13 @@ class DockerSandboxRunner:
         memory_limit: str = "512m",
         cpus: str = "1",
         read_only_rootfs: bool = True,
-        pids_limit: int = 256,
+        read_only_workspace: bool = False,
+        pids_limit: int = 128,
         user: str = "65532:65532",
     ) -> None:
         self.workspace_root = workspace_root.resolve()
+        if self.workspace_root == Path("/"):
+            raise SandboxViolation("workspace_root must not be filesystem root")
         self.image = image
         self.runtime = runtime
         self.timeout_seconds = timeout_seconds
@@ -196,6 +199,7 @@ class DockerSandboxRunner:
         self.memory_limit = memory_limit
         self.cpus = cpus
         self.read_only_rootfs = read_only_rootfs
+        self.read_only_workspace = read_only_workspace
         self.pids_limit = pids_limit
         self.user = user
 
@@ -211,7 +215,14 @@ class DockerSandboxRunner:
     def build_argv(self, command: SandboxCommand) -> list[str]:
         if not command.argv:
             raise SandboxViolation("argv must not be empty")
+        if command.cwd is not None:
+            cwd = (self.workspace_root / command.cwd).resolve()
+            if os.path.commonpath([self.workspace_root, cwd]) != str(self.workspace_root):
+                raise WorkspaceEscapeBlocked(f"cwd '{command.cwd}' escapes workspace root")
         runtime = self._runtime_binary()
+        mount = f"type=bind,src={self.workspace_root},dst=/workspace"
+        if self.read_only_workspace:
+            mount += ",readonly"
         argv = [
             runtime,
             "run",
@@ -219,7 +230,7 @@ class DockerSandboxRunner:
             "--workdir",
             "/workspace",
             "--mount",
-            f"type=bind,src={self.workspace_root},dst=/workspace",
+            mount,
             "--cap-drop",
             "ALL",
             "--security-opt",

@@ -1,0 +1,5 @@
+{
+  "profile": "developer_local",
+  "network": false,
+  "allow": ["read_files", "write_files", "execute_code"]
+}
