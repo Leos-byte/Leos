@@ -5,7 +5,7 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `1.246`
+- Duration seconds: `1.331`
 - Truncated: `False`
 
 ### stdout
@@ -90,8 +90,8 @@ Facts: 1 key(s)
     "compensation_strategy": "undo"
   }
 ]
-proof_status=precommit_dirty release_grade=False
-Enqueued: a65335dd-060a-4d27-9d7e-11e2d92661ee
+proof_status=release_grade release_grade=True
+Enqueued: 79345239-f7f1-413d-a652-38cbda771d09
 Status: succeeded
 Task file is valid.
 echo: verified risk=low
@@ -103,7 +103,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=6e4fa5437a3e50a3b77c2e93626fb909c47a1da49c33e0288a9724ef6e5a8b7d observed=6911ff07a9d08436f0accca7e8381203fc0e127e70d47bc2d64058a28952568e
+  [0] event_hash_mismatch: expected=153e133e962cdfb4bc5be6e3280d0ac9c7d694934f037b32cf59a1121c307167 observed=a7256d7517b19ac48f37495b14da81650b3b12e297690cc2c92f5f1626996a8f
 Integrity: OK
 Applied events: 1
 Facts:
@@ -117,9 +117,9 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpc2op13i9/signed.json
+Signed manifest written to /tmp/tmp98snseeq/signed.json
 Policy configuration is valid. Signature verified.
-Trace written to /tmp/tmp30wsq2k5/trace.html
+Trace written to /tmp/tmpsrpy1ao0/trace.html
 
 ```
 
@@ -140,7 +140,7 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
 ..............................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 345 tests in 0.781s
+Ran 345 tests in 0.834s
 
 OK
 
@@ -151,7 +151,7 @@ OK
 - Command: `coverage report`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.463`
+- Duration seconds: `0.514`
 - Truncated: `False`
 
 ### stdout

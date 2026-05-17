@@ -5,7 +5,7 @@
 - Command: `python -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.551`
+- Duration seconds: `0.638`
 - Truncated: `False`
 
 ### stdout
@@ -90,8 +90,8 @@ Facts: 1 key(s)
     "compensation_strategy": "undo"
   }
 ]
-proof_status=precommit_dirty release_grade=False
-Enqueued: d6b38719-810b-4147-93b8-51c7c9b02fdb
+proof_status=release_grade release_grade=True
+Enqueued: 53bda5f3-966b-4c13-a083-d9d3dbbfd8ca
 Status: succeeded
 Task file is valid.
 echo: verified risk=low
@@ -103,7 +103,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=15f0ec86a60651c6f6816ca07563513224fb6150d79ac973a8b0e52860ebacb9 observed=11d0ce4323e61ac0a21d16073afe484abfd4c323626f5361dcf40360852ed5f1
+  [0] event_hash_mismatch: expected=710b4870918400eab6eca68607199c8b78d61046ef121e2c04e7176665a9daf2 observed=1d32f3a4495f550d1eb87b353624986493a1558cd70669988c10522cd97d32a9
 Integrity: OK
 Applied events: 1
 Facts:
@@ -117,9 +117,9 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpic8hwjib/signed.json
+Signed manifest written to /tmp/tmpnxpuo41a/signed.json
 Policy configuration is valid. Signature verified.
-Trace written to /tmp/tmp2sgs8rpo/trace.html
+Trace written to /tmp/tmpifh7goht/trace.html
 
 ```
 
@@ -140,7 +140,7 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
 ..............................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 345 tests in 0.324s
+Ran 345 tests in 0.372s
 
 OK
 
