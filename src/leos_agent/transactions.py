@@ -181,7 +181,12 @@ class TransactionManager:
                 self._rollback(rollback_stack, state)
                 break
 
-            prepared_args = self._prepare_arguments(step.arguments, tool.spec.secrets_allowed)
+            preserve_secret_keys = ("token",) if tool.spec.name.startswith("github_") else ()
+            prepared_args = self._prepare_arguments(
+                step.arguments,
+                tool.spec.secrets_allowed,
+                preserve_secret_keys=preserve_secret_keys,
+            )
             dry_run = tool.dry_run(prepared_args, state)
             if not dry_run.ok:
                 step.status = StepStatus.FAILED
@@ -365,9 +370,18 @@ class TransactionManager:
         return None
 
     @staticmethod
-    def _prepare_arguments(arguments: dict[str, Any], secrets_allowed: bool) -> dict[str, Any]:
+    def _prepare_arguments(
+        arguments: dict[str, Any],
+        secrets_allowed: bool,
+        *,
+        preserve_secret_keys: Sequence[str] = (),
+    ) -> dict[str, Any]:
         if secrets_allowed:
-            return {k: v.unwrap() if isinstance(v, Secret) else v for k, v in arguments.items()}
+            preserve = set(preserve_secret_keys)
+            return {
+                k: v if k in preserve and isinstance(v, Secret) else v.unwrap() if isinstance(v, Secret) else v
+                for k, v in arguments.items()
+            }
         return _redact_secrets(arguments)
 
     def track_progress(self, plan: TransactionPlan) -> GoalProgress:

@@ -1,0 +1,6 @@
+{
+  "name": "github_pr_idempotency_marker",
+  "threat_model": "Retrying real GitHub pull request creation creates duplicate pull requests.",
+  "expected": "existing open PR with the same Leos idempotency marker is returned without POST",
+  "severity": "high"
+}

@@ -9,8 +9,9 @@ from leos_agent.eval_runner import run_eval_suite
 class EvalFixtureTests(unittest.TestCase):
     def test_safety_fixtures_load_and_run(self) -> None:
         report = run_eval_suite(Path("benchmarks/safety"))
+        fixture_count = len(list(Path("benchmarks/safety").glob("*.json")))
 
-        self.assertEqual(report.total, 8)
+        self.assertEqual(report.total, fixture_count)
         self.assertEqual(report.failed, 0)
         self.assertEqual(
             {case.name for case in report.cases}, {path.stem for path in Path("benchmarks/safety").glob("*.json")}

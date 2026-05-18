@@ -121,11 +121,25 @@ class PublicAPITests(unittest.TestCase):
             InMemoryGitHubClient,
         )
 
+    def test_core_exports_github_rest_client(self) -> None:
+        from leos_agent.core import (  # noqa: F401
+            GitHubAPIError,
+            GitHubAuthError,
+            GitHubConflictError,
+            GitHubHTTPResponse,
+            GitHubNotFoundError,
+            GitHubRateLimitError,
+            GitHubRESTClient,
+            GitHubTransport,
+            UrllibGitHubTransport,
+        )
+
     def test_package_exports_new_runtime_api(self) -> None:
         import leos_agent
 
         self.assertTrue(hasattr(leos_agent, "AgentLoop"))
         self.assertTrue(hasattr(leos_agent, "GoalEvaluator"))
+        self.assertTrue(hasattr(leos_agent, "GitHubRESTClient"))
         self.assertTrue(hasattr(leos_agent, "LocalHTTPModelClient"))
         self.assertTrue(hasattr(leos_agent, "InMemoryGitHubClient"))
 

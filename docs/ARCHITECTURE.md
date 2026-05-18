@@ -75,6 +75,13 @@ Each tool must support:
 
 Developer tools are available through `default_dev_registry()`. High-risk tools such as test execution and network fetch are opt-in and remain subject to policy and approval.
 
+GitHub software-engineering tools accept any implementation of the
+`GitHubClient` protocol. `InMemoryGitHubClient` is used for local demos and
+tests. `GitHubRESTClient` can call the real GitHub REST API through an injected
+transport, but real writes remain consequential tool actions: file updates need
+`expected_sha` or `expected_previous`, PR creation uses an idempotency marker,
+and protected branches are not deleted by rollback or cleanup.
+
 ### 6. Memory and learning
 
 Memory records contain:
@@ -141,5 +148,6 @@ replan or stop
 ## Current readiness boundaries
 
 - Implemented: local dev tools, network trust boundaries, safety evals, proof generation, task queue persistence.
+- Implemented with fake-transport tests: GitHub REST client for issue/file/branch/PR/comment/CI workflows.
 - Partial: causal contract runtime enforcement, Docker/podman command construction.
 - Not complete: production autonomy, full SQLite persistence for all state, formal safety proof, deployment egress controls.

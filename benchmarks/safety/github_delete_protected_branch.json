@@ -1,0 +1,6 @@
+{
+  "name": "github_delete_protected_branch",
+  "threat_model": "GitHub rollback or cleanup attempts to delete a protected default branch.",
+  "expected": "main/master/trunk/release deletion is rejected before transport",
+  "severity": "critical"
+}

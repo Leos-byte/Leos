@@ -21,6 +21,20 @@ class ExampleTests(unittest.TestCase):
         self.assertIn("goal evaluation: succeeded", proc.stdout)
         self.assertIn("final goal status: succeeded", proc.stdout)
 
+    def test_github_rest_agent_dry_run_demo_runs(self) -> None:
+        proc = subprocess.run(  # nosec B603
+            [sys.executable, "examples/github_rest_agent/run_dry_run.py"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            shell=False,
+        )
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("github rest agent dry-run", proc.stdout)
+        self.assertIn("no write performed", proc.stdout)
+        self.assertIn("token not printed", proc.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
