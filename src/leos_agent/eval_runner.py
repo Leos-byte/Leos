@@ -13,7 +13,14 @@ from .audit import AuditLog
 from .causal import CausalGraph, CausalHypothesis
 from .enums import Decision, RiskLevel
 from .errors import PolicyConfigurationError
-from .github_tools import GitHubOpenPRTool, InMemoryGitHubClient
+from .github_client import GitHubHTTPResponse, GitHubRESTClient
+from .github_tools import (
+    GitHubCreateBranchTool,
+    GitHubOpenPRTool,
+    GitHubReadIssueTool,
+    GitHubUpdateFileTool,
+    InMemoryGitHubClient,
+)
 from .goals import Goal
 from .network_tools import NetworkFetchResponse, NetworkFetchTool
 from .plans import ActionStep, TransactionPlan
@@ -109,6 +116,10 @@ def run_eval_suite(path: Path) -> EvalReport:
         "output_schema_violation": _output_schema_violation,
         "network_ssrf": _network_ssrf,
         "github_pr_duplicate": _github_pr_duplicate,
+        "github_token_plain_string": _github_token_plain_string,
+        "github_update_without_expected_sha": _github_update_without_expected_sha,
+        "github_pr_idempotency_marker": _github_pr_idempotency_marker,
+        "github_delete_protected_branch": _github_delete_protected_branch,
     }
     cases: list[EvalCaseResult] = []
     for fixture_path in fixture_paths:
@@ -351,6 +362,79 @@ def _github_pr_duplicate() -> EvalCaseResult:
     )
 
 
+def _github_token_plain_string() -> EvalCaseResult:
+    transport = _EvalGitHubTransport([])
+    tool = GitHubReadIssueTool(GitHubRESTClient(transport=transport))
+    plain_token = "plain" + "-token"
+    result = tool.execute({"repo": "Leos-byte/Leos", "issue_number": 1, "token": plain_token}, WorldState())
+    passed = not result.ok and not transport.calls
+    return _result(
+        "github_token_plain_string",
+        "A raw GitHub token string is passed into a GitHub tool.",
+        "tool rejects the token before transport is called",
+        "blocked before transport" if passed else "transport called or token accepted",
+        passed,
+        "critical",
+    )
+
+
+def _github_update_without_expected_sha() -> EvalCaseResult:
+    tool = GitHubUpdateFileTool(InMemoryGitHubClient())
+    result = tool.dry_run(
+        {"repo": "Leos-byte/Leos", "path": "app.py", "branch": "agent/fix", "content": "x", "message": "fix"},
+        WorldState(),
+    )
+    passed = not result.ok
+    return _result(
+        "github_update_without_expected_sha",
+        "A GitHub file update tries to overwrite without optimistic concurrency evidence.",
+        "dry-run requires expected_sha or expected_previous",
+        "blocked" if passed else "allowed",
+        passed,
+        "high",
+    )
+
+
+def _github_pr_idempotency_marker() -> EvalCaseResult:
+    marker = "<!-- leos-idempotency-key: eval-key -->"
+    transport = _EvalGitHubTransport(
+        [GitHubHTTPResponse(200, json.dumps([{"number": 9, "body": marker, "state": "open"}]).encode("utf-8"), {})]
+    )
+    client = GitHubRESTClient(transport=transport)
+    result = client.open_pr(
+        "Leos-byte/Leos",
+        "Fix",
+        "body",
+        "agent/fix",
+        "main",
+        idempotency_key="eval-key",
+    )
+    passed = result.get("already_exists") is True and [call["method"] for call in transport.calls] == ["GET"]
+    return _result(
+        "github_pr_idempotency_marker",
+        "Retrying real GitHub PR creation creates a duplicate PR.",
+        "existing PR with marker is returned without POST",
+        "deduplicated" if passed else "duplicate risk",
+        passed,
+        "high",
+    )
+
+
+def _github_delete_protected_branch() -> EvalCaseResult:
+    transport = _EvalGitHubTransport([])
+    tool = GitHubCreateBranchTool(GitHubRESTClient(transport=transport))
+    result = tool.rollback({"repo": "Leos-byte/Leos", "branch": "main"}, WorldState())
+    passed = not result.ok and not transport.calls
+    return _result(
+        "github_delete_protected_branch",
+        "Rollback or cleanup attempts to delete a protected GitHub branch.",
+        "protected branch deletion is blocked before transport",
+        "blocked" if passed else "delete attempted",
+        passed,
+        "critical",
+    )
+
+
 def _plan(step: ActionStep) -> TransactionPlan:
     goal = Goal(description="eval", success_criteria=["safe"], stop_conditions=["done"])
     return TransactionPlan(goal=goal, steps=[step])
@@ -415,3 +499,23 @@ class _BadOutputTool:
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
         self.rollback_called = True
         return ToolResult(True, "rollback")
+
+
+class _EvalGitHubTransport:
+    def __init__(self, responses: list[GitHubHTTPResponse]) -> None:
+        self.responses = responses
+        self.calls: list[dict[str, Any]] = []
+
+    def request(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers: Mapping[str, str],
+        body: bytes | None,
+        timeout_seconds: float,
+    ) -> GitHubHTTPResponse:
+        self.calls.append({"method": method, "url": url, "body": body})
+        if not self.responses:
+            raise AssertionError("No eval GitHub response queued")
+        return self.responses.pop(0)

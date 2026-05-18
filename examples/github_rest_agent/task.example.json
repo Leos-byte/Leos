@@ -1,0 +1,16 @@
+{
+  "goal": {
+    "description": "Dry-run a GitHub issue-to-PR workflow",
+    "success_criteria": ["no write performed"],
+    "constraints": ["Do not print tokens", "Do not execute real GitHub writes"],
+    "stop_conditions": ["dry-run plan printed"]
+  },
+  "workflow": [
+    "read issue",
+    "get file",
+    "create branch",
+    "update file",
+    "open PR"
+  ],
+  "policy_profile": "developer_local"
+}

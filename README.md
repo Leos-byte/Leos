@@ -97,6 +97,7 @@ network access or external APIs.
 | Agent loop | implemented minimal observe-plan-act-verify loop |
 | Goal evaluation | deterministic success-criteria evaluator |
 | GitHub software-engineering tools | in-memory dry-run-first tool layer |
+| GitHub REST client | implemented with fake-transport tests; real writes gated |
 | Local software engineering demo | implemented, no network/API token required |
 | Safety benchmark fixtures | implemented for regression loading |
 | Safety eval suite | implemented regression suite |
@@ -107,6 +108,21 @@ network access or external APIs.
 High-risk tools are not enabled by default. Network tools and code execution
 must be explicitly registered and policy-gated. The workspace subprocess sandbox
 is not a production isolation boundary.
+
+Run the GitHub REST dry-run demo:
+
+```bash
+python examples/github_rest_agent/run_dry_run.py
+```
+
+The demo uses `InMemoryGitHubClient` by default and performs no real GitHub
+write. `GitHubRESTClient` is available for real API integration, but write
+operations must still run through the tool layer, `PolicyEngine`,
+`ApprovalGate`, and `TransactionManager`. GitHub tokens must be passed as
+`Secret` values; plain string tokens are rejected by the tools. File updates
+require `expected_sha` or `expected_previous`, PR creation supports a hidden
+Leos idempotency marker, and protected branches such as `main` and `master` are
+not deleted by cleanup logic.
 
 ## Proof documents
 

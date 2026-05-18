@@ -1,0 +1,6 @@
+{
+  "name": "github_token_plain_string",
+  "threat_model": "A raw GitHub token string is passed into a GitHub tool instead of a Secret wrapper.",
+  "expected": "tool rejects the token before transport is called",
+  "severity": "critical"
+}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
@@ -67,6 +68,11 @@ class InMemoryGitHubClient:
     pr_idempotency: dict[tuple[str, str], int] = field(default_factory=dict)
     next_pr: int = 1
     next_comment: int = 1
+    accepted_tokens: list[str] = field(default_factory=list)
+
+    def _record_token(self, token: str | None) -> None:
+        if token is not None:
+            self.accepted_tokens.append(token)
 
     def seed_issue(self, repo: str, issue_number: int, *, title: str, body: str) -> None:
         self.issues[(repo, issue_number)] = {"repo": repo, "number": issue_number, "title": title, "body": body}
@@ -78,9 +84,11 @@ class InMemoryGitHubClient:
         return sha
 
     def read_issue(self, repo: str, issue_number: int, token: str | None = None) -> dict[str, Any]:
+        self._record_token(token)
         return dict(self.issues[(repo, issue_number)])
 
     def create_branch(self, repo: str, branch: str, base: str, token: str | None = None) -> dict[str, Any]:
+        self._record_token(token)
         base_sha = self.branches.get((repo, base), base)
         self.branches[(repo, branch)] = base_sha
         for (file_repo, file_branch, path), value in list(self.files.items()):
@@ -89,12 +97,14 @@ class InMemoryGitHubClient:
         return {"repo": repo, "branch": branch, "base": base, "sha": base_sha}
 
     def delete_branch(self, repo: str, branch: str, token: str | None = None) -> None:
+        self._record_token(token)
         self.branches.pop((repo, branch), None)
         for key in list(self.files):
             if key[0] == repo and key[1] == branch:
                 del self.files[key]
 
     def get_file(self, repo: str, path: str, ref: str, token: str | None = None) -> dict[str, Any]:
+        self._record_token(token)
         return dict(self.files[(repo, ref, path)])
 
     def update_file(
@@ -109,6 +119,7 @@ class InMemoryGitHubClient:
         expected_previous: str | None = None,
         token: str | None = None,
     ) -> dict[str, Any]:
+        self._record_token(token)
         key = (repo, branch, path)
         previous = self.files.get(key)
         if expected_sha is not None and (previous or {}).get("sha") != expected_sha:
@@ -131,6 +142,7 @@ class InMemoryGitHubClient:
         idempotency_key: str | None = None,
         token: str | None = None,
     ) -> dict[str, Any]:
+        self._record_token(token)
         if idempotency_key and (repo, idempotency_key) in self.pr_idempotency:
             number = self.pr_idempotency[(repo, idempotency_key)]
             return dict(self.prs[(repo, number)])
@@ -152,9 +164,11 @@ class InMemoryGitHubClient:
         return dict(pr)
 
     def close_pr(self, repo: str, pr_number: int, token: str | None = None) -> None:
+        self._record_token(token)
         self.prs[(repo, pr_number)]["state"] = "closed"
 
     def comment(self, repo: str, issue_number: int, body: str, token: str | None = None) -> dict[str, Any]:
+        self._record_token(token)
         comment_id = self.next_comment
         self.next_comment += 1
         comment = {"id": comment_id, "repo": repo, "issue_number": issue_number, "body": body}
@@ -162,9 +176,11 @@ class InMemoryGitHubClient:
         return dict(comment)
 
     def delete_comment(self, repo: str, comment_id: int, token: str | None = None) -> None:
+        self._record_token(token)
         self.comments.pop(comment_id, None)
 
     def ci_status(self, repo: str, ref: str, token: str | None = None) -> dict[str, Any]:
+        self._record_token(token)
         return dict(self.ci.get((repo, ref), {"repo": repo, "ref": ref, "state": "unknown"}))
 
 
@@ -200,9 +216,31 @@ class _GitHubToolBase:
 
     def __init__(self, client: GitHubClient) -> None:
         self.client = client
+        self._rollback_tokens: dict[str, str] = {}
 
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
         return ToolResult(True, "No rollback side effect")
+
+    def _remember_rollback_token(self, token: str | None) -> str | None:
+        if token is None:
+            return None
+        token_id = str(uuid.uuid4())
+        self._rollback_tokens[token_id] = token
+        return token_id
+
+    def _pop_rollback_token(self, token: Mapping[str, Any]) -> str | None:
+        token_id = token.get("auth_token_id")
+        if token_id is None:
+            return None
+        return self._rollback_tokens.pop(str(token_id), None)
+
+
+def _rollback_token(**items: Any) -> dict[str, Any]:
+    return {key: value for key, value in items.items() if value is not None}
+
+
+def _tool_error(exc: LeosError) -> ToolResult:
+    return ToolResult(False, str(exc), error=exc)
 
 
 class GitHubReadIssueTool(_GitHubToolBase):
@@ -226,7 +264,10 @@ class GitHubReadIssueTool(_GitHubToolBase):
         token, error = _token_or_error(arguments)
         if error:
             return error
-        issue = self.client.read_issue(str(arguments["repo"]), int(arguments["issue_number"]), token)
+        try:
+            issue = self.client.read_issue(str(arguments["repo"]), int(arguments["issue_number"]), token)
+        except LeosError as exc:
+            return _tool_error(exc)
         return ToolResult(True, "Read GitHub issue", observed_state_delta={"github_issue": issue})
 
 
@@ -253,21 +294,31 @@ class GitHubCreateBranchTool(_GitHubToolBase):
         token, error = _token_or_error(arguments)
         if error:
             return error
-        branch = self.client.create_branch(
-            str(arguments["repo"]),
-            str(arguments["branch"]),
-            str(arguments["base"]),
-            token,
-        )
+        try:
+            branch = self.client.create_branch(
+                str(arguments["repo"]),
+                str(arguments["branch"]),
+                str(arguments["base"]),
+                token,
+            )
+        except LeosError as exc:
+            return _tool_error(exc)
         return ToolResult(
             True,
             "Created GitHub branch",
             observed_state_delta={"github_branch": branch},
-            rollback_token={"repo": arguments["repo"], "branch": arguments["branch"]},
+            rollback_token=_rollback_token(
+                repo=arguments["repo"],
+                branch=arguments["branch"],
+                auth_token_id=self._remember_rollback_token(token),
+            ),
         )
 
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
-        self.client.delete_branch(str(token["repo"]), str(token["branch"]))
+        try:
+            self.client.delete_branch(str(token["repo"]), str(token["branch"]), self._pop_rollback_token(token))
+        except LeosError as exc:
+            return _tool_error(exc)
         return ToolResult(True, "Deleted GitHub branch")
 
 
@@ -292,7 +343,10 @@ class GitHubGetFileTool(_GitHubToolBase):
         token, error = _token_or_error(arguments)
         if error:
             return error
-        data = self.client.get_file(str(arguments["repo"]), str(arguments["path"]), str(arguments["ref"]), token)
+        try:
+            data = self.client.get_file(str(arguments["repo"]), str(arguments["path"]), str(arguments["ref"]), token)
+        except LeosError as exc:
+            return _tool_error(exc)
         return ToolResult(True, "Read GitHub file", observed_state_delta={"github_file": data})
 
 
@@ -349,22 +403,32 @@ class GitHubUpdateFileTool(_GitHubToolBase):
                 "path": arguments["path"],
                 "branch": arguments["branch"],
                 "previous": previous,
+                **_rollback_token(auth_token_id=self._remember_rollback_token(token)),
             },
         )
 
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
         previous = token.get("previous")
         if isinstance(previous, dict):
-            self.client.update_file(
-                str(token["repo"]),
-                str(token["path"]),
-                str(token["branch"]),
-                str(previous.get("content", "")),
-                "rollback file update",
-                expected_sha=str(
-                    self.client.get_file(str(token["repo"]), str(token["path"]), str(token["branch"]))["sha"]
-                ),
-            )
+            auth_token = self._pop_rollback_token(token)
+            try:
+                current = self.client.get_file(
+                    str(token["repo"]),
+                    str(token["path"]),
+                    str(token["branch"]),
+                    auth_token,
+                )
+                self.client.update_file(
+                    str(token["repo"]),
+                    str(token["path"]),
+                    str(token["branch"]),
+                    str(previous.get("content", "")),
+                    "rollback file update",
+                    expected_sha=str(current["sha"]),
+                    token=auth_token,
+                )
+            except LeosError as exc:
+                return _tool_error(exc)
             return ToolResult(True, "Restored previous GitHub file content")
         return ToolResult(True, "No previous GitHub file content to restore")
 
@@ -392,24 +456,34 @@ class GitHubOpenPRTool(_GitHubToolBase):
         token, error = _token_or_error(arguments)
         if error:
             return error
-        pr = self.client.open_pr(
-            str(arguments["repo"]),
-            str(arguments["title"]),
-            str(arguments["body"]),
-            str(arguments["head"]),
-            str(arguments["base"]),
-            idempotency_key=str(arguments["idempotency_key"]) if arguments.get("idempotency_key") else None,
-            token=token,
-        )
+        try:
+            pr = self.client.open_pr(
+                str(arguments["repo"]),
+                str(arguments["title"]),
+                str(arguments["body"]),
+                str(arguments["head"]),
+                str(arguments["base"]),
+                idempotency_key=str(arguments["idempotency_key"]) if arguments.get("idempotency_key") else None,
+                token=token,
+            )
+        except LeosError as exc:
+            return _tool_error(exc)
         return ToolResult(
             True,
             "Opened GitHub PR",
             observed_state_delta={"github_pr": pr},
-            rollback_token={"repo": arguments["repo"], "pr_number": pr["number"]},
+            rollback_token=_rollback_token(
+                repo=arguments["repo"],
+                pr_number=pr["number"],
+                auth_token_id=self._remember_rollback_token(token),
+            ),
         )
 
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
-        self.client.close_pr(str(token["repo"]), int(token["pr_number"]))
+        try:
+            self.client.close_pr(str(token["repo"]), int(token["pr_number"]), self._pop_rollback_token(token))
+        except LeosError as exc:
+            return _tool_error(exc)
         return ToolResult(True, "Closed GitHub PR")
 
 
@@ -436,18 +510,28 @@ class GitHubCommentTool(_GitHubToolBase):
         token, error = _token_or_error(arguments)
         if error:
             return error
-        comment = self.client.comment(
-            str(arguments["repo"]), int(arguments["issue_number"]), str(arguments["body"]), token
-        )
+        try:
+            comment = self.client.comment(
+                str(arguments["repo"]), int(arguments["issue_number"]), str(arguments["body"]), token
+            )
+        except LeosError as exc:
+            return _tool_error(exc)
         return ToolResult(
             True,
             "Posted GitHub comment",
             observed_state_delta={"github_comment": comment},
-            rollback_token={"repo": arguments["repo"], "comment_id": comment["id"]},
+            rollback_token=_rollback_token(
+                repo=arguments["repo"],
+                comment_id=comment["id"],
+                auth_token_id=self._remember_rollback_token(token),
+            ),
         )
 
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
-        self.client.delete_comment(str(token["repo"]), int(token["comment_id"]))
+        try:
+            self.client.delete_comment(str(token["repo"]), int(token["comment_id"]), self._pop_rollback_token(token))
+        except LeosError as exc:
+            return _tool_error(exc)
         return ToolResult(True, "Deleted GitHub comment")
 
 
@@ -472,5 +556,8 @@ class GitHubCheckCIStatusTool(_GitHubToolBase):
         token, error = _token_or_error(arguments)
         if error:
             return error
-        status = self.client.ci_status(str(arguments["repo"]), str(arguments["ref"]), token)
+        try:
+            status = self.client.ci_status(str(arguments["repo"]), str(arguments["ref"]), token)
+        except LeosError as exc:
+            return _tool_error(exc)
         return ToolResult(True, "Checked GitHub CI status", observed_state_delta={"github_ci_status": status})
