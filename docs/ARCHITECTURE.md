@@ -18,6 +18,12 @@ A goal must declare:
 
 This forces the agent to reason under bounded rationality: it can decide when a result is good enough and when to stop.
 
+Goal success is evaluated separately from action verification. Transaction verification
+answers "did this tool action produce the predicted observed state delta?"
+`GoalEvaluator` answers "do the goal success criteria have evidence in world
+state?" For example, a verified patch action is not enough to satisfy a "tests
+pass" goal unless the world state contains `tests_ok=True`.
+
 ### 2. World model
 
 The world state separates:
@@ -88,7 +94,11 @@ Every consequential step emits an audit event. Risky or under-authorized actions
 ## Transaction protocol
 
 ```text
-for each step:
+observe
+recall memory
+propose plans
+select plan
+transact:
   resolve tool
   assign permissions and risk
   predict causal effects
@@ -100,6 +110,9 @@ for each step:
   update observed world state
   verify causal predictions
   continue or rollback
+evaluate goal success criteria
+remember progress
+replan or stop
 ```
 
 ## Safety invariants

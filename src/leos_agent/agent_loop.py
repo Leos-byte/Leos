@@ -8,6 +8,8 @@ from typing import Protocol, cast
 
 from .audit import AuditLog
 from .enums import GoalStatus
+from .errors import InvalidGoalTransition
+from .goal_evaluator import GoalEvaluation, GoalEvaluationStatus, GoalEvaluator
 from .goals import Goal, GoalProgress
 from .kernel import AgentKernel
 from .memory import MemoryStore, MemoryType
@@ -26,6 +28,7 @@ class ProposalProvider(Protocol):
 class AgentLoopConfig:
     max_iterations: int = 3
     memory_scope: str = "agent_loop"
+    use_goal_evaluator: bool = True
 
     def __post_init__(self) -> None:
         if self.max_iterations < 1:
@@ -39,9 +42,12 @@ class AgentLoopResult:
     iterations: int
     selected_plans: list[TransactionPlan] = field(default_factory=list)
     progress: GoalProgress | None = None
+    evaluation: GoalEvaluation | None = None
 
     @property
     def succeeded(self) -> bool:
+        if self.evaluation is not None:
+            return self.evaluation.status is GoalEvaluationStatus.SUCCEEDED
         return self.goal.status is GoalStatus.SUCCEEDED
 
 
@@ -72,12 +78,14 @@ class AgentLoop:
         memory: MemoryStore | None = None,
         audit_log: AuditLog | None = None,
         config: AgentLoopConfig | None = None,
+        goal_evaluator: GoalEvaluator | None = None,
     ) -> None:
         self.kernel = kernel
         self.proposal_provider = proposal_provider
         self.memory = memory or kernel.memory
         self.audit_log = audit_log or kernel.audit_log
         self.config = config or AgentLoopConfig()
+        self.goal_evaluator = goal_evaluator or GoalEvaluator()
 
     def run(self, goal: Goal) -> AgentLoopResult:
         self.audit_log.record(
@@ -88,6 +96,7 @@ class AgentLoop:
         )
         selected_plans: list[TransactionPlan] = []
         progress: GoalProgress | None = None
+        evaluation: GoalEvaluation | None = None
         current_goal = goal
         stop_reason = "max_iterations_reached"
 
@@ -145,9 +154,25 @@ class AgentLoop:
                 rolled_back_steps=progress.rolled_back_steps,
                 phase=progress.phase,
             )
+            if self.config.use_goal_evaluator:
+                evaluation = self.goal_evaluator.evaluate(current_goal, self.kernel.state, progress)
+                self.audit_log.record(
+                    "loop.goal_evaluated",
+                    "Agent loop evaluated goal success criteria",
+                    goal_id=current_goal.goal_id,
+                    iteration=iteration,
+                    evaluation_status=evaluation.status.value,
+                    satisfied_criteria=list(evaluation.satisfied_criteria),
+                    unsatisfied_criteria=list(evaluation.unsatisfied_criteria),
+                    explanation=evaluation.explanation,
+                    evidence_keys=sorted(evaluation.evidence),
+                )
+                current_goal = self._transition_goal_for_evaluation(current_goal, evaluation)
             self._write_iteration_memory(current_goal, iteration, progress)
 
-            stop_reason = self._stop_reason(current_goal)
+            stop_reason = self._evaluation_stop_reason(evaluation) if evaluation is not None else ""
+            if not stop_reason:
+                stop_reason = self._stop_reason(current_goal)
             if stop_reason:
                 break
             stop_reason = "max_iterations_reached"
@@ -171,6 +196,7 @@ class AgentLoop:
             iterations=iterations,
             selected_plans=selected_plans,
             progress=progress,
+            evaluation=evaluation,
         )
 
     def _recall_goal_memory(self, goal: Goal) -> None:
@@ -213,3 +239,47 @@ class AgentLoop:
         if goal.status is GoalStatus.FAILED:
             return "goal_failed"
         return ""
+
+    @staticmethod
+    def _evaluation_stop_reason(evaluation: GoalEvaluation | None) -> str:
+        if evaluation is None:
+            return ""
+        if evaluation.status is GoalEvaluationStatus.SUCCEEDED:
+            return "goal_succeeded"
+        if evaluation.status is GoalEvaluationStatus.BLOCKED:
+            return "goal_blocked"
+        if evaluation.status is GoalEvaluationStatus.FAILED:
+            return "goal_failed"
+        return ""
+
+    def _transition_goal_for_evaluation(self, goal: Goal, evaluation: GoalEvaluation) -> Goal:
+        target = {
+            GoalEvaluationStatus.SUCCEEDED: GoalStatus.SUCCEEDED,
+            GoalEvaluationStatus.FAILED: GoalStatus.FAILED,
+            GoalEvaluationStatus.BLOCKED: GoalStatus.BLOCKED,
+        }.get(evaluation.status)
+        if target is None or goal.status is target:
+            return goal
+        try:
+            transitioned = goal.transition(target)
+        except InvalidGoalTransition as exc:
+            self.audit_log.record(
+                "loop.goal_transition_skipped",
+                "Goal transition from evaluation was not allowed",
+                goal_id=goal.goal_id,
+                from_status=goal.status.value,
+                to_status=target.value,
+                evaluation_status=evaluation.status.value,
+                error_type=type(exc).__name__,
+                reason=str(exc),
+            )
+            return goal
+        self.audit_log.record(
+            "loop.goal_transitioned",
+            "Goal status changed from goal evaluation",
+            goal_id=goal.goal_id,
+            from_status=goal.status.value,
+            to_status=transitioned.status.value,
+            evaluation_status=evaluation.status.value,
+        )
+        return transitioned

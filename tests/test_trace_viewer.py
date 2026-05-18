@@ -74,6 +74,44 @@ class TraceViewerTests(unittest.TestCase):
         self.assertIn("needs_human", markdown)
         self.assertIn("Final goal status: `blocked`", markdown)
 
+    def test_markdown_contains_goal_evaluation_fields(self) -> None:
+        markdown = render_trace_markdown(
+            [
+                {
+                    "event_type": "loop.goal_evaluated",
+                    "message": "evaluated",
+                    "payload": {
+                        "goal_id": "goal-1",
+                        "evaluation_status": "succeeded",
+                        "satisfied_criteria": ["tests pass"],
+                        "unsatisfied_criteria": [],
+                        "explanation": "Test success criterion satisfied by tests_ok=True.",
+                    },
+                }
+            ]
+        )
+
+        self.assertIn("evaluation_status=succeeded", markdown)
+        self.assertIn("tests pass", markdown)
+        self.assertIn("tests_ok=True", markdown)
+
+    def test_goal_evaluation_html_escapes_explanation(self) -> None:
+        rendered = render_trace_html(
+            [
+                {
+                    "event_type": "loop.goal_evaluated",
+                    "message": "evaluated",
+                    "payload": {
+                        "evaluation_status": "failed",
+                        "explanation": "<script>alert(1)</script>",
+                    },
+                }
+            ]
+        )
+
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", rendered)
+        self.assertNotIn("<script>alert(1)</script>", rendered)
+
 
 if __name__ == "__main__":
     unittest.main()

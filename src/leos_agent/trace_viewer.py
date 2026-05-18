@@ -92,11 +92,17 @@ def render_trace_markdown(records: Sequence[Mapping[str, Any]]) -> str:
         payload = payload if isinstance(payload, Mapping) else {}
         permissions = payload.get("permissions") or payload.get("required_permissions")
         decision = payload.get("decision") or payload.get("approval_result") or payload.get("rule_name")
-        status = payload.get("goal_status") or payload.get("phase") or payload.get("error_type")
+        status = (
+            payload.get("goal_status")
+            or payload.get("evaluation_status")
+            or payload.get("phase")
+            or payload.get("error_type")
+        )
+        details = _event_details(message, payload)
         lines.append(
             f"| {index} | `{event_type}` | {_cell(payload.get('goal_id') or payload.get('goal'))} | "
             f"{_cell(payload.get('plan_id'))} | {_cell(payload.get('step_id') or payload.get('tool'))} | "
-            f"{_cell(payload.get('risk'))} | {_cell(permissions)} | {_cell(decision)} | {_cell(status)} | {message} |"
+            f"{_cell(payload.get('risk'))} | {_cell(permissions)} | {_cell(decision)} | {_cell(status)} | {details} |"
         )
     return "\n".join(lines) + "\n"
 
@@ -118,6 +124,20 @@ def _cell(value: Any) -> str:
         return ""
     text = json.dumps(value, ensure_ascii=False, default=str) if isinstance(value, (dict, list, tuple)) else str(value)
     return text.replace("|", "\\|").replace("\n", " ")
+
+
+def _event_details(message: str, payload: Mapping[str, Any]) -> str:
+    details = [message]
+    if "evaluation_status" in payload:
+        details.extend(
+            [
+                f"evaluation_status={_cell(payload.get('evaluation_status'))}",
+                f"satisfied={_cell(payload.get('satisfied_criteria'))}",
+                f"unsatisfied={_cell(payload.get('unsatisfied_criteria'))}",
+                f"explanation={_cell(payload.get('explanation'))}",
+            ]
+        )
+    return "<br>".join(part for part in details if part)
 
 
 def _final_goal_status(records: Sequence[Mapping[str, Any]]) -> str:

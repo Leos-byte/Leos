@@ -24,6 +24,7 @@ User Goal
   -> Approval Gate
   -> Tool Runtime
   -> Verifier
+  -> Goal Evaluator
   -> Memory
   -> Audit Log
 ```
@@ -36,6 +37,7 @@ The initial implementation includes:
 - A capability-based policy engine.
 - Human approval gates for risky or under-authorized actions.
 - Transactional plan execution with rollback support.
+- Deterministic goal evaluation that checks explicit success criteria after action verification.
 - JSON/JSONL memory and audit primitives.
 - A sandboxed reversible file-write tool.
 - Unit tests covering execution, blocking, verification, and workspace escape rejection.
@@ -93,6 +95,7 @@ network access or external APIs.
 | URL SSRF checks | implemented regression guard |
 | Docker sandbox runner | initial command-construction support |
 | Agent loop | implemented minimal observe-plan-act-verify loop |
+| Goal evaluation | deterministic success-criteria evaluator |
 | GitHub software-engineering tools | in-memory dry-run-first tool layer |
 | Local software engineering demo | implemented, no network/API token required |
 | Safety benchmark fixtures | implemented for regression loading |
@@ -131,8 +134,14 @@ Leos Agent instead makes the action boundary explicit:
 4. **What permission does this action require?**
 5. **Can we dry-run it?**
 6. **Can we verify it?**
-7. **Can we roll it back?**
-8. **What should be audited for humans?**
+7. **Did the verified action actually satisfy the goal criteria?**
+8. **Can we roll it back?**
+9. **What should be audited for humans?**
+
+Transaction verification and goal evaluation are intentionally separate.
+Transaction verification checks whether an action produced its predicted effect.
+`GoalEvaluator` checks whether the user's explicit success criteria are actually
+satisfied, such as `tests_ok=True` for a "tests pass" goal.
 
 ## Extension points
 

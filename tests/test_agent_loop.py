@@ -51,6 +51,30 @@ class BlockedTool:
         return ToolResult(True, "rollback")
 
 
+class TestResultTool:
+    def __init__(self, tests_ok: bool) -> None:
+        self.tests_ok = tests_ok
+
+    @property
+    def spec(self) -> ToolSpec:
+        return ToolSpec(
+            name="test_result",
+            description="Record a deterministic test outcome",
+            permissions=(),
+            default_risk=RiskLevel.LOW,
+            output_schema={"type": "object", "required": ["tests_ok"]},
+        )
+
+    def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        return ToolResult(True, "Would record test result")
+
+    def execute(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        return ToolResult(True, "Recorded test result", observed_state_delta={"tests_ok": self.tests_ok})
+
+    def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
+        return ToolResult(True, "rollback")
+
+
 class AgentLoopTests(unittest.TestCase):
     def _kernel(self, registry: ToolRegistry, audit: AuditLog | None = None) -> AgentKernel:
         return AgentKernel(
@@ -84,6 +108,34 @@ class AgentLoopTests(unittest.TestCase):
 
         self.assertEqual(result.stop_reason, "no_plan")
         self.assertFalse(result.succeeded)
+
+    def test_loop_uses_goal_evaluator_for_tests_ok_success(self) -> None:
+        registry = ToolRegistry()
+        registry.register(TestResultTool(True))
+        kernel = self._kernel(registry)
+        goal = Goal("verify", ["tests pass"], stop_conditions=["stop"])
+        proposal = PlanProposal([ActionStep("test_result", {}, "record")], "record")
+
+        result = AgentLoop(kernel, DeterministicProposalProvider([proposal])).run(goal)
+
+        self.assertTrue(result.succeeded)
+        self.assertEqual(result.stop_reason, "goal_succeeded")
+        self.assertIsNotNone(result.evaluation)
+        self.assertEqual(result.evaluation.satisfied_criteria, ["tests pass"])
+
+    def test_loop_does_not_succeed_when_steps_verified_but_tests_failed(self) -> None:
+        registry = ToolRegistry()
+        registry.register(TestResultTool(False))
+        kernel = self._kernel(registry)
+        goal = Goal("verify", ["tests pass"], stop_conditions=["stop"])
+        proposal = PlanProposal([ActionStep("test_result", {}, "record")], "record")
+
+        result = AgentLoop(kernel, DeterministicProposalProvider([proposal])).run(goal)
+
+        self.assertFalse(result.succeeded)
+        self.assertEqual(result.stop_reason, "goal_failed")
+        self.assertIsNotNone(result.evaluation)
+        self.assertEqual(result.evaluation.unsatisfied_criteria, ["tests pass"])
 
     def test_loop_does_not_exceed_max_iterations(self) -> None:
         kernel = self._kernel(ToolRegistry())
@@ -127,6 +179,7 @@ class AgentLoopTests(unittest.TestCase):
             "loop.plan_selected",
             "loop.plan_executed",
             "loop.goal_progress_checked",
+            "loop.goal_evaluated",
             "loop.memory_updated",
             "loop.finished",
         }:
