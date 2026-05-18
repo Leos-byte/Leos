@@ -33,6 +33,13 @@ def _reject_secrets(value: Any) -> None:
             _reject_secrets(item)
 
 
+def _reject_model_request(request: ModelRequest) -> None:
+    _reject_secrets(request.prompt)
+    _reject_secrets(request.system)
+    _reject_secrets(request.schema)
+    _reject_secrets(request.metadata)
+
+
 def _audit_request(audit_log: AuditLog | None, provider: str, request: ModelRequest) -> None:
     if audit_log is None:
         return
@@ -69,7 +76,7 @@ class LocalHTTPModelClient:
         self.audit_log = audit_log
 
     def generate(self, request: ModelRequest) -> ModelResponse:
-        _reject_secrets(request)
+        _reject_model_request(request)
         _audit_request(self.audit_log, "local_http", request)
         payload = json.dumps(
             {
@@ -118,7 +125,7 @@ class OpenAIModelClient:
         self.audit_log = audit_log
 
     def generate(self, request: ModelRequest) -> ModelResponse:
-        _reject_secrets(request)
+        _reject_model_request(request)
         try:
             openai = importlib.import_module("openai")
         except ImportError as exc:
@@ -150,7 +157,7 @@ class AnthropicModelClient:
         self.audit_log = audit_log
 
     def generate(self, request: ModelRequest) -> ModelResponse:
-        _reject_secrets(request)
+        _reject_model_request(request)
         try:
             anthropic = importlib.import_module("anthropic")
         except ImportError as exc:
