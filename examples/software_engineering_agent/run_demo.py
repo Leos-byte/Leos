@@ -13,6 +13,7 @@ from leos_agent import (
     CausalGraph,
     DeterministicProposalProvider,
     Goal,
+    GoalEvaluator,
     PlannerConfig,
     PlanProposal,
     PolicyEngine,
@@ -92,6 +93,7 @@ def main() -> int:
             kernel,
             DeterministicProposalProvider([proposal]),
             config=AgentLoopConfig(max_iterations=1),
+            goal_evaluator=GoalEvaluator(),
         )
         result = loop.run(goal)
         replay = replay_audit_log(audit_log)
@@ -102,6 +104,9 @@ def main() -> int:
         print(f"selected plan: {result.selected_plans[0].plan_id if result.selected_plans else 'none'}")
         print(f"executed steps: {len(result.selected_plans[0].steps) if result.selected_plans else 0}")
         print(f"test result: {kernel.state.facts.get('tests_ok')}")
+        print(f"goal evaluation: {result.evaluation.status.value if result.evaluation else 'none'}")
+        print(f"satisfied criteria: {result.evaluation.satisfied_criteria if result.evaluation else []}")
+        print(f"unsatisfied criteria: {result.evaluation.unsatisfied_criteria if result.evaluation else []}")
         print(f"audit log path: {audit_path}")
         print(f"replay result: {'ok' if replay.ok else 'failed'}")
         print(f"trace markdown path: {trace_path}")

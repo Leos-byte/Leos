@@ -18,6 +18,7 @@ class ExampleTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertIn("selected plan:", proc.stdout)
         self.assertIn("test result: True", proc.stdout)
+        self.assertIn("goal evaluation: succeeded", proc.stdout)
         self.assertIn("final goal status: succeeded", proc.stdout)
 
 

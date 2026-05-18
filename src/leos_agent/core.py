@@ -69,6 +69,7 @@ from .github_tools import (
     GitHubUpdateFileTool,
     InMemoryGitHubClient,
 )
+from .goal_evaluator import GoalEvaluation, GoalEvaluationStatus, GoalEvaluator
 from .goals import Goal, ResourceBudget
 from .kernel import AgentKernel
 from .manifest import (
@@ -227,6 +228,9 @@ __all__ = [
     "GitHubReadIssueTool",
     "GitHubUpdateFileTool",
     "Goal",
+    "GoalEvaluation",
+    "GoalEvaluationStatus",
+    "GoalEvaluator",
     "GoalStatus",
     "IdempotencyConflict",
     "InMemoryGitHubClient",
