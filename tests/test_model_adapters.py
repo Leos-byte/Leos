@@ -58,10 +58,24 @@ class ModelAdapterTests(unittest.TestCase):
         self.assertLess(len(payloads[1]["response_preview"]), 530)
 
     def test_secret_values_are_rejected_before_prompting(self) -> None:
-        with self.assertRaises(ModelCallError):
+        with (
+            mock.patch("urllib.request.urlopen") as urlopen,
+            self.assertRaises(ModelCallError),
+        ):
             LocalHTTPModelClient("http://model.local").generate(
                 ModelRequest(prompt="hi", metadata={"token": Secret("x")})
             )
+        self.assertFalse(urlopen.called)
+
+    def test_redacted_secret_marker_is_rejected_before_prompting(self) -> None:
+        with (
+            mock.patch("urllib.request.urlopen") as urlopen,
+            self.assertRaises(ModelCallError),
+        ):
+            LocalHTTPModelClient("http://model.local").generate(
+                ModelRequest(prompt="hi", metadata={"token": "<secret>"})
+            )
+        self.assertFalse(urlopen.called)
 
 
 if __name__ == "__main__":

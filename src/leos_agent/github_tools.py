@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 from .enums import CompensationStrategy, Permission, Reversibility, RiskLevel
-from .errors import DryRunFailed, LeosError
+from .errors import DryRunFailed, LeosError, SecretBoundaryViolation
 from .state import WorldState
 from .tools import Secret, ToolResult, ToolSpec
 
@@ -174,9 +174,18 @@ def _sha(content: str) -> str:
 
 def _token(arguments: Mapping[str, Any]) -> str | None:
     value = arguments.get("token")
+    if value is None:
+        return None
     if isinstance(value, Secret):
         return value.unwrap()
-    return str(value) if value is not None else None
+    raise SecretBoundaryViolation("GitHub token must be passed as Secret, not a plain string")
+
+
+def _token_or_error(arguments: Mapping[str, Any]) -> tuple[str | None, ToolResult | None]:
+    try:
+        return _token(arguments), None
+    except SecretBoundaryViolation as exc:
+        return None, ToolResult(False, str(exc), error=exc)
 
 
 def _require(arguments: Mapping[str, Any], *names: str) -> ToolResult | None:
@@ -214,7 +223,10 @@ class GitHubReadIssueTool(_GitHubToolBase):
         dry = self.dry_run(arguments, state)
         if not dry.ok:
             return dry
-        issue = self.client.read_issue(str(arguments["repo"]), int(arguments["issue_number"]), _token(arguments))
+        token, error = _token_or_error(arguments)
+        if error:
+            return error
+        issue = self.client.read_issue(str(arguments["repo"]), int(arguments["issue_number"]), token)
         return ToolResult(True, "Read GitHub issue", observed_state_delta={"github_issue": issue})
 
 
@@ -238,11 +250,14 @@ class GitHubCreateBranchTool(_GitHubToolBase):
         dry = self.dry_run(arguments, state)
         if not dry.ok:
             return dry
+        token, error = _token_or_error(arguments)
+        if error:
+            return error
         branch = self.client.create_branch(
             str(arguments["repo"]),
             str(arguments["branch"]),
             str(arguments["base"]),
-            _token(arguments),
+            token,
         )
         return ToolResult(
             True,
@@ -274,9 +289,10 @@ class GitHubGetFileTool(_GitHubToolBase):
         dry = self.dry_run(arguments, state)
         if not dry.ok:
             return dry
-        data = self.client.get_file(
-            str(arguments["repo"]), str(arguments["path"]), str(arguments["ref"]), _token(arguments)
-        )
+        token, error = _token_or_error(arguments)
+        if error:
+            return error
+        data = self.client.get_file(str(arguments["repo"]), str(arguments["path"]), str(arguments["ref"]), token)
         return ToolResult(True, "Read GitHub file", observed_state_delta={"github_file": data})
 
 
@@ -307,6 +323,9 @@ class GitHubUpdateFileTool(_GitHubToolBase):
         dry = self.dry_run(arguments, state)
         if not dry.ok:
             return dry
+        token, error = _token_or_error(arguments)
+        if error:
+            return error
         try:
             updated = self.client.update_file(
                 str(arguments["repo"]),
@@ -316,7 +335,7 @@ class GitHubUpdateFileTool(_GitHubToolBase):
                 str(arguments["message"]),
                 expected_sha=str(arguments["expected_sha"]) if "expected_sha" in arguments else None,
                 expected_previous=str(arguments["expected_previous"]) if "expected_previous" in arguments else None,
-                token=_token(arguments),
+                token=token,
             )
         except LeosError as exc:
             return ToolResult(False, str(exc), error=exc)
@@ -370,6 +389,9 @@ class GitHubOpenPRTool(_GitHubToolBase):
         dry = self.dry_run(arguments, state)
         if not dry.ok:
             return dry
+        token, error = _token_or_error(arguments)
+        if error:
+            return error
         pr = self.client.open_pr(
             str(arguments["repo"]),
             str(arguments["title"]),
@@ -377,7 +399,7 @@ class GitHubOpenPRTool(_GitHubToolBase):
             str(arguments["head"]),
             str(arguments["base"]),
             idempotency_key=str(arguments["idempotency_key"]) if arguments.get("idempotency_key") else None,
-            token=_token(arguments),
+            token=token,
         )
         return ToolResult(
             True,
@@ -411,8 +433,11 @@ class GitHubCommentTool(_GitHubToolBase):
         dry = self.dry_run(arguments, state)
         if not dry.ok:
             return dry
+        token, error = _token_or_error(arguments)
+        if error:
+            return error
         comment = self.client.comment(
-            str(arguments["repo"]), int(arguments["issue_number"]), str(arguments["body"]), _token(arguments)
+            str(arguments["repo"]), int(arguments["issue_number"]), str(arguments["body"]), token
         )
         return ToolResult(
             True,
@@ -444,5 +469,8 @@ class GitHubCheckCIStatusTool(_GitHubToolBase):
         dry = self.dry_run(arguments, state)
         if not dry.ok:
             return dry
-        status = self.client.ci_status(str(arguments["repo"]), str(arguments["ref"]), _token(arguments))
+        token, error = _token_or_error(arguments)
+        if error:
+            return error
+        status = self.client.ci_status(str(arguments["repo"]), str(arguments["ref"]), token)
         return ToolResult(True, "Checked GitHub CI status", observed_state_delta={"github_ci_status": status})
