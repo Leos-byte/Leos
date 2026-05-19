@@ -6,6 +6,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 from .audit import AuditAnomalyDetector
 from .core import (
@@ -35,7 +36,6 @@ from .proof import exit_code_for_manifest, generate_proofs
 from .task_queue import TaskQueue, TaskRunner
 from .trace_viewer import render_trace_html, render_trace_markdown
 
-
 # ── CLI error-handling helpers ────────────────────────────────────────
 
 
@@ -48,17 +48,17 @@ def _check_file_exists(file_path: str) -> Path | None:
     return path
 
 
-def _load_json_file(file_path: str) -> tuple[dict | None, int | None]:
+def _load_json_file(file_path: str) -> tuple[dict[str, Any] | None, int]:
     """Load and parse a JSON file from *file_path*.
 
-    Returns (data, None) on success or (None, exit_code) on failure.
+    Returns (data, 0) on success or (None, exit_code) on failure.
     """
     path = _check_file_exists(file_path)
     if path is None:
         return None, 2
     try:
         with open(path) as f:
-            return json.load(f), None
+            return json.load(f), 0
     except FileNotFoundError:
         print(f"Error: file not found: {file_path}", file=sys.stderr)
         return None, 2
@@ -251,10 +251,9 @@ def main() -> int:
 
 
 def _validate_policy(file_path: str, *, secret: str | None = None) -> int:
-    result = _load_json_file(file_path)
-    if result[0] is None:
-        return result[1]  # type: ignore[return-value]
-    data = result[0]
+    data, exit_code = _load_json_file(file_path)
+    if data is None:
+        return exit_code
 
     if secret is not None:
         try:
@@ -375,10 +374,9 @@ def _run(
     principal: str | None = None,
     cli_secrets: list[str] | None = None,
 ) -> int:
-    result = _load_json_file(file_path)
-    if result[0] is None:
-        return result[1]  # type: ignore[return-value]
-    data = result[0]
+    data, exit_code = _load_json_file(file_path)
+    if data is None:
+        return exit_code
 
     schema_issues = validate_task_file(data)
     if schema_issues:
@@ -482,10 +480,9 @@ def _run(
 
 
 def _sign_policy(file_path: str, secret: str, output: str | None) -> int:
-    result = _load_json_file(file_path)
-    if result[0] is None:
-        return result[1]  # type: ignore[return-value]
-    policy_data = result[0]
+    policy_data, exit_code = _load_json_file(file_path)
+    if policy_data is None:
+        return exit_code
     manifest = sign_policy(policy_data, secret)
     output_json = manifest_to_json(manifest)
     if output:
@@ -514,10 +511,9 @@ def _audit_check(file_path: str) -> int:
 
 
 def _validate_task(file_path: str, workspace: str) -> int:
-    result = _load_json_file(file_path)
-    if result[0] is None:
-        return result[1]  # type: ignore[return-value]
-    data = result[0]
+    data, exit_code = _load_json_file(file_path)
+    if data is None:
+        return exit_code
     issues = validate_task_file(data)
     if issues:
         for issue in issues:

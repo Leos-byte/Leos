@@ -106,7 +106,7 @@ class AgentLoop:
         progress: GoalProgress | None = None
         evaluation: GoalEvaluation | None = None
         current_goal = goal
-        stop_reason = "max_iterations_reached"
+        stop_reason: str | None = None
 
         for iteration in range(1, self.config.max_iterations + 1):
             self.audit_log.record(
@@ -203,14 +203,15 @@ class AgentLoop:
             self._write_iteration_memory(current_goal, iteration, progress)
 
             if self.config.use_goal_evaluator:
-                stop_reason = self._evaluation_stop_reason(evaluation)
+                iteration_stop_reason = self._evaluation_stop_reason(evaluation)
             else:
-                stop_reason = self._stop_reason(current_goal)
-            if stop_reason:
+                iteration_stop_reason = self._stop_reason(current_goal)
+            if iteration_stop_reason:
+                stop_reason = iteration_stop_reason
                 break
-            # Only set max_iterations fallback if we haven't already found a stop reason
-            if not stop_reason:
-                stop_reason = "max_iterations_reached"
+
+        if stop_reason is None:
+            stop_reason = "max_iterations_reached"
 
         iterations = (
             len(selected_plans)
