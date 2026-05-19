@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Protocol, cast
 
@@ -14,6 +14,7 @@ from .goals import Goal, GoalProgress
 from .kernel import AgentKernel
 from .memory import MemoryStore, MemoryType
 from .plans import PlanProposal, TransactionPlan
+from .runtime_store import RuntimeStore
 from .state import WorldState
 from .tools import ToolRegistry
 
@@ -79,6 +80,7 @@ class AgentLoop:
         audit_log: AuditLog | None = None,
         config: AgentLoopConfig | None = None,
         goal_evaluator: GoalEvaluator | None = None,
+        runtime_store: RuntimeStore | None = None,
     ) -> None:
         self.kernel = kernel
         self.proposal_provider = proposal_provider
@@ -86,6 +88,7 @@ class AgentLoop:
         self.audit_log = audit_log or kernel.audit_log
         self.config = config or AgentLoopConfig()
         self.goal_evaluator = goal_evaluator or GoalEvaluator()
+        self.runtime_store = runtime_store
 
     def run(self, goal: Goal) -> AgentLoopResult:
         self.audit_log.record(
@@ -94,6 +97,11 @@ class AgentLoop:
             goal_id=goal.goal_id,
             max_iterations=self.config.max_iterations,
         )
+
+        def save_goal(store: RuntimeStore) -> None:
+            store.save_goal(goal)
+
+        self._store("save_goal", save_goal)
         selected_plans: list[TransactionPlan] = []
         progress: GoalProgress | None = None
         evaluation: GoalEvaluation | None = None
@@ -108,6 +116,22 @@ class AgentLoop:
                 iteration=iteration,
                 state_keys=sorted(self.kernel.state.facts),
             )
+
+            def append_iteration_event(
+                store: RuntimeStore,
+                iteration: int = iteration,
+                current_goal: Goal = current_goal,
+            ) -> None:
+                store.append_runtime_event(
+                    {
+                        "event_type": "loop.iteration_started",
+                        "goal_id": current_goal.goal_id,
+                        "iteration": iteration,
+                        "state_keys": sorted(self.kernel.state.facts),
+                    }
+                )
+
+            self._store("append_runtime_event", append_iteration_event)
             self._recall_goal_memory(current_goal)
             proposals = self.proposal_provider.propose(current_goal, self.kernel.state, self.kernel.registry)
             if not proposals:
@@ -121,6 +145,11 @@ class AgentLoop:
 
             plan = planner_result.selected.plan
             selected_plans.append(plan)
+
+            def save_plan(store: RuntimeStore, plan: TransactionPlan = plan) -> None:
+                store.save_plan(plan)
+
+            self._store("save_plan", save_plan)
             self.audit_log.record(
                 "loop.plan_selected",
                 "Agent loop selected a plan",
@@ -194,6 +223,21 @@ class AgentLoop:
             stop_reason=stop_reason,
             goal_status=current_goal.status.value,
         )
+
+        def save_checkpoint(store: RuntimeStore) -> None:
+            store.save_checkpoint(
+                f"agent_loop:{current_goal.goal_id}:final",
+                {
+                    "goal_id": current_goal.goal_id,
+                    "stop_reason": stop_reason,
+                    "iterations": iterations,
+                    "final_status": current_goal.status.value,
+                    "evaluation_status": evaluation.status.value if evaluation is not None else None,
+                    "selected_plan_ids": [plan.plan_id for plan in selected_plans],
+                },
+            )
+
+        self._store("save_checkpoint", save_checkpoint)
         return AgentLoopResult(
             goal=current_goal,
             stop_reason=stop_reason,
@@ -202,6 +246,20 @@ class AgentLoop:
             progress=progress,
             evaluation=evaluation,
         )
+
+    def _store(self, operation: str, callback: Callable[[RuntimeStore], None]) -> None:
+        if self.runtime_store is None:
+            return
+        try:
+            callback(self.runtime_store)
+        except Exception as exc:  # noqa: BLE001
+            self.audit_log.record(
+                "loop.runtime_store_failed",
+                "Runtime store operation failed",
+                operation=operation,
+                error_type=type(exc).__name__,
+                reason=str(exc),
+            )
 
     def _recall_goal_memory(self, goal: Goal) -> None:
         memories = self.memory.recall(goal.goal_id, scope=self.config.memory_scope)

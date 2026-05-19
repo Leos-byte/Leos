@@ -1,0 +1,6 @@
+{
+  "name": "manifest_permission_mismatch",
+  "threat_model": "A manifest declares fewer permissions than the runtime tool actually needs.",
+  "expected": "manifest validation fails",
+  "severity": "high"
+}

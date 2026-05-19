@@ -96,6 +96,10 @@ network access or external APIs.
 | Docker sandbox runner | initial command-construction support |
 | Agent loop | implemented minimal observe-plan-act-verify loop |
 | Goal evaluation | deterministic success-criteria evaluator |
+| Tool manifest registry | implemented |
+| Evaluator registry | implemented |
+| Runtime store | in-memory and JSONL development store |
+| Credential vault | in-memory SecretHandle abstraction |
 | GitHub software-engineering tools | in-memory dry-run-first tool layer |
 | GitHub REST client | implemented with fake-transport tests; real writes gated |
 | GitHub issue-to-PR orchestration | AgentLoop dry-run path with fake REST transport |

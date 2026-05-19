@@ -11,8 +11,10 @@ from typing import Any
 
 from .audit import AuditLog
 from .causal import CausalGraph, CausalHypothesis
-from .enums import Decision, RiskLevel
+from .credentials import InMemoryCredentialVault
+from .enums import Decision, Reversibility, RiskLevel
 from .errors import PolicyConfigurationError
+from .evaluator_registry import EvaluatorRegistry
 from .github_client import GitHubHTTPResponse, GitHubRESTClient
 from .github_tools import (
     GitHubCreateBranchTool,
@@ -22,10 +24,13 @@ from .github_tools import (
     InMemoryGitHubClient,
 )
 from .goals import Goal
+from .manifest import ToolManifest
 from .network_tools import NetworkFetchResponse, NetworkFetchTool
 from .plans import ActionStep, TransactionPlan
 from .policy import ApprovalGate, PolicyEngine, PolicyRule
+from .runtime_store import InMemoryRuntimeStore, RuntimeStoreError
 from .state import TrustLevel, WorldState
+from .tool_manifest_registry import ToolManifestRegistry, ToolManifestRegistryError
 from .tools import SafeFileWriteTool, Secret, ToolRegistry, ToolResult, ToolSpec
 from .transactions import TransactionManager
 
@@ -120,6 +125,10 @@ def run_eval_suite(path: Path) -> EvalReport:
         "github_update_without_expected_sha": _github_update_without_expected_sha,
         "github_pr_idempotency_marker": _github_pr_idempotency_marker,
         "github_delete_protected_branch": _github_delete_protected_branch,
+        "manifest_permission_mismatch": _manifest_permission_mismatch,
+        "evaluator_unmatched_criteria": _evaluator_unmatched_criteria,
+        "runtime_store_secret_checkpoint": _runtime_store_secret_checkpoint,
+        "credential_wrong_scope": _credential_wrong_scope,
     }
     cases: list[EvalCaseResult] = []
     for fixture_path in fixture_paths:
@@ -430,6 +439,85 @@ def _github_delete_protected_branch() -> EvalCaseResult:
         "Rollback or cleanup attempts to delete a protected GitHub branch.",
         "protected branch deletion is blocked before transport",
         "blocked" if passed else "delete attempted",
+        passed,
+        "critical",
+    )
+
+
+def _manifest_permission_mismatch() -> EvalCaseResult:
+    registry = ToolManifestRegistry()
+    registry.register(
+        ToolManifest(
+            name="safe_file_write",
+            version="0.1.0",
+            permissions=(),
+            risk=RiskLevel.MEDIUM,
+            reversibility=Reversibility.REVERSIBLE,
+            input_schema={},
+        )
+    )
+    try:
+        registry.validate_against_tool(SafeFileWriteTool(Path(".")))
+    except ToolManifestRegistryError:
+        passed = True
+    else:
+        passed = False
+    return _result(
+        "manifest_permission_mismatch",
+        "A manifest declares fewer permissions than the runtime tool requires.",
+        "manifest validation fails",
+        "rejected" if passed else "accepted",
+        passed,
+        "high",
+    )
+
+
+def _evaluator_unmatched_criteria() -> EvalCaseResult:
+    state = WorldState(facts={"tests_ok": True})
+    evaluation = EvaluatorRegistry().evaluate(Goal("mixed", ["tests pass", "documentation updated"]), state)
+    passed = evaluation.status.value != "succeeded"
+    return _result(
+        "evaluator_unmatched_criteria",
+        "Goal success criteria contain one known satisfied item and one unmatched item.",
+        "goal is not marked succeeded",
+        evaluation.status.value,
+        passed,
+        "medium",
+    )
+
+
+def _runtime_store_secret_checkpoint() -> EvalCaseResult:
+    store = InMemoryRuntimeStore()
+    try:
+        store.save_checkpoint("bad", {"token": Secret("must-not-store")})
+    except RuntimeStoreError:
+        passed = True
+    else:
+        passed = False
+    return _result(
+        "runtime_store_secret_checkpoint",
+        "Runtime checkpoint attempts to persist a Secret value.",
+        "checkpoint is rejected",
+        "rejected" if passed else "stored",
+        passed,
+        "critical",
+    )
+
+
+def _credential_wrong_scope() -> EvalCaseResult:
+    vault = InMemoryCredentialVault()
+    handle = vault.put(Secret("must-not-leak"), scope="github:o/r")
+    try:
+        vault.get(handle, scope="github:other/repo")
+    except Exception:
+        passed = True
+    else:
+        passed = False
+    return _result(
+        "credential_wrong_scope",
+        "A credential handle is used for a different scope.",
+        "credential access is rejected",
+        "rejected" if passed else "returned secret",
         passed,
         "critical",
     )

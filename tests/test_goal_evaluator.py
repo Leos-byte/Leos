@@ -76,6 +76,39 @@ class GoalEvaluatorTests(unittest.TestCase):
 
         self.assertIs(evaluation.status, GoalEvaluationStatus.BLOCKED)
 
+    def test_unmatched_criterion_prevents_success(self) -> None:
+        state = WorldState(facts={"tests_ok": True})
+        goal = Goal("verify", ["tests pass", "documentation updated"])
+
+        evaluation = GoalEvaluator().evaluate(goal, state)
+
+        self.assertIs(evaluation.status, GoalEvaluationStatus.PARTIAL)
+        self.assertIn("documentation updated", evaluation.unsatisfied_criteria)
+
+    def test_tests_and_ci_success_succeeds(self) -> None:
+        state = WorldState(facts={"tests_ok": True, "github_ci_status": {"state": "success"}})
+        goal = Goal("verify", ["tests pass", "CI passed"])
+
+        evaluation = GoalEvaluator().evaluate(goal, state)
+
+        self.assertIs(evaluation.status, GoalEvaluationStatus.SUCCEEDED)
+
+    def test_tests_and_ci_failure_fails(self) -> None:
+        state = WorldState(facts={"tests_ok": True, "github_ci_status": {"state": "failure"}})
+        goal = Goal("verify", ["tests pass", "CI passed"])
+
+        evaluation = GoalEvaluator().evaluate(goal, state)
+
+        self.assertIs(evaluation.status, GoalEvaluationStatus.FAILED)
+
+    def test_tests_and_pr_open_succeeds(self) -> None:
+        state = WorldState(facts={"tests_ok": True, "github_pr": {"number": 1, "state": "open"}})
+        goal = Goal("verify", ["tests pass", "PR opened"])
+
+        evaluation = GoalEvaluator().evaluate(goal, state)
+
+        self.assertIs(evaluation.status, GoalEvaluationStatus.SUCCEEDED)
+
 
 if __name__ == "__main__":
     unittest.main()
