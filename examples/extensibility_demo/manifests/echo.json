@@ -1,0 +1,10 @@
+{
+  "name": "echo",
+  "version": "0.1.0",
+  "permissions": [],
+  "risk": "low",
+  "reversibility": "irreversible",
+  "input_schema": {},
+  "output_schema": {},
+  "secrets_allowed": false
+}

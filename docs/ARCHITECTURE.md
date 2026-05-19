@@ -75,6 +75,11 @@ Each tool must support:
 
 Developer tools are available through `default_dev_registry()`. High-risk tools such as test execution and network fetch are opt-in and remain subject to policy and approval.
 
+`ToolManifestRegistry` validates manifest-declared tool metadata against
+runtime `ToolSpec` values. A manifest is an auditable capability declaration and
+schema entry point; it does not approve a tool, instantiate a tool, or bypass
+`PolicyEngine`.
+
 GitHub software-engineering tools accept any implementation of the
 `GitHubClient` protocol. `InMemoryGitHubClient` is used for local demos and
 tests. `GitHubRESTClient` can call the real GitHub REST API through an injected
@@ -88,6 +93,20 @@ proposal reads the issue and target file through normal tools. Once those facts
 exist in `WorldState`, it proposes the branch/update/PR transaction, keeping the
 same `AgentLoop -> Planner -> TransactionManager -> PolicyEngine` path as other
 runtime actions.
+
+Goal evaluation is also registry-backed. `EvaluatorRegistry` groups
+domain-specific deterministic criteria rules, so new domains can add success
+evaluators without widening `GoalEvaluator`. Unmatched criteria remain
+unsatisfied and cannot be silently counted as success.
+
+Runtime progress can optionally be persisted with `RuntimeStore`.
+`InMemoryRuntimeStore` is for tests and demos; `JsonlRuntimeStore` is a
+development store for goals, plans, runtime events, and checkpoints. It is not a
+production database or strong-concurrency storage layer.
+
+Rollback credentials can be represented as `SecretHandle` values from a
+`CredentialVault`. The in-memory vault is a local development abstraction; a
+production deployment should use KMS, an OS keychain, or a cloud secret manager.
 
 ### 6. Memory and learning
 

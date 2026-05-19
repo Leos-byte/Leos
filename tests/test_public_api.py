@@ -137,6 +137,27 @@ class PublicAPITests(unittest.TestCase):
     def test_core_exports_github_issue_plan_provider(self) -> None:
         from leos_agent.core import GitHubIssuePlanConfig, GitHubIssuePlanProvider  # noqa: F401
 
+    def test_core_exports_extensibility_infrastructure(self) -> None:
+        from leos_agent.core import (  # noqa: F401
+            CredentialError,
+            CredentialExpiredError,
+            CredentialRevokedError,
+            CredentialScopeError,
+            CredentialVault,
+            CriterionEvaluation,
+            CriterionRule,
+            DomainEvaluator,
+            EvaluatorRegistry,
+            InMemoryCredentialVault,
+            InMemoryRuntimeStore,
+            JsonlRuntimeStore,
+            RuntimeStore,
+            RuntimeStoreError,
+            SecretHandle,
+            ToolManifestRegistry,
+            ToolManifestRegistryError,
+        )
+
     def test_package_exports_new_runtime_api(self) -> None:
         import leos_agent
 
@@ -144,6 +165,10 @@ class PublicAPITests(unittest.TestCase):
         self.assertTrue(hasattr(leos_agent, "GoalEvaluator"))
         self.assertTrue(hasattr(leos_agent, "GitHubIssuePlanProvider"))
         self.assertTrue(hasattr(leos_agent, "GitHubRESTClient"))
+        self.assertTrue(hasattr(leos_agent, "ToolManifestRegistry"))
+        self.assertTrue(hasattr(leos_agent, "EvaluatorRegistry"))
+        self.assertTrue(hasattr(leos_agent, "InMemoryRuntimeStore"))
+        self.assertTrue(hasattr(leos_agent, "InMemoryCredentialVault"))
         self.assertTrue(hasattr(leos_agent, "LocalHTTPModelClient"))
         self.assertTrue(hasattr(leos_agent, "InMemoryGitHubClient"))
 

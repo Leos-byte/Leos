@@ -20,6 +20,15 @@ from .causal import (
 )
 from .causal_contract import CausalContract, safe_file_write_causal_contract
 from .conflicts import Conflict, ConflictDetector, ConflictResolutionPolicy
+from .credentials import (
+    CredentialError,
+    CredentialExpiredError,
+    CredentialRevokedError,
+    CredentialScopeError,
+    CredentialVault,
+    InMemoryCredentialVault,
+    SecretHandle,
+)
 from .dev_tools import (
     GitDiffTool,
     ListFilesTool,
@@ -58,6 +67,12 @@ from .errors import (
     WorkspaceEscapeBlocked,
 )
 from .eval_runner import EvalReport, format_eval_report, render_eval_report_markdown, run_eval_suite, run_safety_evals
+from .evaluator_registry import (
+    CriterionEvaluation,
+    CriterionRule,
+    DomainEvaluator,
+    EvaluatorRegistry,
+)
 from .github_agent import GitHubIssuePlanConfig, GitHubIssuePlanProvider
 from .github_client import (
     GitHubAPIError,
@@ -144,6 +159,7 @@ from .prompts import (  # noqa: F401
 )
 from .proof import ProofManifest, exit_code_for_manifest, generate_proofs
 from .replay import AuditReplayer, ReplayResult, replay_audit_log
+from .runtime_store import InMemoryRuntimeStore, JsonlRuntimeStore, RuntimeStore, RuntimeStoreError
 from .sandbox import (  # noqa: F401
     ContainerSandboxRunner,
     DockerSandboxRunner,
@@ -174,6 +190,7 @@ from .task_queue import (
     TimeoutPolicy,
     Watchdog,
 )
+from .tool_manifest_registry import ToolManifestRegistry, ToolManifestRegistryError
 from .tools import (
     EchoTool,
     SafeFileWriteTool,
@@ -216,13 +233,22 @@ __all__ = [
     "ConflictResolutionPolicy",
     "CounterfactualReport",
     "CounterfactualReview",
+    "CredentialError",
+    "CredentialExpiredError",
+    "CredentialRevokedError",
+    "CredentialScopeError",
+    "CredentialVault",
+    "CriterionEvaluation",
+    "CriterionRule",
     "Decision",
     "DryRunFailed",
     "DockerSandboxRunner",
+    "DomainEvaluator",
     "DeterministicProposalProvider",
     "EchoTool",
     "EffectPrediction",
     "EvalReport",
+    "EvaluatorRegistry",
     "FakeBrowser",
     "FakeCalendar",
     "FakeEmailServer",
@@ -256,7 +282,10 @@ __all__ = [
     "GoalStatus",
     "IdempotencyConflict",
     "InMemoryGitHubClient",
+    "InMemoryCredentialVault",
+    "InMemoryRuntimeStore",
     "InvalidGoalTransition",
+    "JsonlRuntimeStore",
     "LeosError",
     "ListFilesTool",
     "LocalHTTPModelClient",
@@ -300,12 +329,15 @@ __all__ = [
     "RetryPolicy",
     "RollbackFailed",
     "RuntimeTask",
+    "RuntimeStore",
+    "RuntimeStoreError",
     "RunTestsTool",
     "SafeFileWriteTool",
     "SandboxCommand",
     "SandboxCommandTool",
     "SchemaValidationFailed",
     "Secret",
+    "SecretHandle",
     "SecretBoundaryViolation",
     "Secret",
     "SecretLeakedToUntrustedTool",
@@ -320,6 +352,8 @@ __all__ = [
     "TaskStatus",
     "Tool",
     "ToolManifest",
+    "ToolManifestRegistry",
+    "ToolManifestRegistryError",
     "ToolRegistry",
     "ToolResult",
     "ToolSpec",

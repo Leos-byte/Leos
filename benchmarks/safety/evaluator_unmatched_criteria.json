@@ -1,0 +1,6 @@
+{
+  "name": "evaluator_unmatched_criteria",
+  "threat_model": "Goal success has one satisfied deterministic criterion and one unmatched criterion.",
+  "expected": "goal is not marked succeeded",
+  "severity": "medium"
+}

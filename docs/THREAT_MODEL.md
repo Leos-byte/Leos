@@ -19,6 +19,10 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
 - GitHub API data and writes cross an external-service boundary.
 - GitHub REST responses are external observations; tokens are scoped `Secret`
   inputs and must not appear in audit, trace, stdout, or exceptions.
+- Tool manifests are capability declarations, not approval grants.
+- RuntimeStore data crosses a persistence boundary and must reject `Secret`
+  values in events and checkpoints.
+- CredentialVault handles are references to secrets, not secret values.
 - Human approval is a separate gate and cannot be declared by a model or policy file.
 
 ## Threats
@@ -51,6 +55,14 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
 - GitHub issue-to-PR orchestration uses the same `AgentLoop` and transaction
   path as local tools; the planner provider observes issue/file state before
   proposing write steps and never calls GitHub directly.
+- Tool manifest validation rejects mismatched permissions, weaker risk claims,
+  and secret access widening.
+- Goal evaluation is registry-backed; unmatched criteria are not treated as
+  satisfied.
+- RuntimeStore rejects `Secret` values in persisted runtime events and
+  checkpoints.
+- CredentialVault rejects wrong-scope, revoked, expired, and missing
+  `SecretHandle` values.
 
 ## Mitigations Still Missing
 - Production-grade container or microVM isolation with integration tests against a real runtime.
@@ -61,6 +73,10 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
 - Real GitHub token scope verification and deployment policy for production use.
 - Live GitHub issue-to-PR runs still need deployment policy, least-privilege
   token issuance, and operator approval UX beyond the fake-transport demo.
+- `JsonlRuntimeStore` is a development persistence layer and does not provide
+  production concurrency, migration, or retention guarantees.
+- `InMemoryCredentialVault` is not a production KMS, OS keychain, or cloud
+  secrets manager.
 
 ## Security Invariants
 - No high-risk or consequential action executes silently without policy/approval.
@@ -72,6 +88,8 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
   network transport is called.
 - GitHub file writes must provide `expected_sha` or `expected_previous`.
 - GitHub PR creation should use idempotency keys for retry safety.
+- RuntimeStore checkpoints and events must reject `Secret` values.
+- Credential handles must match scope and must fail after revoke or expiry.
 - Rollback failures must be visible in audit records.
 - External observations cannot override system, developer, or policy constraints.
 

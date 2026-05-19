@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
+from .credentials import CredentialError, CredentialVault, SecretHandle
 from .enums import CompensationStrategy, Permission, Reversibility, RiskLevel
 from .errors import DryRunFailed, LeosError, SecretBoundaryViolation
 from .state import WorldState
@@ -189,11 +190,16 @@ def _sha(content: str) -> str:
 
 
 def _token(arguments: Mapping[str, Any]) -> str | None:
+    value = _token_secret(arguments)
+    return value.unwrap() if value is not None else None
+
+
+def _token_secret(arguments: Mapping[str, Any]) -> Secret | None:
     value = arguments.get("token")
     if value is None:
         return None
     if isinstance(value, Secret):
-        return value.unwrap()
+        return value
     raise SecretBoundaryViolation("GitHub token must be passed as Secret, not a plain string")
 
 
@@ -202,6 +208,14 @@ def _token_or_error(arguments: Mapping[str, Any]) -> tuple[str | None, ToolResul
         return _token(arguments), None
     except SecretBoundaryViolation as exc:
         return None, ToolResult(False, str(exc), error=exc)
+
+
+def _token_with_secret_or_error(arguments: Mapping[str, Any]) -> tuple[str | None, Secret | None, ToolResult | None]:
+    try:
+        secret = _token_secret(arguments)
+        return secret.unwrap() if secret is not None else None, secret, None
+    except SecretBoundaryViolation as exc:
+        return None, None, ToolResult(False, str(exc), error=exc)
 
 
 def _require(arguments: Mapping[str, Any], *names: str) -> ToolResult | None:
@@ -214,25 +228,51 @@ def _require(arguments: Mapping[str, Any], *names: str) -> ToolResult | None:
 class _GitHubToolBase:
     spec: ToolSpec
 
-    def __init__(self, client: GitHubClient) -> None:
+    def __init__(self, client: GitHubClient, credential_vault: CredentialVault | None = None) -> None:
         self.client = client
+        self.credential_vault = credential_vault
         self._rollback_tokens: dict[str, str] = {}
 
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
         return ToolResult(True, "No rollback side effect")
 
-    def _remember_rollback_token(self, token: str | None) -> str | None:
-        if token is None:
-            return None
+    def _remember_rollback_credential(
+        self,
+        token: str | None,
+        token_secret: Secret | None,
+        repo: object,
+    ) -> dict[str, Any]:
+        if token is None and token_secret is None:
+            return {}
+        if self.credential_vault is not None and token_secret is not None:
+            handle = self.credential_vault.put(token_secret, scope=self._credential_scope(repo))
+            return {"auth_handle": handle.to_dict()}
         token_id = str(uuid.uuid4())
-        self._rollback_tokens[token_id] = token
-        return token_id
+        self._rollback_tokens[token_id] = str(token)
+        return {"auth_token_id": token_id}
 
-    def _pop_rollback_token(self, token: Mapping[str, Any]) -> str | None:
+    def _rollback_auth_token(self, token: Mapping[str, Any]) -> tuple[str | None, ToolResult | None]:
+        if "auth_handle" in token:
+            if self.credential_vault is None:
+                return None, ToolResult(False, "Credential vault is not available for rollback")
+            try:
+                handle = SecretHandle.from_dict(dict(token["auth_handle"]))
+                secret = self.credential_vault.get(handle, scope=self._credential_scope(token.get("repo", "")))
+            except (CredentialError, KeyError, TypeError, ValueError) as exc:
+                return None, ToolResult(
+                    False,
+                    f"Rollback credential unavailable: {type(exc).__name__}",
+                    error=exc if isinstance(exc, LeosError) else None,
+                )
+            return secret.unwrap(), None
         token_id = token.get("auth_token_id")
         if token_id is None:
-            return None
-        return self._rollback_tokens.pop(str(token_id), None)
+            return None, None
+        return self._rollback_tokens.pop(str(token_id), None), None
+
+    @staticmethod
+    def _credential_scope(repo: object) -> str:
+        return f"github:{repo}"
 
 
 def _rollback_token(**items: Any) -> dict[str, Any]:
@@ -261,7 +301,7 @@ class GitHubReadIssueTool(_GitHubToolBase):
         dry = self.dry_run(arguments, state)
         if not dry.ok:
             return dry
-        token, error = _token_or_error(arguments)
+        token, token_secret, error = _token_with_secret_or_error(arguments)
         if error:
             return error
         try:
@@ -291,7 +331,7 @@ class GitHubCreateBranchTool(_GitHubToolBase):
         dry = self.dry_run(arguments, state)
         if not dry.ok:
             return dry
-        token, error = _token_or_error(arguments)
+        token, token_secret, error = _token_with_secret_or_error(arguments)
         if error:
             return error
         try:
@@ -310,13 +350,16 @@ class GitHubCreateBranchTool(_GitHubToolBase):
             rollback_token=_rollback_token(
                 repo=arguments["repo"],
                 branch=arguments["branch"],
-                auth_token_id=self._remember_rollback_token(token),
+                **self._remember_rollback_credential(token, token_secret, arguments["repo"]),
             ),
         )
 
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
+        auth_token, error = self._rollback_auth_token(token)
+        if error:
+            return error
         try:
-            self.client.delete_branch(str(token["repo"]), str(token["branch"]), self._pop_rollback_token(token))
+            self.client.delete_branch(str(token["repo"]), str(token["branch"]), auth_token)
         except LeosError as exc:
             return _tool_error(exc)
         return ToolResult(True, "Deleted GitHub branch")
@@ -377,7 +420,7 @@ class GitHubUpdateFileTool(_GitHubToolBase):
         dry = self.dry_run(arguments, state)
         if not dry.ok:
             return dry
-        token, error = _token_or_error(arguments)
+        token, token_secret, error = _token_with_secret_or_error(arguments)
         if error:
             return error
         try:
@@ -403,14 +446,16 @@ class GitHubUpdateFileTool(_GitHubToolBase):
                 "path": arguments["path"],
                 "branch": arguments["branch"],
                 "previous": previous,
-                **_rollback_token(auth_token_id=self._remember_rollback_token(token)),
+                **self._remember_rollback_credential(token, token_secret, arguments["repo"]),
             },
         )
 
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
         previous = token.get("previous")
         if isinstance(previous, dict):
-            auth_token = self._pop_rollback_token(token)
+            auth_token, error = self._rollback_auth_token(token)
+            if error:
+                return error
             try:
                 current = self.client.get_file(
                     str(token["repo"]),
@@ -453,7 +498,7 @@ class GitHubOpenPRTool(_GitHubToolBase):
         dry = self.dry_run(arguments, state)
         if not dry.ok:
             return dry
-        token, error = _token_or_error(arguments)
+        token, token_secret, error = _token_with_secret_or_error(arguments)
         if error:
             return error
         try:
@@ -475,13 +520,16 @@ class GitHubOpenPRTool(_GitHubToolBase):
             rollback_token=_rollback_token(
                 repo=arguments["repo"],
                 pr_number=pr["number"],
-                auth_token_id=self._remember_rollback_token(token),
+                **self._remember_rollback_credential(token, token_secret, arguments["repo"]),
             ),
         )
 
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
+        auth_token, error = self._rollback_auth_token(token)
+        if error:
+            return error
         try:
-            self.client.close_pr(str(token["repo"]), int(token["pr_number"]), self._pop_rollback_token(token))
+            self.client.close_pr(str(token["repo"]), int(token["pr_number"]), auth_token)
         except LeosError as exc:
             return _tool_error(exc)
         return ToolResult(True, "Closed GitHub PR")
@@ -507,7 +555,7 @@ class GitHubCommentTool(_GitHubToolBase):
         dry = self.dry_run(arguments, state)
         if not dry.ok:
             return dry
-        token, error = _token_or_error(arguments)
+        token, token_secret, error = _token_with_secret_or_error(arguments)
         if error:
             return error
         try:
@@ -523,13 +571,16 @@ class GitHubCommentTool(_GitHubToolBase):
             rollback_token=_rollback_token(
                 repo=arguments["repo"],
                 comment_id=comment["id"],
-                auth_token_id=self._remember_rollback_token(token),
+                **self._remember_rollback_credential(token, token_secret, arguments["repo"]),
             ),
         )
 
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
+        auth_token, error = self._rollback_auth_token(token)
+        if error:
+            return error
         try:
-            self.client.delete_comment(str(token["repo"]), int(token["comment_id"]), self._pop_rollback_token(token))
+            self.client.delete_comment(str(token["repo"]), int(token["comment_id"]), auth_token)
         except LeosError as exc:
             return _tool_error(exc)
         return ToolResult(True, "Deleted GitHub comment")
