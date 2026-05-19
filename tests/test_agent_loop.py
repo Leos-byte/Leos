@@ -149,6 +149,25 @@ class AgentLoopTests(unittest.TestCase):
 
         self.assertLessEqual(result.iterations, 2)
 
+    def test_partial_goal_evaluation_replans_until_max_iterations(self) -> None:
+        registry = ToolRegistry()
+        registry.register(TestResultTool(True))
+        kernel = self._kernel(registry)
+        goal = Goal("verify", ["tests pass", "documentation updated"], stop_conditions=["stop"])
+        proposal = PlanProposal([ActionStep("test_result", {}, "record")], "record")
+        provider = DeterministicProposalProvider([[proposal], [proposal]])
+
+        result = AgentLoop(
+            kernel,
+            provider,
+            config=AgentLoopConfig(max_iterations=2),
+        ).run(goal)
+
+        self.assertEqual(provider.calls, 2)
+        self.assertEqual(result.iterations, 2)
+        self.assertEqual(result.stop_reason, "max_iterations_reached")
+        self.assertFalse(result.succeeded)
+
     def test_blocked_step_stops_loop(self) -> None:
         registry = ToolRegistry()
         tool = BlockedTool()
