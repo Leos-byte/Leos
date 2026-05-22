@@ -101,6 +101,8 @@ class InMemoryGitHubClient:
 
     def delete_branch(self, repo: str, branch: str, token: str | None = None) -> None:
         self._record_token(token)
+        if branch in {"main", "master", "trunk", "release"}:
+            raise LeosError(f"Refusing to delete protected branch '{branch}'")
         self.branches.pop((repo, branch), None)
         for key in list(self.files):
             if key[0] == repo and key[1] == branch:

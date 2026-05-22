@@ -225,10 +225,16 @@ class GitHubRESTClient:
         previous: dict[str, Any] | None = None
         sha = expected_sha
         if expected_previous is not None:
-            previous = self.get_file(repo, path, branch, token=token)
-            if previous.get("content") != expected_previous:
-                raise GitHubConflictError("expected_previous mismatch")
-            sha = str(previous.get("sha", ""))
+            try:
+                previous = self.get_file(repo, path, branch, token=token)
+            except GitHubNotFoundError as exc:
+                if expected_previous != "":
+                    raise GitHubConflictError("expected_previous mismatch") from exc
+                previous = None
+            else:
+                if previous.get("content") != expected_previous:
+                    raise GitHubConflictError("expected_previous mismatch")
+                sha = str(previous.get("sha", ""))
         encoded = base64.b64encode(content.encode("utf-8")).decode("ascii")
         body: dict[str, Any] = {
             "message": message,

@@ -7,6 +7,13 @@ continues to work for existing callers.
 from __future__ import annotations
 
 from .agent_loop import AgentLoop, AgentLoopConfig, AgentLoopResult, DeterministicProposalProvider, ProposalProvider
+from .approval import (
+    ApprovalDecision,
+    ApprovalDecisionValue,
+    ApprovalPacket,
+    render_approval_packet_html,
+    render_approval_packet_markdown,
+)
 from .audit import AuditEvent, AuditLog
 from .causal import (
     ActionConsequence,
@@ -44,6 +51,7 @@ from .enums import (
     Permission,
     Reversibility,
     RiskLevel,
+    SandboxPolicy,
     StepStatus,
     TaskStatus,
 )
@@ -97,7 +105,7 @@ from .github_tools import (
     InMemoryGitHubClient,
 )
 from .goal_evaluator import GoalEvaluation, GoalEvaluationStatus, GoalEvaluator
-from .goals import Goal, ResourceBudget
+from .goals import Goal, GoalCriterion, ResourceBudget
 from .kernel import AgentKernel
 from .manifest import (
     ToolManifest,
@@ -166,6 +174,7 @@ from .prompts import (  # noqa: F401
     PromptTemplate,
 )
 from .proof import ProofManifest, exit_code_for_manifest, generate_proofs
+from .replanning import FailureAnalysis, FailureAnalyzer, FailureType, PlanRepairStrategy, ReplanContext
 from .replay import AuditReplayer, ReplayResult, replay_audit_log
 from .runtime_store import InMemoryRuntimeStore, JsonlRuntimeStore, RuntimeStore, RuntimeStoreError
 from .sandbox import (  # noqa: F401
@@ -229,7 +238,10 @@ __all__ = [
     "AgentLoopResult",
     "AgentKernel",
     "AnthropicModelClient",
+    "ApprovalDecision",
+    "ApprovalDecisionValue",
     "ApprovalGate",
+    "ApprovalPacket",
     "ApprovalRequest",
     "AuditEvent",
     "AuditLog",
@@ -293,11 +305,15 @@ __all__ = [
     "GitHubTransport",
     "GitHubUpdateFileTool",
     "Goal",
+    "GoalCriterion",
     "GoalEvaluation",
     "GoalEvaluationStatus",
     "GoalEvaluator",
     "GoalStatus",
     "IdempotencyConflict",
+    "FailureAnalysis",
+    "FailureAnalyzer",
+    "FailureType",
     "InMemoryGitHubClient",
     "InMemoryCredentialVault",
     "InMemoryRuntimeStore",
@@ -322,6 +338,7 @@ __all__ = [
     "PatchFileTool",
     "Permission",
     "PlanCandidate",
+    "PlanRepairStrategy",
     "PlanProposal",
     "PlanScore",
     "Planner",
@@ -341,6 +358,7 @@ __all__ = [
     "RiskLevel",
     "ReplayResult",
     "ResourceBudget",
+    "ReplanContext",
     "ReadFileTool",
     "RetryPolicy",
     "RollbackFailed",
@@ -351,6 +369,7 @@ __all__ = [
     "SafeFileWriteTool",
     "SandboxCommand",
     "SandboxCommandTool",
+    "SandboxPolicy",
     "SanitizationError",
     "SanitizationMode",
     "SchemaValidationFailed",
@@ -400,6 +419,8 @@ __all__ = [
     "make_untrusted_observation",
     "replay_audit_log",
     "render_eval_report_markdown",
+    "render_approval_packet_html",
+    "render_approval_packet_markdown",
     "render_trace_html",
     "render_trace_markdown",
     "run_safety_evals",

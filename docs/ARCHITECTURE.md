@@ -180,11 +180,20 @@ replan or stop
 - Add anomaly detection over audit logs.
 - Add replay tests for known failures.
 - Add external red-team suites for prompt injection and tool injection.
+- Use `production_locked_down` for fail-closed local production simulations:
+  typed goal criteria are required, medium+ tools need causal contracts,
+  timeout, and output schema, and workspace subprocess execution is blocked as
+  a production isolation boundary.
+- Use approval packets for consequential human-gated actions. Approval is bound
+  to the exact step hash, profile, expiry, goal, plan, tool, permissions, risk,
+  and causal contract summary.
 
 ## Current readiness boundaries
 
 - Implemented: local dev tools, network trust boundaries, safety evals, proof generation, task queue persistence.
 - Implemented with fake-transport tests: GitHub REST client for issue/file/branch/PR/comment/CI workflows and issue-to-PR AgentLoop orchestration.
+- Implemented: production locked-down policy checks, typed goal criteria,
+  bounded failure-driven replanning, and anti-replay approval packets.
 - Partial: causal contract runtime enforcement. The causal model is
   tool-contract verification, not a full structural causal model.
 - Opt-in: Docker/Podman sandboxing requires a local container runtime and is

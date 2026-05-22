@@ -109,6 +109,43 @@ class GoalEvaluatorTests(unittest.TestCase):
 
         self.assertIs(evaluation.status, GoalEvaluationStatus.SUCCEEDED)
 
+    def test_typed_equals_success(self) -> None:
+        goal = Goal("verify", ["tests pass"], criteria=({"key": "tests_ok", "op": "equals", "value": True},))
+
+        evaluation = GoalEvaluator().evaluate(goal, WorldState(facts={"tests_ok": True}))
+
+        self.assertIs(evaluation.status, GoalEvaluationStatus.SUCCEEDED)
+        self.assertIn("tests_ok equals", evaluation.satisfied_criteria)
+
+    def test_typed_in_success(self) -> None:
+        goal = Goal(
+            "verify",
+            ["CI passed"],
+            criteria=({"key": "ci_status", "op": "in", "value": ["success", "skipped"]},),
+        )
+
+        evaluation = GoalEvaluator().evaluate(
+            goal,
+            WorldState(facts={"ci_status": "success", "github_ci_status": {"state": "success"}}),
+        )
+
+        self.assertIs(evaluation.status, GoalEvaluationStatus.SUCCEEDED)
+
+    def test_missing_required_typed_criterion_fails(self) -> None:
+        goal = Goal("verify", ["tests pass"], criteria=({"key": "tests_ok", "op": "equals", "value": True},))
+
+        evaluation = GoalEvaluator().evaluate(goal, WorldState())
+
+        self.assertIs(evaluation.status, GoalEvaluationStatus.FAILED)
+
+    def test_failed_tests_cannot_be_interpreted_as_success(self) -> None:
+        progress = GoalProgress(total_steps=1, verified_steps=1)
+        goal = Goal("verify", ["do the task"], criteria=({"key": "tests_ok", "op": "equals", "value": True},))
+
+        evaluation = GoalEvaluator().evaluate(goal, WorldState(facts={"tests_ok": False}), progress)
+
+        self.assertIs(evaluation.status, GoalEvaluationStatus.FAILED)
+
 
 if __name__ == "__main__":
     unittest.main()

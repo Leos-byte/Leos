@@ -14,6 +14,7 @@ from .goals import Goal, GoalProgress
 from .kernel import AgentKernel
 from .memory import MemoryStore, MemoryType
 from .plans import PlanProposal, TransactionPlan
+from .replanning import FailureAnalysis, FailureAnalyzer, FailureAwareProposalProvider, FailureType, ReplanContext
 from .runtime_store import RuntimeStore
 from .state import WorldState
 from .tools import ToolRegistry
@@ -28,12 +29,18 @@ class ProposalProvider(Protocol):
 @dataclass(frozen=True)
 class AgentLoopConfig:
     max_iterations: int = 3
+    max_replans: int = 1
+    max_tool_calls: int | None = None
     memory_scope: str = "agent_loop"
     use_goal_evaluator: bool = True
 
     def __post_init__(self) -> None:
         if self.max_iterations < 1:
             raise ValueError("max_iterations must be >= 1")
+        if self.max_replans < 0:
+            raise ValueError("max_replans must be >= 0")
+        if self.max_tool_calls is not None and self.max_tool_calls < 1:
+            raise ValueError("max_tool_calls must be >= 1 when set")
 
 
 @dataclass
@@ -44,6 +51,7 @@ class AgentLoopResult:
     selected_plans: list[TransactionPlan] = field(default_factory=list)
     progress: GoalProgress | None = None
     evaluation: GoalEvaluation | None = None
+    failure_analyses: list[FailureAnalysis] = field(default_factory=list)
 
     @property
     def succeeded(self) -> bool:
@@ -81,6 +89,7 @@ class AgentLoop:
         config: AgentLoopConfig | None = None,
         goal_evaluator: GoalEvaluator | None = None,
         runtime_store: RuntimeStore | None = None,
+        failure_analyzer: FailureAnalyzer | None = None,
     ) -> None:
         self.kernel = kernel
         self.proposal_provider = proposal_provider
@@ -89,6 +98,7 @@ class AgentLoop:
         self.config = config or AgentLoopConfig()
         self.goal_evaluator = goal_evaluator or GoalEvaluator()
         self.runtime_store = runtime_store
+        self.failure_analyzer = failure_analyzer or FailureAnalyzer()
 
     def run(self, goal: Goal) -> AgentLoopResult:
         self.audit_log.record(
@@ -107,6 +117,10 @@ class AgentLoop:
         evaluation: GoalEvaluation | None = None
         current_goal = goal
         stop_reason: str | None = None
+        replan_attempts = 0
+        tool_calls_used = 0
+        pending_repair_proposals: list[PlanProposal] | None = None
+        failure_analyses: list[FailureAnalysis] = []
 
         for iteration in range(1, self.config.max_iterations + 1):
             self.audit_log.record(
@@ -133,17 +147,70 @@ class AgentLoop:
 
             self._store("append_runtime_event", append_iteration_event)
             self._recall_goal_memory(current_goal)
-            proposals = self.proposal_provider.propose(current_goal, self.kernel.state, self.kernel.registry)
+            if pending_repair_proposals is not None:
+                proposals = pending_repair_proposals
+                pending_repair_proposals = None
+            else:
+                proposals = self.proposal_provider.propose(current_goal, self.kernel.state, self.kernel.registry)
             if not proposals:
                 stop_reason = "no_plan"
                 break
 
-            planner_result = self.kernel.plan(current_goal, proposals)
+            try:
+                planner_result = self.kernel.plan(current_goal, proposals)
+            except KeyError as exc:
+                if replan_attempts < self.config.max_replans and self._has_repair_provider():
+                    analysis = FailureAnalysis(
+                        FailureType.UNKNOWN_TOOL,
+                        str(exc),
+                        True,
+                        "choose a registered tool",
+                        {"error_type": type(exc).__name__},
+                    )
+                    failure_analyses.append(analysis)
+                    replan_attempts += 1
+                    self.audit_log.record(
+                        "loop.failure_analyzed",
+                        "Agent loop analyzed a planning failure",
+                        goal_id=current_goal.goal_id,
+                        iteration=iteration,
+                        failure_type=analysis.failure_type.value,
+                        root_cause=analysis.root_cause,
+                        retryable=analysis.retryable,
+                        suggested_strategy=analysis.suggested_strategy,
+                        evidence=analysis.evidence,
+                    )
+                    pending_repair_proposals = self._propose_repair(
+                        ReplanContext(
+                            goal=current_goal,
+                            failed_plan=TransactionPlan(current_goal, []),
+                            analysis=analysis,
+                            replan_attempt=replan_attempts,
+                        )
+                    )
+                    if pending_repair_proposals:
+                        continue
+                stop_reason = "no_satisfactory_plan"
+                break
             if planner_result.selected is None:
                 stop_reason = "no_satisfactory_plan"
                 break
 
             plan = planner_result.selected.plan
+            attempted_tool_calls = tool_calls_used + len(plan.steps)
+            if self.config.max_tool_calls is not None and attempted_tool_calls > self.config.max_tool_calls:
+                stop_reason = "tool_call_budget_exceeded"
+                self.audit_log.record(
+                    "loop.tool_call_budget_exceeded",
+                    "Agent loop stopped before selected plan exceeded tool call budget",
+                    goal_id=current_goal.goal_id,
+                    iteration=iteration,
+                    plan_id=plan.plan_id,
+                    max_tool_calls=self.config.max_tool_calls,
+                    attempted_tool_calls=attempted_tool_calls,
+                )
+                break
+            tool_calls_used += len(plan.steps)
             selected_plans.append(plan)
 
             def save_plan(store: RuntimeStore, plan: TransactionPlan = plan) -> None:
@@ -207,6 +274,44 @@ class AgentLoop:
             else:
                 iteration_stop_reason = self._stop_reason(current_goal)
             if iteration_stop_reason:
+                if (
+                    iteration_stop_reason in {"goal_failed", "goal_blocked"}
+                    and replan_attempts < self.config.max_replans
+                    and self._has_repair_provider()
+                ):
+                    analysis = self.failure_analyzer.analyze(executed, self.audit_log)
+                    failure_analyses.append(analysis)
+                    self.audit_log.record(
+                        "loop.failure_analyzed",
+                        "Agent loop analyzed a failed plan",
+                        goal_id=current_goal.goal_id,
+                        iteration=iteration,
+                        failure_type=analysis.failure_type.value,
+                        root_cause=analysis.root_cause,
+                        retryable=analysis.retryable,
+                        suggested_strategy=analysis.suggested_strategy,
+                        evidence=analysis.evidence,
+                    )
+                    if analysis.retryable:
+                        replan_attempts += 1
+                        context = ReplanContext(
+                            goal=current_goal,
+                            failed_plan=executed,
+                            analysis=analysis,
+                            replan_attempt=replan_attempts,
+                        )
+                        pending_repair_proposals = self._propose_repair(context)
+                        if pending_repair_proposals:
+                            self.audit_log.record(
+                                "loop.replan_requested",
+                                "Agent loop requested a bounded repair plan",
+                                goal_id=current_goal.goal_id,
+                                iteration=iteration,
+                                replan_attempt=replan_attempts,
+                                proposal_count=len(pending_repair_proposals),
+                                failure_type=analysis.failure_type.value,
+                            )
+                            continue
                 stop_reason = iteration_stop_reason
                 break
 
@@ -248,7 +353,15 @@ class AgentLoop:
             selected_plans=selected_plans,
             progress=progress,
             evaluation=evaluation,
+            failure_analyses=failure_analyses,
         )
+
+    def _has_repair_provider(self) -> bool:
+        return callable(getattr(self.proposal_provider, "propose_repair", None))
+
+    def _propose_repair(self, context: ReplanContext) -> list[PlanProposal]:
+        provider = cast(FailureAwareProposalProvider, self.proposal_provider)
+        return provider.propose_repair(context, context.goal, self.kernel.state, self.kernel.registry)
 
     def _store(self, operation: str, callback: Callable[[RuntimeStore], None]) -> None:
         if self.runtime_store is None:

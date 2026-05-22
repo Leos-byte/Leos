@@ -50,6 +50,7 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 python -m unittest discover -s tests
 leos eval --suite safety
+PYTHONPATH=src:. python -m benchmarks.runner
 python scripts/generate_proofs.py
 ```
 
@@ -64,6 +65,7 @@ coverage run -m unittest discover -s tests
 coverage report --fail-under=83
 bandit -r src
 leos eval --suite safety
+make bench
 python scripts/generate_proofs.py --output docs/proofs --allow-dirty
 ```
 
@@ -106,6 +108,9 @@ network access or external APIs.
 | GitHub software-engineering tools | in-memory dry-run-first tool layer |
 | GitHub REST client | implemented with fake-transport tests; real writes gated |
 | GitHub issue-to-PR orchestration | AgentLoop dry-run path with fake REST transport |
+| Production locked-down policy | fail-closed profile for typed goals, strong sandbox, schemas, and causal contracts |
+| Approval packets | anti-replay packet binding for human-gated consequential actions |
+| Failure-driven replanning | bounded repair loop for selected failure classes |
 | Local software engineering demo | implemented, no network/API token required |
 | Safety benchmark fixtures | implemented for regression loading |
 | Safety eval suite | implemented regression suite |
@@ -138,6 +143,13 @@ Audit, trace rendering, runtime events, and checkpoints share a sanitization
 boundary that rejects or redacts `Secret`, `SecretHandle`-unsafe payloads, and
 common token-like strings. `InMemoryGitHubClient` keeps only token fingerprints
 and counts for test evidence, never raw token strings.
+
+Real GitHub writes are disabled by default. The gated smoke path requires
+`LEOS_ENABLE_REAL_GITHUB_WRITES=1`, a test repository, and a token secret
+reference. It writes only through GitHub tools under `PolicyEngine`,
+`ApprovalGate`, and `TransactionManager`, uses optimistic guards and PR
+idempotency markers, and is exposed only through a `workflow_dispatch` GitHub
+Actions workflow.
 
 Run the end-to-end GitHub issue orchestration demo:
 
@@ -188,6 +200,12 @@ Transaction verification and goal evaluation are intentionally separate.
 Transaction verification checks whether an action produced its predicted effect.
 `GoalEvaluator` checks whether the user's explicit success criteria are actually
 satisfied, such as `tests_ok=True` for a "tests pass" goal.
+In `production_locked_down`, goals must include typed criteria so completion
+cannot depend on natural-language self-assessment alone.
+
+Approval packets bind approval to the exact goal, plan, step, arguments,
+permissions, risk, causal contract hash, profile, and expiry. An approval for
+one action cannot be replayed onto a different tool call or changed arguments.
 
 ## Extension points
 

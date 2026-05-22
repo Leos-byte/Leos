@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
+from typing import Any
 
 from .enums import GoalStatus, RiskLevel
 from .errors import InvalidGoalTransition
@@ -79,11 +80,58 @@ class RuntimeMetrics:
 
 
 @dataclass(frozen=True)
+class GoalCriterion:
+    """Typed success criterion evaluated against observed world state."""
+
+    key: str
+    op: str
+    value: Any = None
+    source: str | None = None
+    required: bool = True
+
+    def __post_init__(self) -> None:
+        if not self.key:
+            raise ValueError("GoalCriterion key must be non-empty")
+        if self.op not in {
+            "equals",
+            "not_equals",
+            "in",
+            "not_in",
+            "exists",
+            "missing",
+            "contains",
+            "greater_than",
+            "less_than",
+        }:
+            raise ValueError(f"Unsupported GoalCriterion op: {self.op}")
+
+    @classmethod
+    def from_mapping(cls, data: Mapping[str, Any]) -> GoalCriterion:
+        return cls(
+            key=str(data["key"]),
+            op=str(data["op"]),
+            value=data.get("value"),
+            source=str(data["source"]) if data.get("source") is not None else None,
+            required=bool(data.get("required", True)),
+        )
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "key": self.key,
+            "op": self.op,
+            "value": self.value,
+            "source": self.source,
+            "required": self.required,
+        }
+
+
+@dataclass(frozen=True)
 class Goal:
     """A user or system goal with explicit success and stop conditions."""
 
     description: str
     success_criteria: Sequence[str]
+    criteria: Sequence[GoalCriterion | Mapping[str, Any]] = ()
     constraints: Sequence[str] = ()
     stop_conditions: Sequence[str] = ()
     priority: int = 5
@@ -95,6 +143,14 @@ class Goal:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "status", GoalStatus(self.status))
+        object.__setattr__(
+            self,
+            "criteria",
+            tuple(
+                criterion if isinstance(criterion, GoalCriterion) else GoalCriterion.from_mapping(criterion)
+                for criterion in self.criteria
+            ),
+        )
 
     def transition(self, status: GoalStatus) -> Goal:
         status = GoalStatus(status)

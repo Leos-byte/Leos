@@ -61,6 +61,7 @@ class AgentKernel:
     def build_plan(self, goal: Goal, steps: Sequence[ActionStep]) -> TransactionPlan:
         if not goal.success_criteria:
             raise ValueError("Goal must have explicit success criteria")
+        self.policy.validate_goal(goal)
         if not goal.stop_conditions:
             self.audit_log.record("goal.warning", "Goal has no stop conditions", goal_id=goal.goal_id)
         self.audit_log.record(
@@ -74,6 +75,7 @@ class AgentKernel:
         return TransactionPlan(goal=goal, steps=list(steps))
 
     def plan(self, goal: Goal, proposals: Sequence[PlanProposal]) -> PlannerResult:
+        self.policy.validate_goal(goal)
         if not goal.stop_conditions:
             self.audit_log.record("goal.warning", "Goal has no stop conditions", goal_id=goal.goal_id)
         self.audit_log.record(

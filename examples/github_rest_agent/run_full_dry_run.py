@@ -173,6 +173,11 @@ def run(output_dir: Path | None = None) -> dict[str, object]:
     goal = Goal(
         "Full GitHub issue-to-PR dry-run",
         ["file updated", "PR opened", "CI passed"],
+        criteria=(
+            {"key": "github_file_updated", "op": "exists"},
+            {"key": "github_pr", "op": "exists"},
+            {"key": "github_ci_status", "op": "exists"},
+        ),
         stop_conditions=["PR opened and CI passed or blocked"],
     )
     result = AgentLoop(
