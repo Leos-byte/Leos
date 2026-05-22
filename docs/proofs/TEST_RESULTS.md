@@ -5,7 +5,7 @@
 - Command: `python -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `1.614`
+- Duration seconds: `1.98`
 - Truncated: `False`
 
 ### stdout
@@ -97,8 +97,9 @@ Facts: 1 key(s)
     "compensation_strategy": "undo"
   }
 ]
-proof_status=precommit_dirty release_grade=False
-Enqueued: 1ae62e44-6d7a-48be-8d5d-7138d8d72015
+Policy configuration is valid.
+proof_status=release_grade release_grade=True
+Enqueued: 2906e1e0-4b44-4f6a-8889-bcd86ad9a305
 Status: succeeded
 Task file is valid.
 echo: verified risk=low
@@ -110,31 +111,31 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=f984ce341432d0735fbab9c3de1c8b6087a5ca2502f99a699d34b1d62cd8820b observed=56c5367891f05ad5128b7ecb1ca5483b2d4a08e7ecaf2d14ca8af18c69559549
+  [0] event_hash_mismatch: expected=4bd715038adbec0823a21e83a23bb02849e2aecb538360881a6b2d6af82ac66a observed=98e1cda9c006181e6b784785914d1b92c08dde4cf2d5a13ff3f5f4613d6a5058
 Integrity: OK
 Applied events: 1
 Facts:
   key = 'val'  [TrustLevel.TOOL_REPORTED]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-safe_file_write: blocked risk=medium (permission requires human approval)
+safe_file_write: blocked risk=medium (approval decision is deny)
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 Policy configuration is valid.
 echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmphpv8qp_4/signed.json
+Signed manifest written to /tmp/tmpniprlkfx/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=github-classic-token
-<redacted> written to /tmp/tmpj098_ugd/trace.html
+<redacted> written to /tmp/tmp88iendlg/trace.html
 
 ```
 
 ### stderr
 
 ```text
-.........................................................Issue: $: 'steps' is a required property
+..................................................................Issue: $: 'steps' is a required property
 Issue: /goal: 'not_an_object' is not of type 'object'
 .Unknown tool: nonexistent
 ..............................................................................Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
@@ -146,9 +147,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-........................................................................................................................................................................................................................................................................................................................................................................
+.................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 546 tests in 1.353s
+Ran 580 tests in 1.711s
 
 OK
 

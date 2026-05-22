@@ -5,7 +5,7 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `2.686`
+- Duration seconds: `3.126`
 - Truncated: `False`
 
 ### stdout
@@ -97,8 +97,9 @@ Facts: 1 key(s)
     "compensation_strategy": "undo"
   }
 ]
-proof_status=precommit_dirty release_grade=False
-Enqueued: 2fc59aa5-5a40-4e11-935f-b60fbaeecd1f
+Policy configuration is valid.
+proof_status=release_grade release_grade=True
+Enqueued: bdfa2655-8c76-4833-8764-8b7a6c19ad69
 Status: succeeded
 Task file is valid.
 echo: verified risk=low
@@ -110,31 +111,31 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=89a6d7b954c4c01e8b09107bfd9a593c583ea3014651164c4434aac27d259f16 observed=371dbdc3e254ccf86f3d53c9f46c9719098c52f0bc3ea374f4e89c685c23ce55
+  [0] event_hash_mismatch: expected=3b15e5f17fe7e579d8ffca9be3125f53d631fd9ff9396f3dd3f63fe515b59c9d observed=3423ec5955da74ca8167f52ee2dd9d8ef21c0b1813126851e4a7eff251b8638e
 Integrity: OK
 Applied events: 1
 Facts:
   key = 'val'  [TrustLevel.TOOL_REPORTED]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-safe_file_write: blocked risk=medium (permission requires human approval)
+safe_file_write: blocked risk=medium (approval decision is deny)
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 Policy configuration is valid.
 echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmp05l520sr/signed.json
+Signed manifest written to /tmp/tmpbbnizw0h/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=github-classic-token
-<redacted> written to /tmp/tmpy4wglbm9/trace.html
+<redacted> written to /tmp/tmp85ns3leo/trace.html
 
 ```
 
 ### stderr
 
 ```text
-.........................................................Issue: $: 'steps' is a required property
+..................................................................Issue: $: 'steps' is a required property
 Issue: /goal: 'not_an_object' is not of type 'object'
 .Unknown tool: nonexistent
 ..............................................................................Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
@@ -146,11 +147,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-................................................................................................../usr/lib64/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 404: 'missing'>
-  _warnings.warn(self.warn_message, ResourceWarning)
-......................................................................................................................................................................................................................................................................
+.................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 546 tests in 2.190s
+Ran 580 tests in 2.588s
 
 OK
 
@@ -161,7 +160,7 @@ OK
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.668`
+- Duration seconds: `0.721`
 - Truncated: `False`
 
 ### stdout
@@ -170,40 +169,42 @@ OK
 Name                                       Stmts   Miss Branch BrPart  Cover
 ----------------------------------------------------------------------------
 src/leos_agent/__init__.py                     2      0      0      0   100%
-src/leos_agent/agent_loop.py                 156     15     40      6    86%
+src/leos_agent/agent_loop.py                 208     19     60     12    86%
+src/leos_agent/approval.py                    83      2     12      2    96%
 src/leos_agent/audit.py                      143      7     46     11    90%
 src/leos_agent/causal.py                      92      1     18      1    98%
 src/leos_agent/causal_contract.py             35      4      6      1    83%
-src/leos_agent/cli.py                        450    202    168     30    52%
+src/leos_agent/cli.py                        476    210    188     34    53%
 src/leos_agent/conflicts.py                   37      0     14      0   100%
-src/leos_agent/core.py                        43      0      0      0   100%
+src/leos_agent/core.py                        45      0      0      0   100%
 src/leos_agent/credentials.py                 61      1     16      8    88%
 src/leos_agent/dev_tools.py                  188     29     38     13    81%
 src/leos_agent/enums.py                       71      0      0      0   100%
 src/leos_agent/errors.py                      23      0      0      0   100%
-src/leos_agent/eval_runner.py                354     19     10      2    94%
-src/leos_agent/evaluator_registry.py         172     12     62     11    88%
+src/leos_agent/eval_runner.py                354     18     10      2    94%
+src/leos_agent/evaluator_registry.py         207     22     84     14    84%
 src/leos_agent/github_agent.py                74      6     18      4    89%
-src/leos_agent/github_client.py              234      7     72      7    95%
-src/leos_agent/github_tools.py               332     53     96     43    78%
+src/leos_agent/github_client.py              239     11     74      7    94%
+src/leos_agent/github_tools.py               334     51     98     43    78%
 src/leos_agent/goal_evaluator.py              29      1      4      2    91%
-src/leos_agent/goals.py                       72      6     14      2    88%
-src/leos_agent/kernel.py                      44      3      6      3    88%
+src/leos_agent/goals.py                       92      8     18      3    88%
+src/leos_agent/kernel.py                      46      3      6      3    88%
 src/leos_agent/manifest.py                    54      0      8      0   100%
-src/leos_agent/memory.py                     102      5     22      6    91%
+src/leos_agent/memory.py                     108      5     24      6    92%
 src/leos_agent/model.py                       47      0      2      1    98%
 src/leos_agent/model_adapters.py             109     26     18      2    76%
 src/leos_agent/network_tools.py              168     26     48      7    84%
 src/leos_agent/planner.py                    150     12     58     15    87%
 src/leos_agent/plans.py                       86      2      8      3    95%
-src/leos_agent/policy.py                     270     47    106     17    80%
+src/leos_agent/policy.py                     312     49    122     20    81%
 src/leos_agent/policy_manifest.py             51      9     12      5    78%
 src/leos_agent/prompts.py                     30      1      2      1    94%
 src/leos_agent/proof.py                      216      9     42      8    93%
+src/leos_agent/replanning.py                  93     18     28      9    69%
 src/leos_agent/replay.py                     122     10     80     15    86%
 src/leos_agent/runtime_store.py              143     13     40     22    81%
 src/leos_agent/sandbox.py                    155     15     44     10    87%
-src/leos_agent/sanitization.py                74      3     38      3    95%
+src/leos_agent/sanitization.py                74      2     38      2    96%
 src/leos_agent/serialization.py               67      1      6      1    97%
 src/leos_agent/simulation.py                  65      0      6      1    99%
 src/leos_agent/sqlite_store.py               103     19     10      5    79%
@@ -212,8 +213,8 @@ src/leos_agent/task_queue.py                 242     23     50      9    88%
 src/leos_agent/tool_manifest_registry.py      81     15     34     10    77%
 src/leos_agent/tools.py                      144      7     26      9    91%
 src/leos_agent/trace_viewer.py                68      0     20      0   100%
-src/leos_agent/transactions.py               305     22    116     10    91%
+src/leos_agent/transactions.py               357     32    130     12    90%
 ----------------------------------------------------------------------------
-TOTAL                                       5503    632   1434    307    85%
+TOTAL                                       5923    688   1576    336    85%
 
 ```
