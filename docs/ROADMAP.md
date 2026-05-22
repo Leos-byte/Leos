@@ -18,6 +18,8 @@ stages, not a claim that the current runtime is production-ready.
   dry-runs, trace output, and goal evaluation.
 - Keep network and code execution opt-in, with high-risk actions gated by
   `PolicyEngine` and `ApprovalGate`.
+- Require typed goal criteria, approval packets, and failure-driven replanning
+  before enabling broader real-write software-engineering workflows.
 - Use Docker/Podman sandboxing for stronger local execution boundaries where
   available, while treating subprocess execution as local-dev only.
 

@@ -9,11 +9,13 @@ from pathlib import Path
 
 from leos_agent.audit import AuditLog
 from leos_agent.cli import (
+    _approval_render,
     _eval,
     _inspect_audit,
     _manifest,
     _proof_generate,
     _queue_demo,
+    _validate_policy,
     _validate_task,
 )
 
@@ -75,6 +77,38 @@ class QueueDemoTests(unittest.TestCase):
 class EvalCliTests(unittest.TestCase):
     def test_eval_safety_exits_zero(self) -> None:
         self.assertEqual(_eval("safety", output_format="text"), 0)
+
+
+class PolicyCliTests(unittest.TestCase):
+    def test_validate_builtin_production_profile(self) -> None:
+        self.assertEqual(_validate_policy(None, profile="production_locked_down"), 0)
+
+
+class ApprovalCliTests(unittest.TestCase):
+    def test_render_approval_packet(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "packet.json"
+            out = Path(tmp) / "packet.md"
+            path.write_text(
+                json.dumps(
+                    {
+                        "approval_id": "a",
+                        "goal_id": "g",
+                        "plan_id": "p",
+                        "step_id": "s",
+                        "step_hash": "h",
+                        "tool_name": "tool",
+                        "risk_level": "medium",
+                        "required_permissions": [],
+                        "causal_contract_summary": "none",
+                        "dry_run_summary": "dry",
+                        "rollback_summary": "none",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(_approval_render(str(path), output_format="markdown", output=str(out)), 0)
+            self.assertIn("Approval Packet", out.read_text(encoding="utf-8"))
 
 
 class ProofCliTests(unittest.TestCase):

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from .approval import build_approval_packet, build_step_hash, validate_approval_decision
 from .audit import AuditLog
 from .causal import CausalGraph, CounterfactualReview
 from .enums import (
@@ -90,13 +91,30 @@ class TransactionManager:
             return plan
 
         for step in plan.steps:
-            tool = self.registry.get(step.tool_name)
+            try:
+                tool = self.registry.get(step.tool_name)
+            except KeyError as exc:
+                if self.policy.profile_name != "production_locked_down":
+                    raise
+                step.status = StepStatus.BLOCKED
+                error: LeosError = PolicyDenied(f"Unknown tool: {step.tool_name}")
+                self.audit_log.record(
+                    "step.blocked",
+                    "Step blocked: unknown tool",
+                    step_id=step.step_id,
+                    tool=step.tool_name,
+                    decision="denied",
+                    reason=str(exc),
+                    error_type=type(error).__name__,
+                )
+                self._rollback(rollback_stack, state)
+                break
             self._hydrate_step_metadata(step, tool)
 
             sandbox_issue = self._enforce_sandbox(tool)
             if sandbox_issue:
                 step.status = StepStatus.BLOCKED
-                error: LeosError = SandboxViolation(sandbox_issue)
+                error = SandboxViolation(sandbox_issue)
                 self.audit_log.record(
                     "step.blocked",
                     "Step blocked by sandbox policy",
@@ -105,6 +123,25 @@ class TransactionManager:
                     decision="denied",
                     error_type=type(error).__name__,
                     reason=sandbox_issue,
+                )
+                self._rollback(rollback_stack, state)
+                break
+
+            production_issue = self.policy.production_block_reason(step, tool)
+            if production_issue:
+                step.status = StepStatus.BLOCKED
+                error = PolicyDenied(production_issue)
+                event_type = "causal_contract.missing" if "causal contract" in production_issue else "policy.blocked"
+                self.audit_log.record(
+                    event_type,
+                    "Step blocked by production policy",
+                    step_id=step.step_id,
+                    tool=step.tool_name,
+                    decision="denied",
+                    risk=step.risk.value,
+                    profile=self.policy.profile_name,
+                    reason=production_issue,
+                    error_type=type(error).__name__,
                 )
                 self._rollback(rollback_stack, state)
                 break
@@ -164,8 +201,91 @@ class TransactionManager:
 
             decision_result = self.policy.decide(step)
             decision = decision_result.decision
+            preserve_secret_keys = ("token",) if tool.spec.name.startswith("github_") else ()
+            prepared_args = self._prepare_arguments(
+                step.arguments,
+                tool.spec.secrets_allowed,
+                preserve_secret_keys=preserve_secret_keys,
+            )
+            dry_run: ToolResult | None = None
+            dry_run_recorded = False
             if decision is Decision.NEEDS_HUMAN:
-                decision = self.approval_gate.request(step)
+                dry_run = tool.dry_run(prepared_args, state)
+                if not dry_run.ok:
+                    step.status = StepStatus.FAILED
+                    error = dry_run.error or DryRunFailed(dry_run.message)
+                    self.audit_log.record(
+                        "step.dry_run_failed",
+                        dry_run.message,
+                        step_id=step.step_id,
+                        data=dry_run.data,
+                        error_type=_error_type(error),
+                    )
+                    self._rollback(rollback_stack, state)
+                    break
+                step.status = StepStatus.DRY_RUN_OK
+                self.audit_log.record("step.dry_run_ok", dry_run.message, step_id=step.step_id, tool=step.tool_name)
+                dry_run_recorded = True
+                packet = build_approval_packet(
+                    plan=plan,
+                    step=step,
+                    tool=tool,
+                    dry_run_summary=dry_run.message,
+                    profile=self.policy.profile_name,
+                    requester=self.policy.principal,
+                )
+                self.audit_log.record(
+                    "approval.packet_created",
+                    "Approval packet created",
+                    **packet.as_dict(),
+                )
+                approval_decision = self.approval_gate.request_packet(packet, step)
+                self.audit_log.record(
+                    "approval.decision_recorded",
+                    "Approval decision recorded",
+                    **approval_decision.as_dict(),
+                )
+                current_hash = build_step_hash(goal_id=plan.goal.goal_id, plan_id=plan.plan_id, step=step, tool=tool)
+                approval_issue = validate_approval_decision(
+                    packet,
+                    approval_decision,
+                    current_step_hash=current_hash,
+                    profile=self.policy.profile_name,
+                )
+                if approval_issue:
+                    step.status = StepStatus.BLOCKED
+                    error = PolicyDenied(f"Step approval rejected: {approval_issue}")
+                    self.audit_log.record(
+                        "step.blocked",
+                        "Step blocked by policy",
+                        step_id=step.step_id,
+                        tool=step.tool_name,
+                        decision="denied",
+                        reason=approval_issue,
+                        rule_name=decision_result.rule_name,
+                        reversibility=step.reversibility.value,
+                        compensation_strategy=step.compensation_strategy.value,
+                        error_type=type(error).__name__,
+                    )
+                    self.audit_log.record(
+                        "approval.rejected",
+                        "Approval rejected before execution",
+                        step_id=step.step_id,
+                        tool=step.tool_name,
+                        approval_id=packet.approval_id,
+                        reason=approval_issue,
+                        error_type=type(error).__name__,
+                    )
+                    self._rollback(rollback_stack, state)
+                    break
+                self.audit_log.record(
+                    "approval.used",
+                    "Approval used for step execution",
+                    step_id=step.step_id,
+                    tool=step.tool_name,
+                    approval_id=packet.approval_id,
+                )
+                decision = Decision.APPROVED
             if decision is not Decision.APPROVED:
                 step.status = StepStatus.BLOCKED
                 error = PolicyDenied(f"Step blocked by policy: {decision.value}")
@@ -184,13 +304,8 @@ class TransactionManager:
                 self._rollback(rollback_stack, state)
                 break
 
-            preserve_secret_keys = ("token",) if tool.spec.name.startswith("github_") else ()
-            prepared_args = self._prepare_arguments(
-                step.arguments,
-                tool.spec.secrets_allowed,
-                preserve_secret_keys=preserve_secret_keys,
-            )
-            dry_run = tool.dry_run(prepared_args, state)
+            if dry_run is None:
+                dry_run = tool.dry_run(prepared_args, state)
             if not dry_run.ok:
                 step.status = StepStatus.FAILED
                 error = dry_run.error or DryRunFailed(dry_run.message)
@@ -204,7 +319,8 @@ class TransactionManager:
                 self._rollback(rollback_stack, state)
                 break
             step.status = StepStatus.DRY_RUN_OK
-            self.audit_log.record("step.dry_run_ok", dry_run.message, step_id=step.step_id, tool=step.tool_name)
+            if not dry_run_recorded:
+                self.audit_log.record("step.dry_run_ok", dry_run.message, step_id=step.step_id, tool=step.tool_name)
 
             result = tool.execute(prepared_args, state)
             if not result.ok:
@@ -443,7 +559,20 @@ class TransactionManager:
         file_writes = 0
         network_requests = 0
         for step in plan.steps:
-            tool = self.registry.get(step.tool_name)
+            try:
+                tool = self.registry.get(step.tool_name)
+            except KeyError as exc:
+                if self.policy.profile_name != "production_locked_down":
+                    raise
+                self._record_budget_exceeded(
+                    step,
+                    "Unknown tool in plan",
+                    limit="known_tools",
+                    allowed="registered tool",
+                    actual=step.tool_name,
+                    error=str(exc),
+                )
+                return True
             self._hydrate_step_metadata(step, tool)
 
             if _risk_value(step.risk) > _risk_value(budget.max_risk_level):

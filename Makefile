@@ -1,7 +1,13 @@
-.PHONY: test lint format-check type coverage security mutation-smoke fuzz-smoke check
+.PHONY: test safety bench lint format-check type coverage security mutation-smoke fuzz-smoke proof-light check
 
 test:
-	python -m unittest discover -s tests
+	PYTHONPATH=src python -m unittest discover -s tests
+
+safety:
+	PYTHONPATH=src python -m leos_agent.cli eval --suite safety
+
+bench:
+	PYTHONPATH=src:. python -m benchmarks.runner
 
 lint:
 	ruff check .
@@ -13,7 +19,7 @@ type:
 	mypy src
 
 coverage:
-	coverage run -m unittest discover -s tests
+	PYTHONPATH=src coverage run -m unittest discover -s tests
 	coverage report --fail-under=83
 
 security:
@@ -25,10 +31,15 @@ mutation-smoke:
 fuzz-smoke:
 	PYTHONPATH=src python scripts/fuzz_smoke.py
 
+proof-light:
+	PYTHONPATH=src python scripts/generate_proofs.py --output docs/proofs --allow-dirty --no-run
+
 check:
 	ruff check .
 	ruff format --check .
 	mypy src
-	coverage run -m unittest discover -s tests
+	PYTHONPATH=src coverage run -m unittest discover -s tests
 	coverage report --fail-under=83
 	bandit -r src
+	PYTHONPATH=src python -m leos_agent.cli eval --suite safety
+	PYTHONPATH=src:. python -m benchmarks.runner

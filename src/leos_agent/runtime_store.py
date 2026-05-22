@@ -9,7 +9,7 @@ from typing import Any, Protocol
 
 from .enums import GoalStatus
 from .errors import LeosError
-from .goals import Goal
+from .goals import Goal, GoalCriterion
 from .plans import TransactionPlan
 from .sanitization import SanitizationError, assert_no_secrets
 from .serialization import SerializationError, deserialize_plan, serialize_plan
@@ -186,6 +186,10 @@ def _goal_to_dict(goal: Goal) -> dict[str, Any]:
         "goal_id": goal.goal_id,
         "description": goal.description,
         "success_criteria": list(goal.success_criteria),
+        "criteria": [
+            criterion.as_dict() if isinstance(criterion, GoalCriterion) else dict(criterion)
+            for criterion in goal.criteria
+        ],
         "constraints": list(goal.constraints),
         "stop_conditions": list(goal.stop_conditions),
         "priority": goal.priority,
@@ -199,6 +203,7 @@ def _goal_from_dict(data: Mapping[str, Any]) -> Goal:
     return Goal(
         description=str(data["description"]),
         success_criteria=tuple(str(value) for value in data.get("success_criteria", ())),
+        criteria=tuple(data.get("criteria", ())),
         constraints=tuple(str(value) for value in data.get("constraints", ())),
         stop_conditions=tuple(str(value) for value in data.get("stop_conditions", ())),
         priority=int(data.get("priority", 5)),

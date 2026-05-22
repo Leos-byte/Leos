@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from .approval import ApprovalPacket, render_approval_packet_html, render_approval_packet_markdown
 from .audit import AuditAnomalyDetector
 from .core import (
     ActionStep,
@@ -92,7 +93,8 @@ def main() -> int:
     sub = parser.add_subparsers(dest="command")
 
     validate_parser = sub.add_parser("validate-policy", help="Validate a policy configuration file.")
-    validate_parser.add_argument("file", help="Path to a policy JSON file.")
+    validate_parser.add_argument("file", nargs="?", help="Path to a policy JSON file.")
+    validate_parser.add_argument("--profile", default=None, help="Built-in policy profile to validate.")
     validate_parser.add_argument(
         "--policy-secret", default=None, help="Secret key for verifying a signed policy manifest."
     )
@@ -175,6 +177,13 @@ def main() -> int:
     manifest_parser = sub.add_parser("manifest", help="Output registered tool manifests as JSON.")
     manifest_parser.add_argument("--workspace", default=".leos-workspace", help="Workspace root.")
 
+    approval_parser = sub.add_parser("approval", help="Approval packet commands.")
+    approval_sub = approval_parser.add_subparsers(dest="approval_command")
+    approval_render = approval_sub.add_parser("render", help="Render an approval packet JSON file.")
+    approval_render.add_argument("file", help="Approval packet JSON file.")
+    approval_render.add_argument("--format", choices=("markdown", "html"), default="markdown")
+    approval_render.add_argument("--output", default=None)
+
     _qdemo = sub.add_parser("queue-demo", help="Demonstrate task queue lifecycle.")
 
     parser.add_argument("--workspace", default=".leos-workspace", help="Sandbox workspace for reversible file actions.")
@@ -182,7 +191,7 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.command == "validate-policy":
-        return _validate_policy(args.file, secret=args.policy_secret)
+        return _validate_policy(args.file, secret=args.policy_secret, profile=args.profile)
     if args.command == "list-tools":
         return _list_tools(args.workspace)
     if args.command == "dry-run":
@@ -220,6 +229,11 @@ def main() -> int:
         return 2
     if args.command == "manifest":
         return _manifest(args.workspace)
+    if args.command == "approval":
+        if args.approval_command == "render":
+            return _approval_render(args.file, output_format=args.format, output=args.output)
+        print("Error: missing approval subcommand", file=sys.stderr)
+        return 2
     if args.command == "queue-demo":
         return _queue_demo()
 
@@ -250,7 +264,18 @@ def main() -> int:
     return 0 if all(step.status is StepStatus.VERIFIED for step in result.steps) else 1
 
 
-def _validate_policy(file_path: str, *, secret: str | None = None) -> int:
+def _validate_policy(file_path: str | None, *, secret: str | None = None, profile: str | None = None) -> int:
+    if profile is not None:
+        try:
+            PolicyEngine.from_profile(profile)
+        except Exception as exc:
+            print(f"Issue: policy_config_invalid: {exc}", file=sys.stderr)
+            return 1
+        print("Policy configuration is valid.")
+        return 0
+    if file_path is None:
+        print("Error: validate-policy requires a file or --profile", file=sys.stderr)
+        return 2
     data, exit_code = _load_json_file(file_path)
     if data is None:
         return exit_code
@@ -397,6 +422,7 @@ def _run(
         goal = Goal(
             description=goal_data["description"],
             success_criteria=goal_data["success_criteria"],
+            criteria=goal_data.get("criteria", ()),
             constraints=goal_data.get("constraints", ()),
             stop_conditions=goal_data.get("stop_conditions", ()),
             priority=goal_data.get("priority", 5),
@@ -616,6 +642,25 @@ def _eval(suite: str, *, output_format: str) -> int:
         for case in report.cases:
             print(f"{case.name}: {case.status} severity={case.severity}")
     return 0 if report.failed == 0 else 1
+
+
+def _approval_render(file_path: str, *, output_format: str, output: str | None) -> int:
+    data, exit_code = _load_json_file(file_path)
+    if data is None:
+        return exit_code
+    try:
+        packet = ApprovalPacket.from_mapping(data)
+    except Exception as exc:
+        print(f"Error: invalid approval packet: {exc}", file=sys.stderr)
+        return 2
+    rendered = (
+        render_approval_packet_html(packet) if output_format == "html" else render_approval_packet_markdown(packet)
+    )
+    if output:
+        Path(output).write_text(rendered, encoding="utf-8")
+    else:
+        sys.stdout.write(rendered)
+    return 0
 
 
 def _proof_generate(output: str, require_clean: bool, allow_dirty: bool, no_run: bool) -> int:

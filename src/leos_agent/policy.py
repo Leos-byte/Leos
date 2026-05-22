@@ -8,7 +8,8 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from .enums import Decision, Permission, Reversibility, RiskLevel, _risk_value
+from .approval import ApprovalDecision, ApprovalDecisionValue, ApprovalPacket
+from .enums import Decision, Permission, Reversibility, RiskLevel, SandboxPolicy, _risk_value
 from .errors import PolicyConfigurationError
 from .plans import ActionStep
 from .tools import Tool
@@ -126,6 +127,12 @@ class PolicyProfile:
     deny_permissions: Sequence[Permission] = ()
     rules: Sequence[PolicyRule] = ()
     grants: Sequence[CapabilityGrant] = ()
+    require_strong_sandbox_for_execute: bool = False
+    network_default_deny: bool = False
+    require_causal_contract_for_medium_risk: bool = False
+    require_timeout_for_medium_risk: bool = False
+    require_output_schema_for_medium_risk: bool = False
+    require_typed_goal_criteria: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "granted_permissions", _permissions(self.granted_permissions))
@@ -158,6 +165,12 @@ class PolicyProfile:
             deny_permissions=tuple(data.get("deny_permissions", ())),
             rules=tuple(PolicyRule.from_mapping(rule) for rule in data.get("rules", ())),
             grants=tuple(CapabilityGrant.from_mapping(grant) for grant in data.get("grants", ())),
+            require_strong_sandbox_for_execute=bool(data.get("require_strong_sandbox_for_execute", False)),
+            network_default_deny=bool(data.get("network_default_deny", False)),
+            require_causal_contract_for_medium_risk=bool(data.get("require_causal_contract_for_medium_risk", False)),
+            require_timeout_for_medium_risk=bool(data.get("require_timeout_for_medium_risk", False)),
+            require_output_schema_for_medium_risk=bool(data.get("require_output_schema_for_medium_risk", False)),
+            require_typed_goal_criteria=bool(data.get("require_typed_goal_criteria", False)),
         )
 
 
@@ -184,6 +197,24 @@ BUILT_IN_POLICY_PROFILES = {
             Permission.EXECUTE_CODE,
             Permission.SYSTEM_CONFIG,
         ),
+    ),
+    "production_locked_down": PolicyProfile(
+        name="production_locked_down",
+        max_auto_risk=RiskLevel.LOW,
+        require_human_for=(
+            Permission.WRITE_FILES,
+            Permission.SEND_MESSAGE,
+            Permission.EXECUTE_CODE,
+            Permission.READ_MEMORY,
+            Permission.WRITE_MEMORY,
+        ),
+        deny_permissions=(Permission.NETWORK, Permission.FINANCIAL, Permission.DELETE, Permission.SYSTEM_CONFIG),
+        require_strong_sandbox_for_execute=True,
+        network_default_deny=True,
+        require_causal_contract_for_medium_risk=True,
+        require_timeout_for_medium_risk=True,
+        require_output_schema_for_medium_risk=True,
+        require_typed_goal_criteria=True,
     ),
 }
 
@@ -218,6 +249,12 @@ class PolicyEngine:
         self.grants = tuple(grants or ())
         self.principal = principal
         self.profile_name = profile_name
+        self.require_strong_sandbox_for_execute = False
+        self.network_default_deny = False
+        self.require_causal_contract_for_medium_risk = False
+        self.require_timeout_for_medium_risk = False
+        self.require_output_schema_for_medium_risk = False
+        self.require_typed_goal_criteria = False
 
     @classmethod
     def from_profile(cls, profile: str | PolicyProfile, *, principal: str | None = None) -> PolicyEngine:
@@ -225,7 +262,7 @@ class PolicyEngine:
             if profile not in BUILT_IN_POLICY_PROFILES:
                 raise KeyError(f"Unknown policy profile: {profile}")
             profile = BUILT_IN_POLICY_PROFILES[profile]
-        return cls(
+        engine = cls(
             granted_permissions=profile.granted_permissions,
             max_auto_risk=profile.max_auto_risk,
             require_human_for=profile.require_human_for,
@@ -235,6 +272,13 @@ class PolicyEngine:
             principal=principal,
             profile_name=profile.name,
         )
+        engine.require_strong_sandbox_for_execute = profile.require_strong_sandbox_for_execute
+        engine.network_default_deny = profile.network_default_deny
+        engine.require_causal_contract_for_medium_risk = profile.require_causal_contract_for_medium_risk
+        engine.require_timeout_for_medium_risk = profile.require_timeout_for_medium_risk
+        engine.require_output_schema_for_medium_risk = profile.require_output_schema_for_medium_risk
+        engine.require_typed_goal_criteria = profile.require_typed_goal_criteria
+        return engine
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any], *, principal: str | None = None) -> PolicyEngine:
@@ -250,6 +294,38 @@ class PolicyEngine:
         if arguments.get("destructive") is True:
             return RiskLevel.HIGH
         return risk
+
+    def production_block_reason(self, step: ActionStep, tool: Tool) -> str | None:
+        """Return a non-overridable production profile block reason."""
+
+        if self.profile_name != "production_locked_down":
+            return None
+        if tool.spec.network_access or Permission.NETWORK in tool.spec.permissions:
+            return "production_locked_down forbids network tools without an explicit egress policy"
+        if (
+            self.require_strong_sandbox_for_execute
+            and Permission.EXECUTE_CODE in tool.spec.permissions
+            and tool.spec.sandbox_policy is SandboxPolicy.WORKSPACE
+        ):
+            return "production_locked_down forbids workspace subprocess execution as a production sandbox"
+        if _risk_value(step.risk) >= _risk_value(RiskLevel.MEDIUM):
+            if self.require_causal_contract_for_medium_risk and tool.spec.causal_contract is None:
+                return "production_locked_down requires causal contracts for medium+ tools"
+            if self.require_timeout_for_medium_risk and tool.spec.timeout_ms <= 0:
+                return "production_locked_down requires timeout_ms for medium+ tools"
+            if self.require_output_schema_for_medium_risk and not tool.spec.output_schema:
+                return "production_locked_down requires output_schema for medium+ tools"
+        return None
+
+    def validate_goal(self, goal: Any) -> None:
+        if (
+            self.profile_name == "production_locked_down"
+            and self.require_typed_goal_criteria
+            and not getattr(goal, "criteria", ())
+        ):
+            from .errors import PolicyDenied
+
+            raise PolicyDenied("production_locked_down requires at least one typed goal criterion")
 
     def _matching_grant(self, tool_name: str) -> CapabilityGrant | None:
         if not self.principal:
@@ -324,6 +400,14 @@ class ApprovalGate:
         if not self.approver:
             return Decision.DENIED
         return Decision.APPROVED if self.approver(step) else Decision.DENIED
+
+    def request_packet(self, packet: ApprovalPacket, step: ActionStep) -> ApprovalDecision:
+        decision = self.request(step)
+        return ApprovalDecision(
+            approval_id=packet.approval_id,
+            step_hash=packet.step_hash,
+            decision=ApprovalDecisionValue.APPROVE if decision is Decision.APPROVED else ApprovalDecisionValue.DENY,
+        )
 
 
 @dataclass(frozen=True)

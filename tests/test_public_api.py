@@ -104,7 +104,7 @@ class PublicAPITests(unittest.TestCase):
         )
 
     def test_core_exports_goal_evaluator_api(self) -> None:
-        from leos_agent.core import GoalEvaluation, GoalEvaluationStatus, GoalEvaluator  # noqa: F401
+        from leos_agent.core import GoalCriterion, GoalEvaluation, GoalEvaluationStatus, GoalEvaluator  # noqa: F401
 
     def test_core_exports_model_adapters(self) -> None:
         from leos_agent.core import AnthropicModelClient, LocalHTTPModelClient, OpenAIModelClient  # noqa: F401
@@ -169,6 +169,20 @@ class PublicAPITests(unittest.TestCase):
             sanitize_for_boundary,
         )
 
+    def test_core_exports_approval_and_replanning_api(self) -> None:
+        from leos_agent.core import (  # noqa: F401
+            ApprovalDecision,
+            ApprovalDecisionValue,
+            ApprovalPacket,
+            FailureAnalysis,
+            FailureAnalyzer,
+            FailureType,
+            PlanRepairStrategy,
+            ReplanContext,
+            render_approval_packet_html,
+            render_approval_packet_markdown,
+        )
+
     def test_package_exports_new_runtime_api(self) -> None:
         import leos_agent
 
@@ -185,6 +199,9 @@ class PublicAPITests(unittest.TestCase):
         self.assertTrue(hasattr(leos_agent, "InMemoryGitHubClient"))
         self.assertTrue(hasattr(leos_agent, "redact_secrets"))
         self.assertTrue(hasattr(leos_agent, "assert_no_secrets"))
+        self.assertTrue(hasattr(leos_agent, "ApprovalPacket"))
+        self.assertTrue(hasattr(leos_agent, "GoalCriterion"))
+        self.assertTrue(hasattr(leos_agent, "FailureAnalyzer"))
 
     def test_core_exports_network_observation_helpers(self) -> None:
         from leos_agent.core import DNSResolver, make_untrusted_observation  # noqa: F401

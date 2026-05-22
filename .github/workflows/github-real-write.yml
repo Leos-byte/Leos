@@ -1,0 +1,35 @@
+name: GitHub Real Write Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_repo:
+        description: "Repository to test, owner/name"
+        required: true
+      base_branch:
+        description: "Base branch"
+        default: "main"
+        required: true
+
+jobs:
+  gated-real-write:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: pip install -e ".[dev]"
+
+      - name: Run gated GitHub real-write smoke
+        env:
+          LEOS_ENABLE_REAL_GITHUB_WRITES: "1"
+          LEOS_GITHUB_TEST_REPO: ${{ inputs.test_repo }}
+          LEOS_GITHUB_BASE_BRANCH: ${{ inputs.base_branch }}
+          LEOS_GITHUB_WORK_BRANCH_PREFIX: "leos/"
+          LEOS_GITHUB_TOKEN_SECRET_REF: "LEOS_GITHUB_TOKEN"
+          LEOS_GITHUB_TOKEN: ${{ secrets.LEOS_GITHUB_TOKEN }}
+        run: python examples/github_rest_agent/run_real_write_gated.py

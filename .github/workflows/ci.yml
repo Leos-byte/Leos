@@ -41,6 +41,9 @@ jobs:
       - name: Safety evals
         run: leos eval --suite safety
 
+      - name: Benchmarks
+        run: make bench
+
       - name: Generate local proof documents
         run: python scripts/generate_proofs.py --output docs/proofs --allow-dirty
 

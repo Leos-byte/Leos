@@ -20,7 +20,7 @@ from .enums import (
     RiskLevel,
     StepStatus,
 )
-from .goals import Goal, ResourceBudget
+from .goals import Goal, GoalCriterion, ResourceBudget
 from .plans import ActionStep, StateCondition, TransactionPlan
 from .state import TrustLevel
 
@@ -33,6 +33,10 @@ def _serialize_goal(goal: Goal) -> dict[str, Any]:
     return {
         "description": goal.description,
         "success_criteria": list(goal.success_criteria),
+        "criteria": [
+            criterion.as_dict() if isinstance(criterion, GoalCriterion) else dict(criterion)
+            for criterion in goal.criteria
+        ],
         "constraints": list(goal.constraints),
         "stop_conditions": list(goal.stop_conditions),
         "priority": goal.priority,
@@ -48,6 +52,7 @@ def _deserialize_goal(data: dict[str, Any]) -> Goal:
     return Goal(
         description=data["description"],
         success_criteria=tuple(data.get("success_criteria", [])),
+        criteria=tuple(GoalCriterion.from_mapping(criterion) for criterion in data.get("criteria", ())),
         constraints=tuple(data.get("constraints", [])),
         stop_conditions=tuple(data.get("stop_conditions", [])),
         priority=data.get("priority", 5),

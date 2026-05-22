@@ -102,26 +102,28 @@ class EvaluatorRegistry:
         return sorted(names)
 
     def evaluate(self, goal: Goal, state: WorldState, progress: GoalProgress | None = None) -> GoalEvaluation:
+        typed = [_evaluate_typed_criterion(criterion, state) for criterion in goal.criteria]
         evaluations = [
             self._evaluate_criterion(str(criterion), goal, state, progress) for criterion in goal.success_criteria
         ]
+        all_evaluations = [*typed, *evaluations]
         matched = [evaluation for evaluation in evaluations if evaluation.matched]
-        if not matched:
+        if not typed and not matched:
             fallback = self.get("fallback").evaluate_criterion("__fallback__", goal, state, progress)
             return GoalEvaluation(status=fallback.status, evidence=fallback.evidence, explanation=fallback.explanation)
 
-        satisfied = [evaluation.criterion for evaluation in evaluations if evaluation.satisfied]
-        unsatisfied = [evaluation.criterion for evaluation in evaluations if not evaluation.satisfied]
-        evidence = {evaluation.criterion: evaluation.evidence for evaluation in evaluations if evaluation.evidence}
-        explanations = [evaluation.explanation for evaluation in evaluations if evaluation.explanation]
+        satisfied = [evaluation.criterion for evaluation in all_evaluations if evaluation.satisfied]
+        unsatisfied = [evaluation.criterion for evaluation in all_evaluations if not evaluation.satisfied]
+        evidence = {evaluation.criterion: evaluation.evidence for evaluation in all_evaluations if evaluation.evidence}
+        explanations = [evaluation.explanation for evaluation in all_evaluations if evaluation.explanation]
 
-        if any(evaluation.failed for evaluation in evaluations):
+        if any(evaluation.failed for evaluation in all_evaluations):
             status = GoalEvaluationStatus.FAILED
-        elif len(satisfied) == len(evaluations) and all(evaluation.matched for evaluation in evaluations):
+        elif len(satisfied) == len(all_evaluations) and all(evaluation.matched for evaluation in all_evaluations):
             status = GoalEvaluationStatus.SUCCEEDED
         elif satisfied:
             status = GoalEvaluationStatus.PARTIAL
-        elif any(evaluation.matched for evaluation in evaluations):
+        elif any(evaluation.matched for evaluation in all_evaluations):
             status = GoalEvaluationStatus.UNKNOWN
         else:
             status = GoalEvaluationStatus.UNKNOWN
@@ -346,4 +348,51 @@ def _unknown(criterion: str, evidence: dict[str, Any], explanation: str) -> Crit
         status=GoalEvaluationStatus.UNKNOWN,
         evidence=evidence,
         explanation=explanation,
+    )
+
+
+def _evaluate_typed_criterion(criterion: Any, state: WorldState) -> CriterionEvaluation:
+    label = f"{criterion.key} {criterion.op}"
+    present = criterion.key in state.facts
+    actual = state.facts.get(criterion.key)
+    ok = False
+    try:
+        if criterion.op == "equals":
+            ok = present and actual == criterion.value
+        elif criterion.op == "not_equals":
+            ok = present and actual != criterion.value
+        elif criterion.op == "in":
+            ok = present and actual in criterion.value
+        elif criterion.op == "not_in":
+            ok = present and actual not in criterion.value
+        elif criterion.op == "exists":
+            ok = present
+        elif criterion.op == "missing":
+            ok = not present
+        elif criterion.op == "contains":
+            ok = present and actual is not None and criterion.value in actual
+        elif criterion.op == "greater_than":
+            ok = present and actual > criterion.value
+        elif criterion.op == "less_than":
+            ok = present and actual < criterion.value
+    except Exception:  # noqa: BLE001 - type mismatch means criterion is not satisfied
+        ok = False
+    evidence = {"key": criterion.key, "actual": actual, "expected": criterion.value, "op": criterion.op}
+    if ok:
+        return _satisfied(label, evidence, f"Typed criterion satisfied: {label}.")
+    if criterion.op == "exists" and not present:
+        return CriterionEvaluation(
+            criterion=label,
+            matched=True,
+            status=GoalEvaluationStatus.UNKNOWN,
+            evidence=evidence,
+            explanation=f"Typed criterion is not observed yet: {label}.",
+        )
+    status = GoalEvaluationStatus.FAILED if criterion.required else GoalEvaluationStatus.UNKNOWN
+    return CriterionEvaluation(
+        criterion=label,
+        matched=True,
+        status=status,
+        evidence=evidence,
+        explanation=f"Typed criterion unsatisfied: {label}.",
     )
