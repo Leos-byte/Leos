@@ -7,7 +7,7 @@ from typing import Any, Protocol
 
 from .errors import LeosError
 from .goal_evaluator import GoalEvaluation, GoalEvaluationStatus
-from .goals import Goal, GoalProgress
+from .goals import Goal, GoalCriterion, GoalProgress
 from .state import WorldState
 
 
@@ -102,26 +102,43 @@ class EvaluatorRegistry:
         return sorted(names)
 
     def evaluate(self, goal: Goal, state: WorldState, progress: GoalProgress | None = None) -> GoalEvaluation:
-        typed = [_evaluate_typed_criterion(criterion, state) for criterion in goal.criteria]
+        typed_criteria = [
+            criterion if isinstance(criterion, GoalCriterion) else GoalCriterion.from_mapping(criterion)
+            for criterion in goal.criteria
+        ]
+        typed = [_evaluate_typed_criterion(criterion, state) for criterion in typed_criteria]
         evaluations = [
             self._evaluate_criterion(str(criterion), goal, state, progress) for criterion in goal.success_criteria
         ]
         all_evaluations = [*typed, *evaluations]
+        required_typed = [
+            evaluation for criterion, evaluation in zip(typed_criteria, typed, strict=False) if criterion.required
+        ]
+        optional_typed = [
+            evaluation for criterion, evaluation in zip(typed_criteria, typed, strict=False) if not criterion.required
+        ]
+        required_evaluations = [*required_typed, *evaluations]
         matched = [evaluation for evaluation in evaluations if evaluation.matched]
         if not typed and not matched:
             fallback = self.get("fallback").evaluate_criterion("__fallback__", goal, state, progress)
             return GoalEvaluation(status=fallback.status, evidence=fallback.evidence, explanation=fallback.explanation)
 
         satisfied = [evaluation.criterion for evaluation in all_evaluations if evaluation.satisfied]
-        unsatisfied = [evaluation.criterion for evaluation in all_evaluations if not evaluation.satisfied]
+        unsatisfied = [evaluation.criterion for evaluation in required_evaluations if not evaluation.satisfied]
         evidence = {evaluation.criterion: evaluation.evidence for evaluation in all_evaluations if evaluation.evidence}
         explanations = [evaluation.explanation for evaluation in all_evaluations if evaluation.explanation]
+        if any(not evaluation.satisfied for evaluation in optional_typed):
+            explanations.append(
+                "Optional typed criteria were not satisfied; required success criteria remain decisive."
+            )
 
-        if any(evaluation.failed for evaluation in all_evaluations):
+        if any(evaluation.failed for evaluation in required_evaluations):
             status = GoalEvaluationStatus.FAILED
-        elif len(satisfied) == len(all_evaluations) and all(evaluation.matched for evaluation in all_evaluations):
+        elif required_evaluations and all(
+            evaluation.satisfied and evaluation.matched for evaluation in required_evaluations
+        ):
             status = GoalEvaluationStatus.SUCCEEDED
-        elif satisfied:
+        elif any(evaluation.satisfied for evaluation in all_evaluations):
             status = GoalEvaluationStatus.PARTIAL
         elif any(evaluation.matched for evaluation in all_evaluations):
             status = GoalEvaluationStatus.UNKNOWN
@@ -377,7 +394,13 @@ def _evaluate_typed_criterion(criterion: Any, state: WorldState) -> CriterionEva
             ok = present and actual < criterion.value
     except Exception:  # noqa: BLE001 - type mismatch means criterion is not satisfied
         ok = False
-    evidence = {"key": criterion.key, "actual": actual, "expected": criterion.value, "op": criterion.op}
+    evidence = {
+        "key": criterion.key,
+        "actual": actual,
+        "expected": criterion.value,
+        "op": criterion.op,
+        "required": criterion.required,
+    }
     if ok:
         return _satisfied(label, evidence, f"Typed criterion satisfied: {label}.")
     if criterion.op == "exists" and not present:

@@ -111,22 +111,6 @@ class TransactionManager:
                 break
             self._hydrate_step_metadata(step, tool)
 
-            sandbox_issue = self._enforce_sandbox(tool)
-            if sandbox_issue:
-                step.status = StepStatus.BLOCKED
-                error = SandboxViolation(sandbox_issue)
-                self.audit_log.record(
-                    "step.blocked",
-                    "Step blocked by sandbox policy",
-                    step_id=step.step_id,
-                    tool=step.tool_name,
-                    decision="denied",
-                    error_type=type(error).__name__,
-                    reason=sandbox_issue,
-                )
-                self._rollback(rollback_stack, state)
-                break
-
             production_issue = self.policy.production_block_reason(step, tool)
             if production_issue:
                 step.status = StepStatus.BLOCKED
@@ -142,6 +126,22 @@ class TransactionManager:
                     profile=self.policy.profile_name,
                     reason=production_issue,
                     error_type=type(error).__name__,
+                )
+                self._rollback(rollback_stack, state)
+                break
+
+            sandbox_issue = self._enforce_sandbox(tool)
+            if sandbox_issue:
+                step.status = StepStatus.BLOCKED
+                error = SandboxViolation(sandbox_issue)
+                self.audit_log.record(
+                    "step.blocked",
+                    "Step blocked by sandbox policy",
+                    step_id=step.step_id,
+                    tool=step.tool_name,
+                    decision="denied",
+                    error_type=type(error).__name__,
+                    reason=sandbox_issue,
                 )
                 self._rollback(rollback_stack, state)
                 break
@@ -255,6 +255,24 @@ class TransactionManager:
                 if approval_issue:
                     step.status = StepStatus.BLOCKED
                     error = PolicyDenied(f"Step approval rejected: {approval_issue}")
+                    if approval_decision.decision.value == "dry_run_only":
+                        self.audit_log.record(
+                            "approval.dry_run_only",
+                            "Approval limited the step to dry-run only",
+                            step_id=step.step_id,
+                            tool=step.tool_name,
+                            approval_id=packet.approval_id,
+                            reason=approval_issue,
+                        )
+                    elif approval_decision.decision.value == "narrow_scope":
+                        self.audit_log.record(
+                            "approval.narrow_scope_requested",
+                            "Approval requested a narrower action scope",
+                            step_id=step.step_id,
+                            tool=step.tool_name,
+                            approval_id=packet.approval_id,
+                            reason=approval_issue,
+                        )
                     self.audit_log.record(
                         "step.blocked",
                         "Step blocked by policy",
@@ -463,10 +481,10 @@ class TransactionManager:
     @staticmethod
     def _final_goal_status(plan: TransactionPlan) -> GoalStatus:
         if not plan.steps:
-            return GoalStatus.SUCCEEDED
+            return GoalStatus.PARTIALLY_DONE
         verified = sum(1 for step in plan.steps if step.status is StepStatus.VERIFIED)
         if verified == len(plan.steps):
-            return GoalStatus.SUCCEEDED
+            return GoalStatus.PARTIALLY_DONE
         if verified:
             return GoalStatus.PARTIALLY_DONE
         if any(step.status is StepStatus.BLOCKED for step in plan.steps):

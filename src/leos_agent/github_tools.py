@@ -8,6 +8,12 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
+from .causal_contract import (
+    github_comment_causal_contract,
+    github_create_branch_causal_contract,
+    github_open_pr_causal_contract,
+    github_update_file_causal_contract,
+)
 from .credentials import CredentialError, CredentialVault, SecretHandle
 from .enums import CompensationStrategy, Permission, Reversibility, RiskLevel
 from .errors import DryRunFailed, LeosError, SecretBoundaryViolation
@@ -330,6 +336,7 @@ class GitHubCreateBranchTool(_GitHubToolBase):
         secrets_allowed=True,
         input_schema={"type": "object", "required": ["repo", "branch", "base"]},
         output_schema={"type": "object", "required": ["github_branch"]},
+        causal_contract=github_create_branch_causal_contract(),
     )
 
     def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
@@ -412,6 +419,7 @@ class GitHubUpdateFileTool(_GitHubToolBase):
         secrets_allowed=True,
         input_schema={"type": "object", "required": ["repo", "path", "branch", "content", "message"]},
         output_schema={"type": "object", "required": ["github_file_updated"]},
+        causal_contract=github_update_file_causal_contract(),
     )
 
     def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
@@ -497,6 +505,7 @@ class GitHubOpenPRTool(_GitHubToolBase):
         secrets_allowed=True,
         input_schema={"type": "object", "required": ["repo", "title", "body", "head", "base"]},
         output_schema={"type": "object", "required": ["github_pr"]},
+        causal_contract=github_open_pr_causal_contract(),
     )
 
     def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
@@ -554,6 +563,7 @@ class GitHubCommentTool(_GitHubToolBase):
         secrets_allowed=True,
         input_schema={"type": "object", "required": ["repo", "issue_number", "body"]},
         output_schema={"type": "object", "required": ["github_comment"]},
+        causal_contract=github_comment_causal_contract(),
     )
 
     def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:

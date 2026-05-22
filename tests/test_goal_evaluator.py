@@ -146,6 +146,69 @@ class GoalEvaluatorTests(unittest.TestCase):
 
         self.assertIs(evaluation.status, GoalEvaluationStatus.FAILED)
 
+    def test_required_typed_success_with_optional_missing_still_succeeds(self) -> None:
+        goal = Goal(
+            "verify",
+            [],
+            criteria=(
+                {"key": "tests_ok", "op": "equals", "value": True},
+                {"key": "coverage_ok", "op": "equals", "value": True, "required": False},
+            ),
+        )
+
+        evaluation = GoalEvaluator().evaluate(goal, WorldState(facts={"tests_ok": True}))
+
+        self.assertIs(evaluation.status, GoalEvaluationStatus.SUCCEEDED)
+        self.assertIn("Optional typed criteria", evaluation.explanation)
+        self.assertNotIn("coverage_ok equals", evaluation.unsatisfied_criteria)
+
+    def test_required_typed_success_with_optional_failed_still_succeeds(self) -> None:
+        goal = Goal(
+            "verify",
+            [],
+            criteria=(
+                {"key": "tests_ok", "op": "equals", "value": True},
+                {"key": "coverage_ok", "op": "equals", "value": True, "required": False},
+            ),
+        )
+
+        evaluation = GoalEvaluator().evaluate(
+            goal,
+            WorldState(facts={"tests_ok": True, "coverage_ok": False}),
+        )
+
+        self.assertIs(evaluation.status, GoalEvaluationStatus.SUCCEEDED)
+        self.assertIn("coverage_ok equals", evaluation.evidence)
+        self.assertNotIn("coverage_ok equals", evaluation.unsatisfied_criteria)
+
+    def test_required_failed_dominates_optional_satisfied(self) -> None:
+        goal = Goal(
+            "verify",
+            [],
+            criteria=(
+                {"key": "tests_ok", "op": "equals", "value": True},
+                {"key": "docs_ok", "op": "equals", "value": True, "required": False},
+            ),
+        )
+
+        evaluation = GoalEvaluator().evaluate(
+            goal,
+            WorldState(facts={"tests_ok": False, "docs_ok": True}),
+        )
+
+        self.assertIs(evaluation.status, GoalEvaluationStatus.FAILED)
+
+    def test_only_optional_typed_criteria_do_not_false_succeed(self) -> None:
+        goal = Goal(
+            "verify",
+            [],
+            criteria=({"key": "docs_ok", "op": "equals", "value": True, "required": False},),
+        )
+
+        evaluation = GoalEvaluator().evaluate(goal, WorldState(facts={"docs_ok": True}))
+
+        self.assertIs(evaluation.status, GoalEvaluationStatus.PARTIAL)
+
 
 if __name__ == "__main__":
     unittest.main()

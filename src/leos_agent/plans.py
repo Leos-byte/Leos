@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import time
 import uuid
 from collections.abc import Sequence
@@ -65,6 +66,28 @@ class ActionStep:
     postconditions: Sequence[StateCondition] = ()
     invariants: Sequence[StateCondition] = ()
     step_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+    def clone(self) -> ActionStep:
+        """Clone a step without dropping safety-critical metadata."""
+
+        return ActionStep(
+            tool_name=self.tool_name,
+            arguments=copy.deepcopy(self.arguments),
+            reason=self.reason,
+            status=self.status,
+            risk=self.risk,
+            reversibility=self.reversibility,
+            compensation_strategy=self.compensation_strategy,
+            rollback_reliability=self.rollback_reliability,
+            required_permissions=tuple(self.required_permissions),
+            predictions=copy.deepcopy(self.predictions),
+            counterfactual_report=copy.deepcopy(self.counterfactual_report),
+            idempotency_key=self.idempotency_key,
+            preconditions=tuple(copy.deepcopy(tuple(self.preconditions))),
+            postconditions=tuple(copy.deepcopy(tuple(self.postconditions))),
+            invariants=tuple(copy.deepcopy(tuple(self.invariants))),
+            step_id=self.step_id,
+        )
 
 
 @dataclass

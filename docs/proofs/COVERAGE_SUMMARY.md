@@ -5,7 +5,7 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `3.126`
+- Duration seconds: `3.249`
 - Truncated: `False`
 
 ### stdout
@@ -99,8 +99,8 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: bdfa2655-8c76-4833-8764-8b7a6c19ad69
-Status: succeeded
+Enqueued: 6a7a238a-5411-436d-bb7e-b035ecca1eaf
+Status: failed
 Task file is valid.
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
@@ -111,7 +111,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=3b15e5f17fe7e579d8ffca9be3125f53d631fd9ff9396f3dd3f63fe515b59c9d observed=3423ec5955da74ca8167f52ee2dd9d8ef21c0b1813126851e4a7eff251b8638e
+  [0] event_hash_mismatch: expected=fb26199ea579a5a4a430a5e9c3065f225038eb1cd38a6b16cc45485d5994f1db observed=e437aea5fbd3ee3edd4033658ea081f6f3d1b2b23663d6801c69ce567d6e1f63
 Integrity: OK
 Applied events: 1
 Facts:
@@ -125,17 +125,17 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpbbnizw0h/signed.json
+Signed manifest written to /tmp/tmpas2ihj51/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=github-classic-token
-<redacted> written to /tmp/tmp85ns3leo/trace.html
+<redacted> written to /tmp/tmpluo78zpj/trace.html
 
 ```
 
 ### stderr
 
 ```text
-..................................................................Issue: $: 'steps' is a required property
+..........................................................................Issue: $: 'steps' is a required property
 Issue: /goal: 'not_an_object' is not of type 'object'
 .Unknown tool: nonexistent
 ..............................................................................Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
@@ -147,9 +147,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-.................................................................................................................................................................................................................................................................................................................................................................................................
+...........................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 580 tests in 2.588s
+Ran 598 tests in 2.699s
 
 OK
 
@@ -160,7 +160,7 @@ OK
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.721`
+- Duration seconds: `0.779`
 - Truncated: `False`
 
 ### stdout
@@ -169,34 +169,35 @@ OK
 Name                                       Stmts   Miss Branch BrPart  Cover
 ----------------------------------------------------------------------------
 src/leos_agent/__init__.py                     2      0      0      0   100%
-src/leos_agent/agent_loop.py                 208     19     60     12    86%
-src/leos_agent/approval.py                    83      2     12      2    96%
+src/leos_agent/agent_loop.py                 208     20     60     12    86%
+src/leos_agent/approval.py                    87      2     16      2    96%
 src/leos_agent/audit.py                      143      7     46     11    90%
 src/leos_agent/causal.py                      92      1     18      1    98%
-src/leos_agent/causal_contract.py             35      4      6      1    83%
+src/leos_agent/causal_contract.py             43      4      6      1    86%
 src/leos_agent/cli.py                        476    210    188     34    53%
 src/leos_agent/conflicts.py                   37      0     14      0   100%
-src/leos_agent/core.py                        45      0      0      0   100%
+src/leos_agent/core.py                        46      0      0      0   100%
 src/leos_agent/credentials.py                 61      1     16      8    88%
 src/leos_agent/dev_tools.py                  188     29     38     13    81%
+src/leos_agent/egress.py                      25      4      6      3    77%
 src/leos_agent/enums.py                       71      0      0      0   100%
 src/leos_agent/errors.py                      23      0      0      0   100%
 src/leos_agent/eval_runner.py                354     18     10      2    94%
-src/leos_agent/evaluator_registry.py         207     22     84     14    84%
+src/leos_agent/evaluator_registry.py         213     22     86     14    85%
 src/leos_agent/github_agent.py                74      6     18      4    89%
 src/leos_agent/github_client.py              239     11     74      7    94%
-src/leos_agent/github_tools.py               334     51     98     43    78%
+src/leos_agent/github_tools.py               335     51     98     43    78%
 src/leos_agent/goal_evaluator.py              29      1      4      2    91%
 src/leos_agent/goals.py                       92      8     18      3    88%
-src/leos_agent/kernel.py                      46      3      6      3    88%
+src/leos_agent/kernel.py                      46      2      6      2    92%
 src/leos_agent/manifest.py                    54      0      8      0   100%
 src/leos_agent/memory.py                     108      5     24      6    92%
 src/leos_agent/model.py                       47      0      2      1    98%
 src/leos_agent/model_adapters.py             109     26     18      2    76%
 src/leos_agent/network_tools.py              168     26     48      7    84%
-src/leos_agent/planner.py                    150     12     58     15    87%
-src/leos_agent/plans.py                       86      2      8      3    95%
-src/leos_agent/policy.py                     312     49    122     20    81%
+src/leos_agent/planner.py                    150     12     58     14    88%
+src/leos_agent/plans.py                       89      2      8      3    95%
+src/leos_agent/policy.py                     346     68    136     19    78%
 src/leos_agent/policy_manifest.py             51      9     12      5    78%
 src/leos_agent/prompts.py                     30      1      2      1    94%
 src/leos_agent/proof.py                      216      9     42      8    93%
@@ -209,12 +210,12 @@ src/leos_agent/serialization.py               67      1      6      1    97%
 src/leos_agent/simulation.py                  65      0      6      1    99%
 src/leos_agent/sqlite_store.py               103     19     10      5    79%
 src/leos_agent/state.py                       39      1     10      3    92%
-src/leos_agent/task_queue.py                 242     23     50      9    88%
+src/leos_agent/task_queue.py                 242     24     50     10    88%
 src/leos_agent/tool_manifest_registry.py      81     15     34     10    77%
 src/leos_agent/tools.py                      144      7     26      9    91%
 src/leos_agent/trace_viewer.py                68      0     20      0   100%
-src/leos_agent/transactions.py               357     32    130     12    90%
+src/leos_agent/transactions.py               361     32    134     12    90%
 ----------------------------------------------------------------------------
-TOTAL                                       5923    688   1576    336    85%
+TOTAL                                       6009    712   1606    337    84%
 
 ```

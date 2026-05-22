@@ -14,6 +14,7 @@ from leos_agent import (
     CausalGraph,
     DeterministicProposalProvider,
     Goal,
+    GoalCriterion,
     PlannerConfig,
     PlanProposal,
     PolicyEngine,
@@ -136,6 +137,46 @@ class AgentLoopTests(unittest.TestCase):
         self.assertEqual(result.stop_reason, "goal_failed")
         self.assertIsNotNone(result.evaluation)
         self.assertEqual(result.evaluation.unsatisfied_criteria, ["tests pass"])
+        self.assertNotEqual(result.selected_plans[0].goal.status.value, "succeeded")
+
+    def test_loop_does_not_succeed_when_typed_criterion_missing(self) -> None:
+        registry = ToolRegistry()
+        registry.register(TestResultTool(True))
+        kernel = self._kernel(registry)
+        goal = Goal(
+            "verify",
+            ["tests pass"],
+            criteria=(GoalCriterion("missing_required", "equals", True),),
+            stop_conditions=["stop"],
+        )
+        proposal = PlanProposal([ActionStep("test_result", {}, "record")], "record")
+
+        result = AgentLoop(
+            kernel,
+            DeterministicProposalProvider([proposal]),
+            config=AgentLoopConfig(max_iterations=1),
+        ).run(goal)
+
+        self.assertFalse(result.succeeded)
+        self.assertEqual(result.stop_reason, "goal_failed")
+        self.assertNotEqual(result.selected_plans[0].goal.status.value, "succeeded")
+
+    def test_loop_succeeds_when_verified_and_typed_criteria_satisfied(self) -> None:
+        registry = ToolRegistry()
+        registry.register(TestResultTool(True))
+        kernel = self._kernel(registry)
+        goal = Goal(
+            "verify",
+            ["tests pass"],
+            criteria=(GoalCriterion("tests_ok", "equals", True),),
+            stop_conditions=["stop"],
+        )
+        proposal = PlanProposal([ActionStep("test_result", {}, "record")], "record")
+
+        result = AgentLoop(kernel, DeterministicProposalProvider([proposal])).run(goal)
+
+        self.assertTrue(result.succeeded)
+        self.assertEqual(result.stop_reason, "goal_succeeded")
 
     def test_loop_does_not_exceed_max_iterations(self) -> None:
         kernel = self._kernel(ToolRegistry())

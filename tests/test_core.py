@@ -330,7 +330,7 @@ class AgentKernelTests(unittest.TestCase):
         self.assertEqual(result.steps[0].status, StepStatus.VERIFIED)
         self.assertEqual(agent.state.facts["last_echo"], "hello")
 
-    def test_goal_lifecycle_success_transitions_are_audited(self) -> None:
+    def test_goal_lifecycle_verified_actions_do_not_claim_goal_success(self) -> None:
         registry = default_registry()
         agent = AgentKernel(registry=registry, policy=PolicyEngine())
         goal = Goal(
@@ -342,12 +342,12 @@ class AgentKernelTests(unittest.TestCase):
 
         result = agent.run(plan)
 
-        self.assertEqual(result.goal.status, GoalStatus.SUCCEEDED)
+        self.assertEqual(result.goal.status, GoalStatus.PARTIALLY_DONE)
         transitions = [event for event in agent.audit_log.events if event.event_type == "goal.status_changed"]
         observed = [(event.payload["from_status"], event.payload["to_status"]) for event in transitions]
         self.assertIn(("created", "planning"), observed)
         self.assertIn(("planning", "running"), observed)
-        self.assertIn(("running", "succeeded"), observed)
+        self.assertIn(("running", "partially_done"), observed)
 
     def test_goal_lifecycle_partially_done_after_later_block(self) -> None:
         registry = default_registry()
@@ -485,12 +485,13 @@ class AgentKernelTests(unittest.TestCase):
         result = runner.run_next(now=20.0)
 
         self.assertEqual(result.task_id, task.task_id)
-        self.assertEqual(task.status, TaskStatus.SUCCEEDED)
+        self.assertEqual(task.status, TaskStatus.FAILED)
+        self.assertEqual(task.failure_reason, "Goal ended with status partially_done")
         self.assertEqual(agent.state.facts["last_echo"], "queued")
         events = [event.event_type for event in audit.events]
         self.assertIn("task.runner_started", events)
         self.assertIn("task.runner_finished", events)
-        self.assertIn("task.completed", events)
+        self.assertIn("task.failed", events)
 
     def test_task_runner_fails_when_goal_does_not_succeed(self) -> None:
         audit = AuditLog()

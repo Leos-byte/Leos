@@ -44,6 +44,7 @@ from .dev_tools import (
     RunTestsTool,
     default_dev_registry,
 )
+from .egress import EgressPolicy
 from .enums import (
     CompensationStrategy,
     Decision,
@@ -155,6 +156,7 @@ from .policy import (
     ApprovalGate,
     ApprovalRequest,
     CapabilityGrant,
+    InteractiveApprovalGate,
     PolicyEngine,
     PolicyProfile,
     PolicyRule,
@@ -278,6 +280,7 @@ __all__ = [
     "EffectPrediction",
     "EvalReport",
     "EvaluatorRegistry",
+    "EgressPolicy",
     "FakeBrowser",
     "FakeCalendar",
     "FakeEmailServer",
@@ -317,6 +320,7 @@ __all__ = [
     "InMemoryGitHubClient",
     "InMemoryCredentialVault",
     "InMemoryRuntimeStore",
+    "InteractiveApprovalGate",
     "InvalidGoalTransition",
     "JsonlRuntimeStore",
     "SQLiteRuntimeStore",
