@@ -7,7 +7,10 @@ from leos_agent import (
     AgentKernel,
     ApprovalGate,
     CausalContract,
+    EgressPolicy,
+    GitHubCreateBranchTool,
     Goal,
+    InMemoryGitHubClient,
     Permission,
     PolicyConfigurationError,
     PolicyDenied,
@@ -41,12 +44,19 @@ def _contract() -> CausalContract:
     return CausalContract("tool", sets=("ok",), required_observations=("ok",))
 
 
-def _run_tool(tool: _Tool, *, profile: str = "production_locked_down", approve: bool = True):
+def _run_tool(
+    tool,
+    *,
+    profile: str = "production_locked_down",
+    approve: bool = True,
+    policy: PolicyEngine | None = None,
+    arguments: dict | None = None,
+):
     registry = ToolRegistry()
     registry.register(tool)
     kernel = AgentKernel(
         registry,
-        PolicyEngine.from_profile(profile),
+        policy or PolicyEngine.from_profile(profile),
         approval_gate=ApprovalGate(lambda step: approve),
     )
     goal = Goal(
@@ -55,7 +65,7 @@ def _run_tool(tool: _Tool, *, profile: str = "production_locked_down", approve: 
         criteria=({"key": "ok", "op": "equals", "value": True},),
         stop_conditions=["done"],
     )
-    plan = kernel.build_plan(goal, [ActionStep(tool.spec.name, {}, "run")])
+    plan = kernel.build_plan(goal, [ActionStep(tool.spec.name, arguments or {}, "run")])
     return kernel, kernel.run(plan)
 
 
@@ -94,6 +104,48 @@ class ProductionProfileTests(unittest.TestCase):
         self.assertEqual(plan.steps[0].status.value, "blocked")
         self.assertFalse(tool.executed)
         self.assertTrue(any("network" in str(event.payload.get("reason", "")) for event in kernel.audit_log.events))
+
+    def test_network_tool_blocked_when_egress_host_not_allowed(self) -> None:
+        tool = _Tool(
+            ToolSpec(
+                "net_tool",
+                "network",
+                (Permission.NETWORK,),
+                default_risk=RiskLevel.LOW,
+                network_access=True,
+            )
+        )
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",))
+
+        kernel, plan = _run_tool(tool, policy=policy, arguments={"host": "example.com"})
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertFalse(tool.executed)
+        self.assertTrue(
+            any("egress policy" in str(event.payload.get("reason", "")) for event in kernel.audit_log.events)
+        )
+
+    def test_network_tool_with_allowed_egress_reaches_human_gate(self) -> None:
+        tool = _Tool(
+            ToolSpec(
+                "net_tool",
+                "network",
+                (Permission.NETWORK,),
+                default_risk=RiskLevel.LOW,
+                network_access=True,
+            )
+        )
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",))
+
+        kernel, plan = _run_tool(tool, policy=policy, approve=False, arguments={"host": "api.github.com"})
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertFalse(tool.executed)
+        self.assertFalse(
+            any("egress policy" in str(event.payload.get("reason", "")) for event in kernel.audit_log.events)
+        )
 
     def test_medium_tool_without_causal_contract_blocked_in_production(self) -> None:
         tool = _Tool(ToolSpec("medium", "m", (), default_risk=RiskLevel.MEDIUM, output_schema={"type": "object"}))
@@ -155,6 +207,16 @@ class ProductionProfileTests(unittest.TestCase):
         _, plan = _run_tool(tool, approve=True)
         self.assertEqual(plan.steps[0].status.value, "blocked")
         self.assertFalse(tool.executed)
+
+    def test_github_create_branch_has_production_causal_contract(self) -> None:
+        client = InMemoryGitHubClient()
+        tool = GitHubCreateBranchTool(client)
+
+        kernel, plan = _run_tool(tool, approve=True, arguments={"repo": "o/r", "branch": "feature", "base": "main"})
+
+        self.assertEqual(plan.steps[0].status.value, "verified")
+        self.assertIn(("o/r", "feature"), client.branches)
+        self.assertFalse(any(event.event_type == "causal_contract.missing" for event in kernel.audit_log.events))
 
     def test_developer_local_warns_for_missing_causal_contract(self) -> None:
         tool = _Tool(ToolSpec("medium", "m", (), default_risk=RiskLevel.MEDIUM))

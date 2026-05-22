@@ -1,15 +1,17 @@
 # Proof Index
 
-- Proof status: `release_grade`
-- Release grade: `True`
-- Generated at: `2026-05-22T03:20:40.274774+00:00`
-- Commit SHA: `f7e9569053687028ffbb79afdd4758bd985b43cd`
+- Proof status: `precommit_dirty`
+- Release grade: `False`
+- Generated at: `2026-05-22T08:11:43.863759+00:00`
+- Commit SHA: `791b99ccece6a265b53e1b035ce45cbdc742d9cf`
 - Branch: `fix/pr-21-review-improvements`
-- Dirty worktree: `False`
+- Dirty worktree: `True`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 
 ## Warnings
-- none
+- WARNING: This proof was generated from a dirty worktree and is not release-grade evidence.
+
+**WARNING: This proof was generated from a dirty worktree. It is useful for local review but not release-grade evidence.**
 
 ## Documents
 - [SOURCE_SNAPSHOT.md](SOURCE_SNAPSHOT.md)

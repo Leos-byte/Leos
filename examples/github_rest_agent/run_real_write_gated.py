@@ -15,15 +15,14 @@ from leos_agent import (
     ActionStep,
     AgentKernel,
     ApprovalGate,
+    EgressPolicy,
     GitHubConflictError,
     GitHubCreateBranchTool,
     GitHubOpenPRTool,
     GitHubRESTClient,
     GitHubUpdateFileTool,
     Goal,
-    Permission,
     PolicyEngine,
-    RiskLevel,
     Secret,
     ToolRegistry,
 )
@@ -56,10 +55,7 @@ def main() -> int:
     registry.register(GitHubOpenPRTool(client))
     kernel = AgentKernel(
         registry=registry,
-        policy=PolicyEngine(
-            granted_permissions=(Permission.WRITE_FILES, Permission.SEND_MESSAGE),
-            max_auto_risk=RiskLevel.MEDIUM,
-        ),
+        policy=_production_github_policy(),
         approval_gate=ApprovalGate(lambda step: True),
     )
 
@@ -128,6 +124,14 @@ def main() -> int:
         summary["branch_created"] = "github_branch" in kernel.state.facts
         summary["file_updated"] = "github_file_updated" in kernel.state.facts
         read_back = client.get_file(repo, target_path, work_branch, token=token.unwrap())
+        kernel.audit_log.record(
+            "github.real_write.readback_direct_client_call",
+            "Read-back verification used direct GitHubRESTClient call; "
+            "keep token redacted and migrate to tool-mediated read-back.",
+            repo=repo,
+            path=target_path,
+            branch=work_branch,
+        )
         if read_back.get("content") != content:
             raise GitHubConflictError("read-back verification failed")
         summary["read_back_verified"] = True
@@ -155,6 +159,12 @@ def _required_env(name: str) -> str:
 
 def _without_none(value: dict[str, object]) -> dict[str, object]:
     return {key: item for key, item in value.items() if item is not None}
+
+
+def _production_github_policy() -> PolicyEngine:
+    policy = PolicyEngine.from_profile("production_locked_down")
+    policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",))
+    return policy
 
 
 if __name__ == "__main__":

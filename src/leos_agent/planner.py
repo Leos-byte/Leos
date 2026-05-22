@@ -116,12 +116,7 @@ class Planner:
 
     @staticmethod
     def _clone_step(step: ActionStep) -> ActionStep:
-        return ActionStep(
-            tool_name=step.tool_name,
-            arguments=dict(step.arguments),
-            reason=step.reason,
-            risk=step.risk,
-        )
+        return step.clone()
 
 
 class LLMPlannerAdapter(Protocol):

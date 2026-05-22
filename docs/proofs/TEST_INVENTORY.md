@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-05-22T03:20:40.274774+00:00`
+Generated: `2026-05-22T08:11:43.863759+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -10,14 +10,14 @@ Generated: `2026-05-22T03:20:40.274774+00:00`
 | `tests/redteam/test_secret_boundary.py` | `e4af0e26b8134aeae18f645f4bf18c50dab92b9ec1f561d199397cbed15c5553` | 86 | 2993 | True |
 | `tests/redteam/test_tool_output_injection.py` | `f896e94ac15053060083eec92ba4ea23dc7bcc08032fdb77b48e5b79d4cb095f` | 115 | 4607 | True |
 | `tests/redteam/test_workspace_escape.py` | `869767479000d0a24d1f71527696bb963dc2f6d0351da2e5705dea446d419963` | 54 | 2176 | True |
-| `tests/test_agent_loop.py` | `a7f1b4ee884e3329d026c6b7bb95d134a4a0991ff54ca40ccade1e88caaa5876` | 209 | 7755 | True |
+| `tests/test_agent_loop.py` | `4959ffbdc919ea9024bc48ae3f1e4cd5052b02808042c26912ace0e28890a7d7` | 250 | 9381 | True |
 | `tests/test_agent_loop_runtime_store.py` | `68deb22fbc404b5b930b6b22358fdce01a6e303cae95dc90bb6df2f6770b819d` | 100 | 3580 | True |
-| `tests/test_approval_packet.py` | `32e2b6831e0bba81df4d29a80dc469120cf81590980b6beee0e7d6200bc70ec9` | 159 | 6902 | True |
+| `tests/test_approval_packet.py` | `306f3632979d2f14439da9b4c54d80106abdd87679099af5fc63c5838ac04065` | 231 | 9768 | True |
 | `tests/test_approval_request.py` | `5fd64240db4fadb130ffdb22048ea1fdc21fb2525be3fb8ad8f55498da6cf657` | 47 | 2073 | True |
 | `tests/test_audit_sanitization.py` | `ba95edcbaab5d8693706807369f4d80094d44b87449144b7bdef04e5fb8b6f87` | 58 | 1984 | True |
-| `tests/test_causal_contract.py` | `77eed9e2573c71d1e084820368bf728c634a9e30a13670f69c2f00067ed5323b` | 117 | 4821 | True |
+| `tests/test_causal_contract.py` | `a1caa7b8c5f7e1c415154bf72868c620e57d6f9f8f22b94ed77875937dc4afa6` | 185 | 7114 | True |
 | `tests/test_cli.py` | `5c51ecec17b4bc92f017620d2194e2209a66a1ab77cf9d1dcafbd86b27370844` | 124 | 4256 | True |
-| `tests/test_core.py` | `39efb0ade7f3016887f9ee7977bbd75aadc5349cfe8b10915e79eff2ae9bbeda` | 2447 | 103626 | True |
+| `tests/test_core.py` | `6dfd43d5dc485309b2451fe421ae03d9e829b7f7e244470a9062b3e0fbf301b2` | 2448 | 103728 | True |
 | `tests/test_credentials.py` | `752f2cd4b2f187250e214255cf992f964b8010579f051462ed3e9e4c7e8648f7` | 75 | 2506 | True |
 | `tests/test_dev_tools.py` | `80d36b3d0375a97bc8219c6d55df4a3b83aa91d9268fd9a16f5202f8521c2624` | 115 | 4251 | True |
 | `tests/test_docker_sandbox.py` | `52ab41235c8ee09a2d8a1f51b096bb7ffa3387b8ff2257d6b9a7cb03c71ea960` | 62 | 2571 | True |
@@ -31,14 +31,15 @@ Generated: `2026-05-22T03:20:40.274774+00:00`
 | `tests/test_github_rest_client.py` | `d16ae54deb5ec3b51d2a25d3dc9b128a3f67d82ac0c173b6431dc7227ef7674e` | 376 | 15504 | True |
 | `tests/test_github_tools.py` | `9c8fc8a44ab065b4f78c61292ef015968645f48bd630431f61e84dba92838cb1` | 434 | 16228 | True |
 | `tests/test_github_tools_credentials.py` | `2227a920470d0398065b792c71fe8e5ec735c0301c8d6348751c1f56b9a22003` | 93 | 3736 | True |
-| `tests/test_goal_evaluator.py` | `01a81ab0c0bb214d0d592a534baffdbb7abb7ba5eb92e3473b93cca9968ab563` | 151 | 6189 | True |
+| `tests/test_goal_evaluator.py` | `f29ee7f1fb1565be2aecfd9e173528c97794cdbb1a2e2a892d200b0c6d56d82f` | 214 | 8535 | True |
 | `tests/test_llm_planner.py` | `bd0eb4bfb938795835a3aeb6827d0c3e0d2be446e4d2b2e4e64b1e10bbce7c45` | 152 | 5998 | True |
 | `tests/test_model_adapters.py` | `59f4bedd8f56cdd6a78a102bf5e54485111876ff2134d25a825f6d448785157c` | 82 | 3391 | True |
 | `tests/test_network_tools.py` | `91362d989c57f9d98632c0a1283bbc3b99c88ff6a576a80a42214d7d2e97739d` | 215 | 8706 | True |
-| `tests/test_production_profile.py` | `62908141ab7148dc807903ec0f5259ac15234df69a4f200005b00c91aad2aca8` | 179 | 6474 | True |
+| `tests/test_planner.py` | `f749bb4546f5623f281581ccf33c7dcba64e8641a1bf872c9f6db35e688e493f` | 70 | 3190 | True |
+| `tests/test_production_profile.py` | `ace218ee5d53e1f7ee65060f83ec3c33faeee74f3707337a64febe66eec10352` | 241 | 8821 | True |
 | `tests/test_proof_generation.py` | `6d3688c9d0a9905693ec2a3228b5d5026627a4272e006f631ed8287346d92a5e` | 146 | 6270 | True |
 | `tests/test_properties.py` | `c79e170732b4853a1404712a485b85cca756b49ec0e0fe201f9f7080daa0a558` | 173 | 6762 | True |
-| `tests/test_public_api.py` | `c70daf4f871a99245d2367dcf754a4a60db27b0521fa2597cd120e8d45a6b49e` | 211 | 8075 | True |
+| `tests/test_public_api.py` | `ac4d11b83c6e5e27d6bb6e1228f72be3f424aaf6ac1790691205573b78aeb54f` | 215 | 8271 | True |
 | `tests/test_replanning.py` | `ab70ef5daed4ec24948fae66eafd124351a920a407d885932930ffd000f021bc` | 100 | 3307 | True |
 | `tests/test_replay.py` | `c283dec6fdcdb9857e966d4ea25b1e82ae1f268d12a455e5842afcf7288a94d3` | 117 | 5330 | True |
 | `tests/test_runtime_store.py` | `5fd95e8ab33018da777c85e460e7ebf712694552f803d1ecee8ad8dd9c12bc64` | 189 | 7363 | True |
@@ -53,4 +54,5 @@ Generated: `2026-05-22T03:20:40.274774+00:00`
 | `tests/test_task_queue_persistence.py` | `c436014da0c923ceb7588a47ebdaf94798d7078bdb108ca6286391b90413410e` | 162 | 6184 | True |
 | `tests/test_tool_manifest_registry.py` | `5c412c2faaefcf0e0dda06df1d1718a333ba29e9797bb793164d554306659279` | 136 | 4789 | True |
 | `tests/test_trace_viewer.py` | `abbefcdd03f8d602fc67636fb16511e010d22f3890d14b68b97940724c837b55` | 145 | 5315 | True |
+| `tests/test_transactions.py` | `8f1059320a01ea56dff8f52b20f8ecff54d8ebbf839c0a36da810b61cd1d8d18` | 25 | 847 | True |
 | `tests/test_untrusted_observation_guard.py` | `c191c3fb7753dd1fd06a82981a49d84bb5e7e40b9bce59240dc1c83fcafb9043` | 46 | 1863 | True |

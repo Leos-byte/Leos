@@ -5,7 +5,7 @@
 - Command: `ruff check .`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.011`
+- Duration seconds: `0.009`
 - Truncated: `False`
 
 ### stdout
@@ -20,13 +20,13 @@ All checks passed!
 - Command: `ruff format --check .`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.01`
+- Duration seconds: `0.009`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-111 files already formatted
+114 files already formatted
 
 ```
 
@@ -35,12 +35,12 @@ All checks passed!
 - Command: `mypy src`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.153`
+- Duration seconds: `0.146`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Success: no issues found in 46 source files
+Success: no issues found in 47 source files
 
 ```

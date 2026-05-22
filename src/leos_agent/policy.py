@@ -8,7 +8,8 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from .approval import ApprovalDecision, ApprovalDecisionValue, ApprovalPacket
+from .approval import ApprovalDecision, ApprovalDecisionValue, ApprovalPacket, render_approval_packet_markdown
+from .egress import EgressPolicy
 from .enums import Decision, Permission, Reversibility, RiskLevel, SandboxPolicy, _risk_value
 from .errors import PolicyConfigurationError
 from .plans import ActionStep
@@ -133,6 +134,7 @@ class PolicyProfile:
     require_timeout_for_medium_risk: bool = False
     require_output_schema_for_medium_risk: bool = False
     require_typed_goal_criteria: bool = False
+    egress_policy: EgressPolicy | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "granted_permissions", _permissions(self.granted_permissions))
@@ -171,6 +173,18 @@ class PolicyProfile:
             require_timeout_for_medium_risk=bool(data.get("require_timeout_for_medium_risk", False)),
             require_output_schema_for_medium_risk=bool(data.get("require_output_schema_for_medium_risk", False)),
             require_typed_goal_criteria=bool(data.get("require_typed_goal_criteria", False)),
+            egress_policy=(
+                EgressPolicy(
+                    allowed_hosts=tuple(data["egress_policy"].get("allowed_hosts", ())),
+                    allowed_methods=tuple(
+                        data["egress_policy"].get("allowed_methods", ("GET", "POST", "PATCH", "PUT", "DELETE"))
+                    ),
+                    max_requests=data["egress_policy"].get("max_requests"),
+                    dns_rebind_protection=bool(data["egress_policy"].get("dns_rebind_protection", True)),
+                )
+                if isinstance(data.get("egress_policy"), Mapping)
+                else None
+            ),
         )
 
 
@@ -202,13 +216,14 @@ BUILT_IN_POLICY_PROFILES = {
         name="production_locked_down",
         max_auto_risk=RiskLevel.LOW,
         require_human_for=(
+            Permission.NETWORK,
             Permission.WRITE_FILES,
             Permission.SEND_MESSAGE,
             Permission.EXECUTE_CODE,
             Permission.READ_MEMORY,
             Permission.WRITE_MEMORY,
         ),
-        deny_permissions=(Permission.NETWORK, Permission.FINANCIAL, Permission.DELETE, Permission.SYSTEM_CONFIG),
+        deny_permissions=(Permission.FINANCIAL, Permission.DELETE, Permission.SYSTEM_CONFIG),
         require_strong_sandbox_for_execute=True,
         network_default_deny=True,
         require_causal_contract_for_medium_risk=True,
@@ -240,6 +255,7 @@ class PolicyEngine:
         grants: Iterable[CapabilityGrant] | None = None,
         principal: str | None = None,
         profile_name: str = "custom",
+        egress_policy: EgressPolicy | None = None,
     ) -> None:
         self.granted_permissions = set(granted_permissions or [])
         self.max_auto_risk = max_auto_risk
@@ -249,6 +265,7 @@ class PolicyEngine:
         self.grants = tuple(grants or ())
         self.principal = principal
         self.profile_name = profile_name
+        self.egress_policy = egress_policy
         self.require_strong_sandbox_for_execute = False
         self.network_default_deny = False
         self.require_causal_contract_for_medium_risk = False
@@ -278,6 +295,7 @@ class PolicyEngine:
         engine.require_timeout_for_medium_risk = profile.require_timeout_for_medium_risk
         engine.require_output_schema_for_medium_risk = profile.require_output_schema_for_medium_risk
         engine.require_typed_goal_criteria = profile.require_typed_goal_criteria
+        engine.egress_policy = profile.egress_policy
         return engine
 
     @classmethod
@@ -301,7 +319,15 @@ class PolicyEngine:
         if self.profile_name != "production_locked_down":
             return None
         if tool.spec.network_access or Permission.NETWORK in tool.spec.permissions:
-            return "production_locked_down forbids network tools without an explicit egress policy"
+            host = str(
+                step.arguments.get("host") or step.arguments.get("hostname") or step.arguments.get("domain") or ""
+            )
+            method = str(step.arguments.get("method", "GET"))
+            if self.egress_policy is None:
+                return "production_locked_down forbids network tools without an explicit egress policy"
+            if not self.egress_policy.allows(host, method):
+                target = host or "<missing-host>"
+                return f"production_locked_down egress policy does not allow {method.upper()} {target}"
         if (
             self.require_strong_sandbox_for_execute
             and Permission.EXECUTE_CODE in tool.spec.permissions
@@ -513,6 +539,36 @@ class InteractiveApprovalGate(ApprovalGate):
             return Decision.DENIED
         except Exception:  # noqa: BLE001
             return Decision.DENIED
+
+    def request_packet(self, packet: ApprovalPacket, step: ActionStep) -> ApprovalDecision:
+        import sys
+
+        if not sys.stdout.isatty():
+            return ApprovalDecision(packet.approval_id, packet.step_hash, ApprovalDecisionValue.DENY)
+
+        print(render_approval_packet_markdown(packet))
+        try:
+            import select
+
+            prompt = f"Approve packet? [y/N/dry-run/narrow] (timeout {self.timeout_seconds:.0f}s): "
+            print(prompt, end="", flush=True)
+            ready, _, _ = select.select([sys.stdin], [], [], self.timeout_seconds)
+            if not ready:
+                print("\n(timeout)")
+                return ApprovalDecision(packet.approval_id, packet.step_hash, ApprovalDecisionValue.DENY)
+            response = sys.stdin.readline().strip().lower()
+        except Exception:  # noqa: BLE001
+            return ApprovalDecision(packet.approval_id, packet.step_hash, ApprovalDecisionValue.DENY)
+
+        if response in {"y", "yes"}:
+            decision = ApprovalDecisionValue.APPROVE
+        elif response in {"d", "dry-run", "dry_run", "dry_run_only"}:
+            decision = ApprovalDecisionValue.DRY_RUN_ONLY
+        elif response == "narrow":
+            decision = ApprovalDecisionValue.NARROW_SCOPE
+        else:
+            decision = ApprovalDecisionValue.DENY
+        return ApprovalDecision(packet.approval_id, packet.step_hash, decision)
 
 
 def _as_list(value: Any) -> list[Any]:

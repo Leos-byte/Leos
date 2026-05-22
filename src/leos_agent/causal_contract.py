@@ -77,3 +77,51 @@ def safe_file_write_causal_contract() -> CausalContract:
         risk_notes=("Modifies one workspace-scoped file.",),
         confidence=0.9,
     )
+
+
+def github_create_branch_causal_contract() -> CausalContract:
+    return CausalContract(
+        tool_name="github_create_branch",
+        sets=("github_branch",),
+        side_effects=("github_branch_created",),
+        rollback_effects=("github_branch_deleted",),
+        required_observations=("github_branch",),
+        risk_notes=("Creates a remote GitHub branch and requires cleanup on rollback.",),
+        confidence=0.85,
+    )
+
+
+def github_update_file_causal_contract() -> CausalContract:
+    return CausalContract(
+        tool_name="github_update_file",
+        sets=("github_file_updated",),
+        side_effects=("github_repository_file_modified",),
+        rollback_effects=("previous_github_file_content_restored_when_available",),
+        required_observations=("github_file_updated",),
+        risk_notes=("Modifies repository content on a non-protected branch with optimistic guards.",),
+        confidence=0.85,
+    )
+
+
+def github_open_pr_causal_contract() -> CausalContract:
+    return CausalContract(
+        tool_name="github_open_pr",
+        sets=("github_pr",),
+        side_effects=("github_pull_request_created",),
+        rollback_effects=("github_pull_request_closed",),
+        required_observations=("github_pr",),
+        risk_notes=("Creates or reuses an idempotent GitHub pull request.",),
+        confidence=0.85,
+    )
+
+
+def github_comment_causal_contract() -> CausalContract:
+    return CausalContract(
+        tool_name="github_comment",
+        sets=("github_comment",),
+        side_effects=("github_issue_comment_created",),
+        rollback_effects=("github_issue_comment_deleted",),
+        required_observations=("github_comment",),
+        risk_notes=("Posts a GitHub issue or PR comment.",),
+        confidence=0.85,
+    )

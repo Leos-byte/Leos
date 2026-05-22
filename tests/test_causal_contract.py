@@ -9,6 +9,7 @@ from typing import Any
 from leos_agent.audit import AuditLog
 from leos_agent.causal import CausalGraph, CausalHypothesis
 from leos_agent.enums import Permission, RiskLevel
+from leos_agent.github_tools import GitHubOpenPRTool, GitHubUpdateFileTool, InMemoryGitHubClient
 from leos_agent.goals import Goal
 from leos_agent.plans import ActionStep, TransactionPlan
 from leos_agent.policy import ApprovalGate, PolicyEngine
@@ -107,6 +108,73 @@ class CausalContractTests(unittest.TestCase):
         predictions = CausalGraph([CausalHypothesis("old", ["x"], "legacy")]).predict_for_tool(step, WorldState())
 
         self.assertEqual(predictions[0].variable, "x")
+
+    def test_github_update_file_observation_satisfies_contract(self) -> None:
+        client = InMemoryGitHubClient()
+        old_sha = client.seed_file("o/r", "feature", "README.md", "old")
+        tool = GitHubUpdateFileTool(client)
+        registry = ToolRegistry()
+        registry.register(tool)
+        manager = TransactionManager(
+            registry,
+            PolicyEngine(granted_permissions=(Permission.WRITE_FILES,)),
+            CausalGraph(),
+            AuditLog(),
+            ApprovalGate(lambda step: True),
+        )
+
+        result = manager.execute_plan(
+            _plan(
+                ActionStep(
+                    "github_update_file",
+                    {
+                        "repo": "o/r",
+                        "path": "README.md",
+                        "branch": "feature",
+                        "content": "new",
+                        "message": "update",
+                        "expected_sha": old_sha,
+                    },
+                    "update",
+                )
+            ),
+            WorldState(),
+        )
+
+        self.assertEqual(result.steps[0].status.value, "verified")
+
+    def test_github_open_pr_observation_satisfies_contract(self) -> None:
+        client = InMemoryGitHubClient()
+        tool = GitHubOpenPRTool(client)
+        registry = ToolRegistry()
+        registry.register(tool)
+        manager = TransactionManager(
+            registry,
+            PolicyEngine(granted_permissions=(Permission.SEND_MESSAGE,)),
+            CausalGraph(),
+            AuditLog(),
+            ApprovalGate(lambda step: True),
+        )
+
+        result = manager.execute_plan(
+            _plan(
+                ActionStep(
+                    "github_open_pr",
+                    {
+                        "repo": "o/r",
+                        "title": "Fix",
+                        "body": "Body",
+                        "head": "feature",
+                        "base": "main",
+                        "idempotency_key": "same",
+                    },
+                    "open",
+                )
+            ),
+            WorldState(),
+        )
+
+        self.assertEqual(result.steps[0].status.value, "verified")
 
 
 def _plan(step: ActionStep) -> TransactionPlan:

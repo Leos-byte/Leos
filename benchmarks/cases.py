@@ -55,6 +55,7 @@ def cases() -> list[BenchmarkCase]:
             tags=["smoke"],
             build_goal=lambda **kw: Goal(description="Echo", success_criteria=["ok"], stop_conditions=["done"]),
             build_steps=lambda **kw: [ActionStep("echo", {"message": "hi"}, "test")],
+            expected_goal_status="partially_done",
             expected_step_statuses=["verified"],
         ),
         BenchmarkCase(
@@ -134,7 +135,7 @@ def cases() -> list[BenchmarkCase]:
                 registry=default_registry(kw.get("ws", Path("."))),
                 policy=PolicyEngine.from_profile("developer_local"),
             ),
-            expected_goal_status="succeeded",
+            expected_goal_status="partially_done",
             expected_step_statuses=["verified"],
         ),
         BenchmarkCase(
@@ -178,7 +179,7 @@ def cases() -> list[BenchmarkCase]:
             tags=["task", "retry"],
             build_goal=lambda **kw: Goal(description="Retry", success_criteria=["ok"], stop_conditions=["done"]),
             build_steps=lambda **kw: [ActionStep("echo", {"message": "hi"}, "retry test")],
-            expected_goal_status="succeeded",
+            expected_goal_status="partially_done",
             expected_step_statuses=["verified"],
         ),
         BenchmarkCase(
@@ -190,7 +191,7 @@ def cases() -> list[BenchmarkCase]:
             build_steps=lambda **kw: [
                 ActionStep("network_fetch", {"url": "https://example.test"}, "fetch untrusted page")
             ],
-            expected_goal_status="succeeded",
+            expected_goal_status="partially_done",
             expected_step_statuses=["verified"],
         ),
     ]

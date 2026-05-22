@@ -185,6 +185,10 @@ def validate_approval_decision(
         return "profile mismatch"
     if packet.expires_at is not None and (time.time() if now is None else now) > packet.expires_at:
         return "approval expired"
+    if decision.decision is ApprovalDecisionValue.DRY_RUN_ONLY:
+        return "approval decision is dry_run_only"
+    if decision.decision is ApprovalDecisionValue.NARROW_SCOPE:
+        return "approval decision requires narrowed scope"
     if decision.decision is not ApprovalDecisionValue.APPROVE:
         return f"approval decision is {decision.decision.value}"
     return None
@@ -198,13 +202,19 @@ def render_approval_packet_markdown(packet: ApprovalPacket) -> str:
         "goal_id",
         "plan_id",
         "step_id",
+        "step_hash",
         "tool_name",
+        "action_summary",
         "risk_level",
         "required_permissions",
         "causal_contract_summary",
         "dry_run_summary",
         "rollback_summary",
+        "diff_summary",
+        "alternatives",
+        "requester",
         "profile",
+        "created_at",
         "expires_at",
     ):
         lines.append(f"- **{key}**: {data[key]}")
