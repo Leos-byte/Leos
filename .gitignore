@@ -33,3 +33,15 @@ Thumbs.db
 # Leos runtime artifacts
 .leos-workspace/
 *.leos-audit.jsonl
+
+# Claude Code
+.claude/
+
+# pytest
+.pytest_cache/
+
+# Ruff
+.ruff_cache/
+
+# Jupyter notebooks (may contain sensitive output)
+*.ipynb

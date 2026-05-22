@@ -263,14 +263,17 @@ class AgentLoop:
                     explanation=evaluation.explanation,
                     evidence_keys=sorted(evaluation.evidence),
                 )
-                if self._evaluation_stop_reason(evaluation):
+                eval_stop = self._evaluation_stop_reason(evaluation)
+                if eval_stop:
                     current_goal = self._transition_goal_for_evaluation(plan_goal, evaluation)
+                else:
+                    current_goal = plan_goal
             else:
                 current_goal = plan_goal
             self._write_iteration_memory(current_goal, iteration, progress)
 
             if self.config.use_goal_evaluator:
-                iteration_stop_reason = self._evaluation_stop_reason(evaluation)
+                iteration_stop_reason = eval_stop
             else:
                 iteration_stop_reason = self._stop_reason(current_goal)
             if iteration_stop_reason:
