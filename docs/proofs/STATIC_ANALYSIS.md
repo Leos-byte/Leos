@@ -5,7 +5,7 @@
 - Command: `ruff check .`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.009`
+- Duration seconds: `0.011`
 - Truncated: `False`
 
 ### stdout
@@ -35,7 +35,7 @@ All checks passed!
 - Command: `mypy src`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.146`
+- Duration seconds: `0.159`
 - Truncated: `False`
 
 ### stdout
