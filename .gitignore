@@ -37,11 +37,5 @@ Thumbs.db
 # Claude Code
 .claude/
 
-# pytest
-.pytest_cache/
-
 # Ruff
 .ruff_cache/
-
-# Jupyter notebooks (may contain sensitive output)
-*.ipynb
