@@ -18,6 +18,21 @@ class ReleaseProofCheckTests(unittest.TestCase):
         with mock.patch.object(check_release_proof, "_git", return_value="abc"):
             self.assertEqual(check_release_proof._proof_failures(manifest, Path.cwd()), [])
 
+    def test_proof_refresh_commit_parent_passes_when_only_proofs_changed(self) -> None:
+        manifest = _manifest()
+
+        def fake_git(_root: Path, *args: str) -> str:
+            if args == ("rev-parse", "HEAD"):
+                return "proof-refresh"
+            if args == ("rev-parse", "HEAD^"):
+                return "abc"
+            if args == ("diff", "--name-only", "abc", "proof-refresh"):
+                return "docs/proofs/MANIFEST.json\ndocs/proofs/PROOF_INDEX.md"
+            raise AssertionError(args)
+
+        with mock.patch.object(check_release_proof, "_git", side_effect=fake_git):
+            self.assertEqual(check_release_proof._proof_failures(manifest, Path.cwd()), [])
+
     def test_precommit_dirty_fails(self) -> None:
         manifest = _manifest(proof_status="precommit_dirty")
         with mock.patch.object(check_release_proof, "_git", return_value="abc"):
@@ -35,6 +50,22 @@ class ReleaseProofCheckTests(unittest.TestCase):
     def test_commit_mismatch_fails(self) -> None:
         manifest = _manifest()
         with mock.patch.object(check_release_proof, "_git", return_value="different"):
+            failures = check_release_proof._proof_failures(manifest, Path.cwd())
+        self.assertTrue(any("commit_sha" in failure for failure in failures))
+
+    def test_proof_refresh_parent_fails_when_non_proof_files_changed(self) -> None:
+        manifest = _manifest()
+
+        def fake_git(_root: Path, *args: str) -> str:
+            if args == ("rev-parse", "HEAD"):
+                return "proof-refresh"
+            if args == ("rev-parse", "HEAD^"):
+                return "abc"
+            if args == ("diff", "--name-only", "abc", "proof-refresh"):
+                return "docs/proofs/MANIFEST.json\nsrc/leos_agent/core.py"
+            raise AssertionError(args)
+
+        with mock.patch.object(check_release_proof, "_git", side_effect=fake_git):
             failures = check_release_proof._proof_failures(manifest, Path.cwd())
         self.assertTrue(any("commit_sha" in failure for failure in failures))
 

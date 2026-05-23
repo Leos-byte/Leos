@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Check that release proof metadata matches the current clean commit."""
+"""Check that release proof metadata matches the current release evidence flow."""
 
 from __future__ import annotations
 
@@ -50,9 +50,22 @@ def _proof_failures(manifest: dict[str, Any], root: Path) -> list[str]:
     current = _git(root, "rev-parse", "HEAD")
     if current is None:
         failures.append("current git commit unavailable")
-    elif git.get("commit_sha") != current:
-        failures.append("git.commit_sha does not match current HEAD")
+    elif not _commit_matches_release_flow(root, str(git.get("commit_sha", "")), current):
+        failures.append("git.commit_sha does not match current HEAD or proof-refresh parent")
     return failures
+
+
+def _commit_matches_release_flow(root: Path, manifest_commit: str, current: str) -> bool:
+    if manifest_commit == current:
+        return True
+    parent = _git(root, "rev-parse", "HEAD^")
+    if manifest_commit != parent:
+        return False
+    changed = _git(root, "diff", "--name-only", parent, current)
+    if changed is None:
+        return False
+    paths = [line.strip() for line in changed.splitlines() if line.strip()]
+    return bool(paths) and all(path.startswith("docs/proofs/") for path in paths)
 
 
 def _git(root: Path, *args: str) -> str | None:
