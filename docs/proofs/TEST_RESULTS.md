@@ -5,7 +5,7 @@
 - Command: `python -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `2.052`
+- Duration seconds: `2.093`
 - Truncated: `False`
 
 ### stdout
@@ -105,7 +105,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: 5ed7c688-337d-4368-9d5b-e18d38eccc0a
+Enqueued: a2995a96-eabe-409f-883d-1014ac2986c2
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -117,7 +117,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=86f61fab70013cb6a1dfa789030811f9dfd065031e0f5d8b3d8eb316d3dc0eb7 observed=db23370b5668a5871f656cf0d09c1cfd7dab2ff12424bf60aefc54cb4028a49e
+  [0] event_hash_mismatch: expected=7bda656c6ef306020f0fa27baad00f429ce40b7b6b931784874882cc6f22dbef observed=768505972d23db6b95641a59ca004ec33704ed00d0efd33f217d6fe2e954dc9a
 Integrity: OK
 Applied events: 1
 Facts:
@@ -131,10 +131,10 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpz1qtdoyf/signed.json
+Signed manifest written to /tmp/tmpfv33qagr/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=github-classic-token
-<redacted> written to /tmp/tmpzzzl84uf/trace.html
+<redacted> written to /tmp/tmpur9jyndg/trace.html
 
 ```
 
@@ -153,9 +153,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+..................................................................................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 671 tests in 1.773s
+Ran 673 tests in 1.807s
 
 OK
 
