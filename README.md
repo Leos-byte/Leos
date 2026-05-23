@@ -111,7 +111,7 @@ network access or external APIs.
 | Production locked-down policy | fail-closed profile for typed goals, strong sandbox, schemas, causal contracts, and egress methods |
 | Approval packets | anti-replay packet binding for human-gated consequential actions |
 | File approval exchange | local non-interactive approval packet/decision files |
-| Runtime egress guard | opt-in GitHubRESTClient host/method enforcement |
+| Runtime egress guard | opt-in GitHubRESTClient host/method enforcement with production attestation |
 | Manual recovery packets | structured rollback failure/operator recovery records |
 | Failure-driven replanning | bounded repair loop for selected failure classes |
 | Local software engineering demo | implemented, no network/API token required |
@@ -149,7 +149,9 @@ methods such as `PUT`, `POST`, `PATCH`, or `DELETE`.
 The real GitHub client can also be constructed with `enforce_egress=True`, which
 checks each runtime request against the same host/method policy before the
 transport is called. This is a runtime guard inside Leos, not a substitute for
-container, OS, or firewall-level egress controls.
+container, OS, or firewall-level egress controls. In `production_locked_down`,
+network tools must attest that this runtime guard is enabled and configured, so
+a miswired `GitHubRESTClient(enforce_egress=False)` is blocked before execution.
 Audit, trace rendering, runtime events, and checkpoints share a sanitization
 boundary that rejects or redacts `Secret`, `SecretHandle`-unsafe payloads, and
 common token-like strings. `InMemoryGitHubClient` keeps only token fingerprints
@@ -221,7 +223,9 @@ one action cannot be replayed onto a different tool call or changed arguments.
 For non-interactive runs, `FileApprovalGate` can write packets to a local
 directory and consume matching decision files. The decision still has to match
 the packet approval id and step hash; file exchange does not bypass
-`production_locked_down` hard blocks or anti-replay validation.
+`production_locked_down` hard blocks or anti-replay validation. It can also
+restrict approvers with an allowlist and reject decision files whose permissions
+are too broad.
 
 If rollback fails or rollback egress is blocked, Leos emits a
 `ManualRecoveryPacket` with the affected step, tool, risk, reason, and suggested

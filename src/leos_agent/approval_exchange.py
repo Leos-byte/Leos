@@ -57,11 +57,20 @@ def build_decision_for_packet(
 class FileApprovalGate(ApprovalGate):
     """Writes approval packets to disk and consumes matching decision files."""
 
-    def __init__(self, packet_dir: Path, decision_dir: Path, timeout_seconds: float = 0.0) -> None:
+    def __init__(
+        self,
+        packet_dir: Path,
+        decision_dir: Path,
+        timeout_seconds: float = 0.0,
+        allowed_approvers: set[str] | None = None,
+        require_private_decision_files: bool = True,
+    ) -> None:
         super().__init__(approver=None)
         self.packet_dir = packet_dir
         self.decision_dir = decision_dir
         self.timeout_seconds = timeout_seconds
+        self.allowed_approvers = set(allowed_approvers) if allowed_approvers is not None else None
+        self.require_private_decision_files = require_private_decision_files
         self.packet_dir.mkdir(parents=True, exist_ok=True)
         self.decision_dir.mkdir(parents=True, exist_ok=True)
 
@@ -71,13 +80,33 @@ class FileApprovalGate(ApprovalGate):
         write_approval_packet(packet, packet_path)
         decision_path = self.decision_dir / f"{_safe_approval_id(packet.approval_id)}.json"
         if decision_path.exists():
-            return read_approval_decision(decision_path)
+            permission_issue = self._decision_file_permission_issue(decision_path)
+            if permission_issue is not None:
+                return _deny(packet, permission_issue)
+            decision = read_approval_decision(decision_path)
+            if self.allowed_approvers is not None and (
+                decision.approver is None or decision.approver not in self.allowed_approvers
+            ):
+                return _deny(packet, "approver not allowed")
+            return decision
         return ApprovalDecision(packet.approval_id, packet.step_hash, ApprovalDecisionValue.DENY)
+
+    def _decision_file_permission_issue(self, path: Path) -> str | None:
+        if not self.require_private_decision_files:
+            return None
+        try:
+            mode = path.stat().st_mode & 0o777
+        except OSError:
+            return "decision file permissions could not be checked"
+        if mode & 0o077:
+            return "decision file permissions too broad"
+        return None
 
 
 def _write_json(path: Path, data: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(safe_json_dumps(data), encoding="utf-8")
+    _chmod_private(path)
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -92,3 +121,19 @@ def _safe_approval_id(approval_id: str) -> str:
     if not safe or safe != approval_id:
         raise ValueError("approval_id contains unsafe path characters")
     return safe
+
+
+def _deny(packet: ApprovalPacket, reason: str) -> ApprovalDecision:
+    return ApprovalDecision(
+        approval_id=packet.approval_id,
+        step_hash=packet.step_hash,
+        decision=ApprovalDecisionValue.DENY,
+        reason=reason,
+    )
+
+
+def _chmod_private(path: Path) -> None:
+    try:
+        path.chmod(0o600)
+    except OSError:
+        return

@@ -183,6 +183,8 @@ class PublicAPITests(unittest.TestCase):
             ManualRecoveryPacket,
             PlanRepairStrategy,
             ReplanContext,
+            RuntimeAttestationAssessment,
+            RuntimeAttestedTool,
             RuntimeEgressBlocked,
             RuntimeEgressDecision,
             RuntimeEgressGuard,
@@ -217,6 +219,7 @@ class PublicAPITests(unittest.TestCase):
         self.assertTrue(hasattr(leos_agent, "EgressPolicy"))
         self.assertTrue(hasattr(leos_agent, "InteractiveApprovalGate"))
         self.assertTrue(hasattr(leos_agent, "RuntimeEgressGuard"))
+        self.assertTrue(hasattr(leos_agent, "RuntimeAttestedTool"))
         self.assertTrue(hasattr(leos_agent, "ManualRecoveryPacket"))
         self.assertTrue(hasattr(leos_agent, "FileApprovalGate"))
 

@@ -102,6 +102,12 @@ wildcards are rejected, and private or localhost hosts are blocked. This guard
 protects direct client use inside Leos, but production deployments still need
 OS, container, or network firewall egress enforcement.
 
+In `production_locked_down`, network tools must also provide runtime
+attestation. GitHub tools report whether their underlying client has runtime
+egress enforcement enabled and has a configured egress policy. Real
+`GitHubRESTClient` instances must attest `enforce_egress=True`; the in-memory
+client attests an explicit `in_memory` mode for tests and demos.
+
 `GitHubIssuePlanProvider` is a deterministic bridge between GitHub observations
 and the closed loop runtime. It does not call GitHub directly. Its first
 proposal reads the issue and target file through normal tools. Once those facts
@@ -213,7 +219,9 @@ replan or stop
 - Use file-based approval exchange for non-interactive local/manual workflows
   when a human needs to review a packet out of band. Decision files still bind
   to the packet approval id and step hash and cannot bypass production hard
-  blocks.
+  blocks. `FileApprovalGate` can restrict approvers by allowlist and can reject
+  decision files with group/world permissions; this is local hardening, not a
+  cryptographic signature or multi-tenant approval system.
 - For release evidence, regenerate clean proofs and verify the manifest:
 
   ```bash

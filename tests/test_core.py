@@ -1458,6 +1458,8 @@ class AgentKernelTests(unittest.TestCase):
         self.assertNotIn("rollback_token", manual_recovery[0].payload)
         recovery = [event for event in agent.audit_log.events if event.event_type == "recovery.packet_created"]
         self.assertEqual(recovery[0].payload["packet"]["tool_name"], "rollback_fails")
+        self.assertEqual(recovery[0].payload["packet"]["goal_id"], result.goal.goal_id)
+        self.assertEqual(recovery[0].payload["packet"]["plan_id"], result.plan_id)
 
     def test_mixed_rollback_results_record_partial_completion(self) -> None:
         registry = ToolRegistry()

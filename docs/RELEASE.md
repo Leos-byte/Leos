@@ -18,3 +18,8 @@ then commit the generated proof documents.
 
 Dirty proofs generated with `--allow-dirty` are useful for local review only and
 must not be treated as release-grade evidence.
+
+CI runs `check_release_proof.py` only on `main`. Pull requests still generate
+local dirty proof documents for review, but ordinary code changes should not be
+blocked by proof-document churn before maintainers perform the release proof
+refresh.

@@ -77,6 +77,9 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
 - `GitHubRESTClient` can enforce runtime egress with `RuntimeEgressGuard`, so
   production smoke paths deny hosts and methods outside the configured egress
   policy before the HTTP transport is called.
+- `production_locked_down` requires network tools to attest runtime egress
+  enforcement, preventing a GitHub tool wired to `GitHubRESTClient` with
+  `enforce_egress=False` from passing production checks.
 - GitHub issue-to-PR orchestration uses the same `AgentLoop` and transaction
   path as local tools; the planner provider observes issue/file state before
   proposing write steps and never calls GitHub directly.
@@ -100,7 +103,8 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
 - File-based approval exchange writes approval packets and consumes decision
   files for non-interactive local workflows. It does not approve by default and
   still relies on approval id, step hash, expiry, and profile validation before
-  execution.
+  execution. It can also restrict approvers by allowlist and reject broad
+  decision-file permissions.
 - `check_release_proof.py` verifies release-grade proof metadata against the
   current clean commit, reducing proof drift.
 - `scripts/check_no_secret_literals.py` scans generated artifacts (.jsonl,
@@ -113,6 +117,8 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
 - Production-grade container or microVM isolation with integration tests against a real runtime.
 - Deployment-level egress proxy and DNS rebinding defenses.
 - Runtime egress guard is process-level validation, not an OS or firewall boundary.
+- File-based approval allowlists and file mode checks are local hardening, not
+  cryptographic signing or a multi-tenant approval service.
 - Complete SQLite persistence for every runtime state component.
 - Stronger secret scanning across every stdout/stderr/result path.
 - Broader adversarial benchmark coverage for long-running software engineering tasks.

@@ -48,6 +48,14 @@ class _RollbackNetworkTool:
         self.rollback_called = True
         return ToolResult(True, "rollback")
 
+    def runtime_attestations(self):
+        return {
+            "runtime_egress_enforced": True,
+            "runtime_egress_policy_configured": True,
+            "runtime_egress_mode": "test",
+            "runtime_egress_host": "api.github.com",
+        }
+
 
 class _FailingSecondTool:
     spec = ToolSpec("failing_second", "fails", (), output_schema={"type": "object", "required": ["missing"]})
@@ -245,6 +253,14 @@ class TransactionGoalStatusTests(unittest.TestCase):
         self.assertIn("rollback.egress_blocked", event_types)
         self.assertIn("recovery.packet_created", event_types)
         self.assertIn("recovery.manual_action_required", event_types)
+        recovery = next(event for event in agent.audit_log.events if event.event_type == "recovery.packet_created")
+        self.assertEqual(recovery.payload["packet"]["goal_id"], plan.goal.goal_id)
+        self.assertEqual(recovery.payload["packet"]["plan_id"], plan.plan_id)
+        manual = next(
+            event for event in agent.audit_log.events if event.event_type == "recovery.manual_action_required"
+        )
+        self.assertEqual(manual.payload["goal_id"], plan.goal.goal_id)
+        self.assertEqual(manual.payload["plan_id"], plan.plan_id)
         self.assertNotIn("must-not-leak", repr(agent.audit_log.records()))
 
 

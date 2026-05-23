@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from collections.abc import Mapping
 
 from leos_agent import (
     ActionStep,
@@ -12,8 +13,10 @@ from leos_agent import (
     GitHubCommentTool,
     GitHubCreateBranchTool,
     GitHubGetFileTool,
+    GitHubHTTPResponse,
     GitHubOpenPRTool,
     GitHubReadIssueTool,
+    GitHubRESTClient,
     GitHubUpdateFileTool,
     Goal,
     InMemoryGitHubClient,
@@ -25,6 +28,7 @@ from leos_agent import (
     Reversibility,
     RiskLevel,
     SandboxPolicy,
+    Secret,
     ToolRegistry,
     ToolResult,
     ToolSpec,
@@ -47,6 +51,37 @@ class _Tool:
         return ToolResult(True, "rollback")
 
 
+class _AttestedTool(_Tool):
+    def runtime_attestations(self):
+        return {
+            "runtime_egress_enforced": True,
+            "runtime_egress_policy_configured": True,
+            "runtime_egress_mode": "test",
+            "runtime_egress_host": self.spec.egress_host or "api.github.com",
+        }
+
+
+class _IssueTransport:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def request(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers: Mapping[str, str],
+        body: bytes | None,
+        timeout_seconds: float,
+    ) -> GitHubHTTPResponse:
+        del method, url, headers, body, timeout_seconds
+        self.calls += 1
+        return GitHubHTTPResponse(
+            200,
+            b'{"number": 1, "title": "t", "body": "b", "state": "open", "html_url": "https://example.test/1"}',
+        )
+
+
 def _contract() -> CausalContract:
     return CausalContract("tool", sets=("ok",), required_observations=("ok",))
 
@@ -58,6 +93,7 @@ def _run_tool(
     approve: bool = True,
     policy: PolicyEngine | None = None,
     arguments: dict | None = None,
+    allow_network_tools: bool = False,
 ):
     registry = ToolRegistry()
     registry.register(tool)
@@ -65,6 +101,7 @@ def _run_tool(
         registry,
         policy or PolicyEngine.from_profile(profile),
         approval_gate=ApprovalGate(lambda step: approve),
+        allow_network_tools=allow_network_tools,
     )
     goal = Goal(
         "g",
@@ -136,7 +173,7 @@ class ProductionProfileTests(unittest.TestCase):
         )
 
     def test_network_tool_with_allowed_egress_reaches_human_gate(self) -> None:
-        tool = _Tool(
+        tool = _AttestedTool(
             ToolSpec(
                 "net_tool",
                 "network",
@@ -155,6 +192,33 @@ class ProductionProfileTests(unittest.TestCase):
         self.assertFalse(tool.executed)
         self.assertFalse(
             any("egress policy" in str(event.payload.get("reason", "")) for event in kernel.audit_log.events)
+        )
+
+    def test_network_tool_without_runtime_attestations_blocked_in_production(self) -> None:
+        tool = _Tool(
+            ToolSpec(
+                "net_tool",
+                "network",
+                (),
+                default_risk=RiskLevel.LOW,
+                network_access=True,
+                egress_host="api.github.com",
+                egress_methods=("GET",),
+            )
+        )
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",))
+
+        kernel, plan = _run_tool(tool, policy=policy)
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertFalse(tool.executed)
+        self.assertTrue(any(event.event_type == "runtime.attestation_failed" for event in kernel.audit_log.events))
+        self.assertTrue(
+            any(
+                "requires runtime egress attestation" in str(event.payload.get("reason", ""))
+                for event in kernel.audit_log.events
+            )
         )
 
     def test_egress_policy_rejects_local_private_and_wildcard_hosts(self) -> None:
@@ -352,7 +416,7 @@ class ProductionProfileTests(unittest.TestCase):
         )
 
     def test_irreversible_network_tool_does_not_require_rollback_methods(self) -> None:
-        tool = _Tool(
+        tool = _AttestedTool(
             ToolSpec(
                 "irreversible_net",
                 "network",
@@ -401,6 +465,57 @@ class ProductionProfileTests(unittest.TestCase):
         self.assertTrue(
             any("api.github.com" in str(event.payload.get("reason", "")) for event in kernel.audit_log.events)
         )
+
+    def test_production_blocks_github_rest_client_without_runtime_egress(self) -> None:
+        transport = _IssueTransport()
+        tool = GitHubReadIssueTool(GitHubRESTClient(transport=transport))
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET",))
+
+        kernel, plan = _run_tool(
+            tool,
+            policy=policy,
+            arguments={"repo": "o/r", "issue_number": 1, "token": Secret("ghp_mustnotleak123456")},
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertEqual(transport.calls, 0)
+        self.assertNotIn("ghp_mustnotleak123456", repr(kernel.audit_log.records()))
+        self.assertTrue(any(event.event_type == "runtime.attestation_failed" for event in kernel.audit_log.events))
+        self.assertTrue(
+            any(
+                "requires runtime egress enforcement" in str(event.payload.get("reason", ""))
+                for event in kernel.audit_log.events
+            )
+        )
+
+    def test_production_allows_github_rest_client_with_runtime_egress(self) -> None:
+        transport = _IssueTransport()
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET",))
+        client = GitHubRESTClient(transport=transport, egress_policy=policy.egress_policy, enforce_egress=True)
+        tool = GitHubReadIssueTool(client)
+
+        kernel, plan = _run_tool(tool, policy=policy, arguments={"repo": "o/r", "issue_number": 1})
+
+        self.assertEqual(plan.steps[0].status.value, "verified")
+        self.assertEqual(transport.calls, 1)
+        self.assertTrue(any(event.event_type == "runtime.attestation_checked" for event in kernel.audit_log.events))
+
+    def test_developer_local_does_not_require_runtime_egress_attestation(self) -> None:
+        transport = _IssueTransport()
+        tool = GitHubReadIssueTool(GitHubRESTClient(transport=transport))
+
+        kernel, plan = _run_tool(
+            tool,
+            profile="developer_local",
+            arguments={"repo": "o/r", "issue_number": 1},
+            allow_network_tools=True,
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "verified")
+        self.assertEqual(transport.calls, 1)
+        self.assertFalse(any(event.event_type.startswith("runtime.attestation") for event in kernel.audit_log.events))
 
     def test_medium_tool_without_causal_contract_blocked_in_production(self) -> None:
         tool = _Tool(ToolSpec("medium", "m", (), default_risk=RiskLevel.MEDIUM, output_schema={"type": "object"}))

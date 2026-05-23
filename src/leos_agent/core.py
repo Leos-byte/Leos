@@ -170,6 +170,7 @@ from .policy import (
     PolicyEngine,
     PolicyProfile,
     PolicyRule,
+    RuntimeAttestationAssessment,
     build_approval_request,
     validate_policy_config,
 )
@@ -232,6 +233,7 @@ from .task_queue import (
 from .tool_manifest_registry import ToolManifestRegistry, ToolManifestRegistryError
 from .tools import (
     EchoTool,
+    RuntimeAttestedTool,
     SafeFileWriteTool,
     Secret,
     Tool,
@@ -379,6 +381,8 @@ __all__ = [
     "ReadFileTool",
     "RetryPolicy",
     "RollbackFailed",
+    "RuntimeAttestationAssessment",
+    "RuntimeAttestedTool",
     "RuntimeEgressBlocked",
     "RuntimeEgressDecision",
     "RuntimeEgressGuard",

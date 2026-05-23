@@ -243,6 +243,13 @@ class EgressAssessment:
     reason: str | None = None
 
 
+@dataclass(frozen=True)
+class RuntimeAttestationAssessment:
+    allowed: bool
+    attestations: Mapping[str, Any]
+    reason: str | None = None
+
+
 class PolicyEngine:
     """Capability and risk policy.
 
@@ -330,6 +337,9 @@ class PolicyEngine:
         egress = self.production_egress_assessment(step, tool)
         if egress is not None and not egress.allowed:
             return egress.reason
+        attestation = self.production_runtime_attestation_assessment(step, tool)
+        if attestation is not None and not attestation.allowed:
+            return attestation.reason
         if (
             self.require_strong_sandbox_for_execute
             and Permission.EXECUTE_CODE in tool.spec.permissions
@@ -425,6 +435,38 @@ class PolicyEngine:
             rollback_methods=rollback_methods,
             allowed=True,
         )
+
+    def production_runtime_attestation_assessment(
+        self, step: ActionStep, tool: Tool
+    ) -> RuntimeAttestationAssessment | None:
+        """Assess runtime guard attestations for production network tools."""
+
+        del step
+        if self.profile_name != "production_locked_down":
+            return None
+        if not (tool.spec.network_access or Permission.NETWORK in tool.spec.permissions):
+            return None
+        attest = getattr(tool, "runtime_attestations", None)
+        if not callable(attest):
+            return RuntimeAttestationAssessment(
+                allowed=False,
+                attestations={},
+                reason="production_locked_down requires runtime egress attestation for network tools",
+            )
+        data = dict(attest())
+        if data.get("runtime_egress_enforced") is not True:
+            return RuntimeAttestationAssessment(
+                allowed=False,
+                attestations=data,
+                reason="production_locked_down requires runtime egress enforcement for network tools",
+            )
+        if data.get("runtime_egress_policy_configured") is not True:
+            return RuntimeAttestationAssessment(
+                allowed=False,
+                attestations=data,
+                reason="production_locked_down requires runtime egress policy configuration for network tools",
+            )
+        return RuntimeAttestationAssessment(allowed=True, attestations=data)
 
     def validate_goal(self, goal: Any) -> None:
         if (

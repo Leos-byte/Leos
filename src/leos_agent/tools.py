@@ -6,7 +6,7 @@ import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, runtime_checkable
 
 from .enums import (
     CompensationStrategy,
@@ -138,6 +138,11 @@ class Tool(Protocol):
     def execute(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult: ...
 
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult: ...
+
+
+@runtime_checkable
+class RuntimeAttestedTool(Protocol):
+    def runtime_attestations(self) -> Mapping[str, Any]: ...
 
 
 class ToolRegistry:

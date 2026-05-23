@@ -44,6 +44,10 @@ jobs:
       - name: Benchmarks
         run: make bench
 
+      - name: Check release proof
+        if: github.ref == 'refs/heads/main'
+        run: python scripts/check_release_proof.py
+
       - name: Generate local proof documents
         run: python scripts/generate_proofs.py --output docs/proofs --allow-dirty
 

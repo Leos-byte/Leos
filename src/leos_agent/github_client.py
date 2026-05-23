@@ -127,6 +127,18 @@ class GitHubRESTClient:
         self.enforce_egress = enforce_egress
         self.egress_guard = egress_guard or RuntimeEgressGuard(egress_policy)
 
+    @property
+    def runtime_egress_enforced(self) -> bool:
+        return self.enforce_egress
+
+    @property
+    def runtime_egress_policy_configured(self) -> bool:
+        return self.egress_guard.policy is not None
+
+    @property
+    def runtime_egress_mode(self) -> str:
+        return "http"
+
     def read_issue(self, repo: str, issue_number: int, token: str | None = None) -> dict[str, Any]:
         owner, name = parse_repo(repo)
         data = self._request_json("GET", f"/repos/{owner}/{name}/issues/{issue_number}", token=token)

@@ -80,6 +80,18 @@ class InMemoryGitHubClient:
     accepted_token_count: int = 0
     accepted_token_fingerprints: list[str] = field(default_factory=list)
 
+    @property
+    def runtime_egress_enforced(self) -> bool:
+        return True
+
+    @property
+    def runtime_egress_policy_configured(self) -> bool:
+        return True
+
+    @property
+    def runtime_egress_mode(self) -> str:
+        return "in_memory"
+
     def _record_token(self, token: str | None) -> None:
         if token is not None:
             self.accepted_token_count += 1
@@ -253,6 +265,14 @@ class _GitHubToolBase:
 
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
         return ToolResult(True, "No rollback side effect")
+
+    def runtime_attestations(self) -> Mapping[str, Any]:
+        return {
+            "runtime_egress_enforced": bool(getattr(self.client, "runtime_egress_enforced", False)),
+            "runtime_egress_policy_configured": bool(getattr(self.client, "runtime_egress_policy_configured", False)),
+            "runtime_egress_mode": str(getattr(self.client, "runtime_egress_mode", "unknown")),
+            "runtime_egress_host": str(getattr(self.client, "base_url", self.spec.egress_host or "")),
+        }
 
     def _remember_rollback_credential(
         self,
