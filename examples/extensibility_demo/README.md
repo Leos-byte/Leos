@@ -1,5 +1,7 @@
 # Extensibility Demo
 
+> **Leos is not a production autonomous employee and not a general open-world agent.**
+
 This local demo exercises the extension infrastructure without network access
 or external dependencies:
 
@@ -7,7 +9,14 @@ or external dependencies:
 python examples/extensibility_demo/run_demo.py
 ```
 
-It loads an EchoTool manifest, validates it against the runtime tool spec,
-evaluates a simple goal through `EvaluatorRegistry`, stores a runtime
-checkpoint in `InMemoryRuntimeStore`, and creates a `SecretHandle` in
-`InMemoryCredentialVault` without printing the secret value.
+## What the demo exercises
+
+- **Tool manifest loading**: loads `manifests/echo.json`, validates it via
+  `ToolManifestRegistry`, and checks it against the runtime `EchoTool` spec.
+- **Goal evaluation**: runs a goal through `EvaluatorRegistry` to verify
+  deterministic criteria matching.
+- **Runtime checkpoint storage**: persists a checkpoint in
+  `InMemoryRuntimeStore`.
+- **Credential vault operations**: creates a `SecretHandle` in
+  `InMemoryCredentialVault`. The secret value is never printed or persisted
+  in plaintext. Only the handle reference is shown.

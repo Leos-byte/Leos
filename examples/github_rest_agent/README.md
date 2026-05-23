@@ -1,7 +1,11 @@
 # GitHub REST Agent Dry-Run Demo
 
+> **Leos is not a production autonomous employee and not a general open-world agent.**
+
 This directory contains two GitHub software-engineering demos. Neither performs
-real GitHub writes by default.
+real GitHub writes by default. All demos use `InMemoryGitHubClient` or
+`FakeTransport`; no real GitHub API calls are made unless explicitly enabled
+with `LEOS_ENABLE_REAL_GITHUB_WRITES=1`.
 
 ## Tool Dry-Run
 

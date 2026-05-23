@@ -61,6 +61,30 @@ class SQLiteRuntimeStoreTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp, self.assertRaises(RuntimeStoreError):
             SQLiteRuntimeStore(Path(tmp))
 
+    def test_load_goal_nonexistent_returns_none(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SQLiteRuntimeStore(Path(tmp) / "runtime.db")
+            self.assertIsNone(store.load_goal("nonexistent_goal_id"))
+
+    def test_load_checkpoint_nonexistent_returns_none(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SQLiteRuntimeStore(Path(tmp) / "runtime.db")
+            self.assertIsNone(store.load_checkpoint("nonexistent_key"))
+
+    def test_list_runtime_events_without_filter(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SQLiteRuntimeStore(Path(tmp) / "runtime.db")
+            store.append_runtime_event({"goal_id": "g1", "event_type": "a"})
+            store.append_runtime_event({"goal_id": "g2", "event_type": "b"})
+            events = store.list_runtime_events()
+            self.assertEqual(len(events), 2)
+
+    def test_close_can_be_called_multiple_times(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = SQLiteRuntimeStore(Path(tmp) / "runtime.db")
+            store.close()
+            store.close()
+
 
 if __name__ == "__main__":
     unittest.main()
