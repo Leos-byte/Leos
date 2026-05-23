@@ -114,11 +114,13 @@ class ToolManifestRegistryTests(unittest.TestCase):
 
     def test_to_tool_specs_returns_tool_specs(self) -> None:
         registry = ToolManifestRegistry()
-        registry.register(_manifest())
+        registry.register(_manifest(egress_methods=("GET", "PUT"), rollback_egress_methods=("PUT",)))
 
         specs = registry.to_tool_specs()
 
         self.assertEqual(specs["echo"].name, "echo")
+        self.assertEqual(tuple(specs["echo"].egress_methods), ("GET", "PUT"))
+        self.assertEqual(tuple(specs["echo"].rollback_egress_methods), ("PUT",))
 
     def test_secrets_allowed_defaults_to_false_if_absent(self) -> None:
         manifest = _manifest_json("echo")

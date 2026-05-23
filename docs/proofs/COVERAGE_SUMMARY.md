@@ -5,7 +5,7 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `3.288`
+- Duration seconds: `3.488`
 - Truncated: `False`
 
 ### stdout
@@ -44,6 +44,7 @@ Facts: 1 key(s)
     "network_access": false,
     "egress_host": null,
     "egress_methods": [],
+    "rollback_egress_methods": [],
     "filesystem_scope": "none",
     "secrets_allowed": false,
     "sandbox_policy": "none",
@@ -91,6 +92,7 @@ Facts: 1 key(s)
     "network_access": false,
     "egress_host": null,
     "egress_methods": [],
+    "rollback_egress_methods": [],
     "filesystem_scope": "workspace",
     "secrets_allowed": false,
     "sandbox_policy": "workspace",
@@ -103,7 +105,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: 6afeb66a-0514-4f05-b866-15b4e333edbe
+Enqueued: ab41a789-0109-4a5e-9792-05e6cb49340a
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -115,7 +117,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=953aa51c6a234a07ef96f6ec27ba019d9601e87c841dc502c7de0f6e8289a02c observed=b992f2f1343cda2e4c9847ce66e3cfbaf05db3d4d80aefc1899a42f0cefe1849
+  [0] event_hash_mismatch: expected=7b3ef6a05fbb5f8cfba5e12f80a3b7326483165be8671adf0f42fca75e8a4d54 observed=56d6e1728e3e9b3a1ee08a6b430f27dffaa35732ca216191cd4e03c9c03951ee
 Integrity: OK
 Applied events: 1
 Facts:
@@ -129,17 +131,17 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpzqpw5cfg/signed.json
+Signed manifest written to /tmp/tmprvu8bj59/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=github-classic-token
-<redacted> written to /tmp/tmp7cqk7hha/trace.html
+<redacted> written to /tmp/tmpf5g_g1r7/trace.html
 
 ```
 
 ### stderr
 
 ```text
-................................................................................Issue: $: 'steps' is a required property
+.........................................................................................Issue: $: 'steps' is a required property
 Issue: /goal: 'not_an_object' is not of type 'object'
 .Unknown tool: nonexistent
 ..............................................................................Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
@@ -151,9 +153,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-...........................................................................................................................................................................................................................................................................................................................................................................................................................
+..................................................................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 620 tests in 2.743s
+Ran 652 tests in 2.879s
 
 OK
 
@@ -164,7 +166,7 @@ OK
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.742`
+- Duration seconds: `0.816`
 - Truncated: `False`
 
 ### stdout
@@ -173,35 +175,35 @@ OK
 Name                                       Stmts   Miss Branch BrPart  Cover
 ----------------------------------------------------------------------------
 src/leos_agent/__init__.py                     2      0      0      0   100%
-src/leos_agent/agent_loop.py                 208     20     60     12    86%
+src/leos_agent/agent_loop.py                 206     19     56     11    86%
 src/leos_agent/approval.py                    87      2     16      2    96%
 src/leos_agent/audit.py                      143      7     46     11    90%
 src/leos_agent/causal.py                      92      1     18      1    98%
-src/leos_agent/causal_contract.py             92     16     34      8    78%
+src/leos_agent/causal_contract.py            108     17     44      9    80%
 src/leos_agent/cli.py                        476    210    188     34    53%
 src/leos_agent/conflicts.py                   37      0     14      0   100%
 src/leos_agent/core.py                        46      0      0      0   100%
 src/leos_agent/credentials.py                 61      1     16      8    88%
 src/leos_agent/dev_tools.py                  188     29     38     13    81%
-src/leos_agent/egress.py                      25      1      6      1    94%
+src/leos_agent/egress.py                      25      0      6      0   100%
 src/leos_agent/enums.py                       71      0      0      0   100%
 src/leos_agent/errors.py                      23      0      0      0   100%
 src/leos_agent/eval_runner.py                354     18     10      2    94%
 src/leos_agent/evaluator_registry.py         213     22     86     14    85%
 src/leos_agent/github_agent.py                74      6     18      4    89%
 src/leos_agent/github_client.py              239     11     74      7    94%
-src/leos_agent/github_tools.py               340     45    100     43    80%
+src/leos_agent/github_tools.py               341     45    100     43    80%
 src/leos_agent/goal_evaluator.py              29      1      4      2    91%
 src/leos_agent/goals.py                       92      8     18      3    88%
 src/leos_agent/kernel.py                      46      2      6      2    92%
-src/leos_agent/manifest.py                    56      0      8      0   100%
-src/leos_agent/memory.py                     108      5     24      6    92%
+src/leos_agent/manifest.py                    57      0      8      0   100%
+src/leos_agent/memory.py                     109      3     24      4    95%
 src/leos_agent/model.py                       47      0      2      1    98%
 src/leos_agent/model_adapters.py             109     26     18      2    76%
 src/leos_agent/network_tools.py              168     26     48      7    84%
 src/leos_agent/planner.py                    150     12     58     14    88%
 src/leos_agent/plans.py                       89      2      8      3    95%
-src/leos_agent/policy.py                     355     70    142     21    78%
+src/leos_agent/policy.py                     385     71    156     22    79%
 src/leos_agent/policy_manifest.py             51      9     12      5    78%
 src/leos_agent/prompts.py                     30      1      2      1    94%
 src/leos_agent/proof.py                      216      9     42      8    93%
@@ -216,10 +218,10 @@ src/leos_agent/sqlite_store.py               103     19     10      5    79%
 src/leos_agent/state.py                       39      1     10      3    92%
 src/leos_agent/task_queue.py                 242     24     50     10    88%
 src/leos_agent/tool_manifest_registry.py      81     15     34     10    77%
-src/leos_agent/tools.py                      146      7     26      9    91%
+src/leos_agent/tools.py                      147      7     26      9    91%
 src/leos_agent/trace_viewer.py                68      0     20      0   100%
-src/leos_agent/transactions.py               370     32    138     12    91%
+src/leos_agent/transactions.py               373     30    140     11    91%
 ----------------------------------------------------------------------------
-TOTAL                                       6085    705   1646    342    85%
+TOTAL                                       6136    701   1668    339    85%
 
 ```

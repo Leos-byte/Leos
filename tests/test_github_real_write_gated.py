@@ -6,8 +6,25 @@ import sys
 import unittest
 from pathlib import Path
 
-from examples.github_rest_agent.run_real_write_gated import _production_github_policy, _tool_mediated_get_file
-from leos_agent import AgentKernel, AuditLog, GitHubGetFileTool, InMemoryGitHubClient, LeosError, Secret, ToolRegistry
+from examples.github_rest_agent.run_real_write_gated import (
+    _evaluate_real_write_goal,
+    _production_github_policy,
+    _tool_mediated_get_file,
+)
+from leos_agent import (
+    ActionStep,
+    AgentKernel,
+    AuditLog,
+    GitHubConflictError,
+    GitHubGetFileTool,
+    Goal,
+    InMemoryGitHubClient,
+    LeosError,
+    Secret,
+    ToolRegistry,
+    TransactionPlan,
+)
+from leos_agent.enums import StepStatus
 from leos_agent.github_tools import GitHubUpdateFileTool, _token_or_error
 from leos_agent.state import WorldState
 
@@ -104,6 +121,45 @@ class GitHubRealWriteGatedTests(unittest.TestCase):
                 allow_missing=False,
             )
 
+    def test_real_write_goal_evaluation_fails_without_readback_fact(self) -> None:
+        kernel = _github_get_file_kernel(InMemoryGitHubClient())
+        kernel.state.observe(
+            {
+                "github_branch": {"branch": "feature"},
+                "github_file_updated": {"path": "x.txt"},
+                "github_pr": {"number": 1, "state": "open"},
+            }
+        )
+        summary: dict[str, object] = {}
+
+        with self.assertRaises(GitHubConflictError):
+            _evaluate_real_write_goal(kernel, _verified_real_write_plan(), summary)
+
+        self.assertEqual(summary["evaluation_status"], "failed")
+        self.assertTrue(
+            any(event.event_type == "github.real_write.goal_evaluated" for event in kernel.audit_log.events)
+        )
+
+    def test_real_write_goal_evaluation_succeeds_with_all_typed_criteria(self) -> None:
+        kernel = _github_get_file_kernel(InMemoryGitHubClient())
+        kernel.state.observe(
+            {
+                "github_branch": {"branch": "feature"},
+                "github_file_updated": {"path": "x.txt"},
+                "github_pr": {"number": 1, "state": "open"},
+                "read_back_verified": True,
+            }
+        )
+        summary: dict[str, object] = {}
+
+        _evaluate_real_write_goal(kernel, _verified_real_write_plan(), summary)
+
+        self.assertEqual(summary["evaluation_status"], "succeeded")
+        self.assertNotIn("ghp_", repr(summary))
+        self.assertTrue(
+            any(event.event_type == "github.real_write.goal_evaluated" for event in kernel.audit_log.events)
+        )
+
 
 def _github_get_file_kernel(client: InMemoryGitHubClient) -> AgentKernel:
     registry = ToolRegistry()
@@ -113,6 +169,24 @@ def _github_get_file_kernel(client: InMemoryGitHubClient) -> AgentKernel:
         policy=_production_github_policy(),
         audit_log=AuditLog(),
     )
+
+
+def _verified_real_write_plan() -> TransactionPlan:
+    goal = Goal(
+        "Gated GitHub real-write smoke",
+        ["file updated", "PR opened"],
+        criteria=(
+            {"key": "github_branch", "op": "exists"},
+            {"key": "github_file_updated", "op": "exists"},
+            {"key": "github_pr", "op": "exists"},
+            {"key": "read_back_verified", "op": "equals", "value": True},
+        ),
+        stop_conditions=["done"],
+    )
+    steps = [ActionStep("github_update_file", {}, "verified"), ActionStep("github_open_pr", {}, "verified")]
+    for step in steps:
+        step.status = StepStatus.VERIFIED
+    return TransactionPlan(goal, steps)
 
 
 if __name__ == "__main__":

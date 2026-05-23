@@ -108,7 +108,7 @@ network access or external APIs.
 | GitHub software-engineering tools | in-memory dry-run-first tool layer |
 | GitHub REST client | implemented with fake-transport tests; real writes gated |
 | GitHub issue-to-PR orchestration | AgentLoop dry-run path with fake REST transport |
-| Production locked-down policy | fail-closed profile for typed goals, strong sandbox, schemas, and causal contracts |
+| Production locked-down policy | fail-closed profile for typed goals, strong sandbox, schemas, causal contracts, and egress methods |
 | Approval packets | anti-replay packet binding for human-gated consequential actions |
 | Failure-driven replanning | bounded repair loop for selected failure classes |
 | Local software engineering demo | implemented, no network/API token required |
@@ -139,6 +139,10 @@ operations must still run through the tool layer, `PolicyEngine`,
 require `expected_sha` or `expected_previous`, PR creation supports a hidden
 Leos idempotency marker, and protected branches such as `main` and `master` are
 not deleted by cleanup logic.
+GitHub tools declare forward and rollback egress methods. In
+`production_locked_down`, every declared method must be allowed by explicit
+egress policy; read-only `GET` access does not authorize write or rollback
+methods such as `PUT`, `POST`, `PATCH`, or `DELETE`.
 Audit, trace rendering, runtime events, and checkpoints share a sanitization
 boundary that rejects or redacts `Secret`, `SecretHandle`-unsafe payloads, and
 common token-like strings. `InMemoryGitHubClient` keeps only token fingerprints

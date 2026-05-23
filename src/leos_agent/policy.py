@@ -234,6 +234,15 @@ BUILT_IN_POLICY_PROFILES = {
 }
 
 
+@dataclass(frozen=True)
+class EgressAssessment:
+    host: str
+    forward_methods: tuple[str, ...]
+    rollback_methods: tuple[str, ...]
+    allowed: bool
+    reason: str | None = None
+
+
 class PolicyEngine:
     """Capability and risk policy.
 
@@ -318,19 +327,9 @@ class PolicyEngine:
 
         if self.profile_name != "production_locked_down":
             return None
-        if tool.spec.network_access or Permission.NETWORK in tool.spec.permissions:
-            host = str(
-                step.arguments.get("host") or step.arguments.get("hostname") or step.arguments.get("domain") or ""
-            ) or (tool.spec.egress_host or "")
-            methods = _egress_methods_for_step(step, tool)
-            if self.egress_policy is None:
-                return "production_locked_down forbids network tools without an explicit egress policy"
-            if not host:
-                return "production_locked_down egress policy does not allow GET <missing-host>"
-            if not any(self.egress_policy.allows(host, method) for method in methods):
-                target = host or "<missing-host>"
-                methods_label = ",".join(method.upper() for method in methods)
-                return f"production_locked_down egress policy does not allow {methods_label} {target}"
+        egress = self.production_egress_assessment(step, tool)
+        if egress is not None and not egress.allowed:
+            return egress.reason
         if (
             self.require_strong_sandbox_for_execute
             and Permission.EXECUTE_CODE in tool.spec.permissions
@@ -345,6 +344,87 @@ class PolicyEngine:
             if self.require_output_schema_for_medium_risk and not tool.spec.output_schema:
                 return "production_locked_down requires output_schema for medium+ tools"
         return None
+
+    def production_egress_assessment(self, step: ActionStep, tool: Tool) -> EgressAssessment | None:
+        """Assess production egress for network tools without approving the action."""
+
+        if self.profile_name != "production_locked_down":
+            return None
+        if not (tool.spec.network_access or Permission.NETWORK in tool.spec.permissions):
+            return None
+        host = str(
+            step.arguments.get("host") or step.arguments.get("hostname") or step.arguments.get("domain") or ""
+        ) or (tool.spec.egress_host or "")
+        forward_methods = _egress_methods_for_step(step, tool)
+        rollback_methods = _rollback_egress_methods_for_tool(tool)
+        if self.egress_policy is None:
+            return EgressAssessment(
+                host=host,
+                forward_methods=forward_methods,
+                rollback_methods=rollback_methods,
+                allowed=False,
+                reason="production_locked_down forbids network tools without an explicit egress policy",
+            )
+        if not host:
+            return EgressAssessment(
+                host=host,
+                forward_methods=forward_methods,
+                rollback_methods=rollback_methods,
+                allowed=False,
+                reason="production_locked_down egress policy does not allow <missing-host>",
+            )
+        if not forward_methods:
+            return EgressAssessment(
+                host=host,
+                forward_methods=forward_methods,
+                rollback_methods=rollback_methods,
+                allowed=False,
+                reason=f"production_locked_down requires declared forward egress methods for {tool.spec.name}",
+            )
+        missing_forward = tuple(method for method in forward_methods if not self.egress_policy.allows(host, method))
+        if missing_forward:
+            return EgressAssessment(
+                host=host,
+                forward_methods=forward_methods,
+                rollback_methods=rollback_methods,
+                allowed=False,
+                reason=(
+                    f"production_locked_down egress policy does not allow forward {','.join(missing_forward)} {host}"
+                ),
+            )
+        rollback_required = tool.spec.reversibility in {Reversibility.REVERSIBLE, Reversibility.COMPENSATABLE}
+        if rollback_required:
+            if not rollback_methods:
+                return EgressAssessment(
+                    host=host,
+                    forward_methods=forward_methods,
+                    rollback_methods=rollback_methods,
+                    allowed=False,
+                    reason=(
+                        "production_locked_down requires rollback egress methods for reversible "
+                        f"network tool {tool.spec.name}"
+                    ),
+                )
+            missing_rollback = tuple(
+                method for method in rollback_methods if not self.egress_policy.allows(host, method)
+            )
+            if missing_rollback:
+                return EgressAssessment(
+                    host=host,
+                    forward_methods=forward_methods,
+                    rollback_methods=rollback_methods,
+                    allowed=False,
+                    reason=(
+                        "production_locked_down egress policy does not allow rollback "
+                        f"{','.join(missing_rollback)} {host}"
+                    ),
+                )
+        return EgressAssessment(
+            host=host,
+            forward_methods=forward_methods,
+            rollback_methods=rollback_methods,
+            allowed=True,
+        )
 
     def validate_goal(self, goal: Any) -> None:
         if (
@@ -581,11 +661,19 @@ def _as_list(value: Any) -> list[Any]:
 
 
 def _egress_methods_for_step(step: ActionStep, tool: Tool) -> tuple[str, ...]:
+    declared = tuple(str(method).upper() for method in tool.spec.egress_methods)
     if step.arguments.get("method") is not None:
-        return (str(step.arguments["method"]).upper(),)
-    if tool.spec.egress_methods:
-        return tuple(str(method).upper() for method in tool.spec.egress_methods)
-    return ("GET",)
+        requested = str(step.arguments["method"]).upper()
+        if declared:
+            if requested not in declared:
+                return (*declared, requested)
+            return declared
+        return (requested,)
+    return declared
+
+
+def _rollback_egress_methods_for_tool(tool: Tool) -> tuple[str, ...]:
+    return tuple(str(method).upper() for method in tool.spec.rollback_egress_methods)
 
 
 @dataclass(frozen=True)

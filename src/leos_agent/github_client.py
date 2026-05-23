@@ -312,6 +312,7 @@ class GitHubRESTClient:
             "repo": repo,
             "id": data.get("id"),
             "issue_number": issue_number,
+            "body": body,
             "html_url": data.get("html_url", ""),
         }
 

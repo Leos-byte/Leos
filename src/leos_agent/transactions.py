@@ -111,6 +111,22 @@ class TransactionManager:
                 break
             self._hydrate_step_metadata(step, tool)
 
+            egress_assessment = self.policy.production_egress_assessment(step, tool)
+            if egress_assessment is not None:
+                self.audit_log.record(
+                    "egress.allowed" if egress_assessment.allowed else "egress.blocked",
+                    "Production egress policy assessed tool network access",
+                    step_id=step.step_id,
+                    tool=step.tool_name,
+                    host=egress_assessment.host,
+                    forward_methods=list(egress_assessment.forward_methods),
+                    rollback_methods=list(egress_assessment.rollback_methods),
+                    profile=self.policy.profile_name,
+                    policy_name="production_locked_down",
+                    network_access=tool.spec.network_access,
+                    reason=egress_assessment.reason,
+                )
+
             production_issue = self.policy.production_block_reason(step, tool)
             if production_issue:
                 step.status = StepStatus.BLOCKED
@@ -373,7 +389,7 @@ class TransactionManager:
                 break
 
             contract_missing = self._missing_contract_observations(tool, result)
-            contract_field_violations = self._contract_field_violations(tool, result)
+            contract_field_violations = self._contract_field_violations(tool, result, step)
             if contract_missing or contract_field_violations:
                 step.status = StepStatus.FAILED
                 error = SchemaValidationFailed("Causal contract required observations missing")
@@ -565,11 +581,11 @@ class TransactionManager:
         return list(contract.missing_required_observations(result.observed_state_delta))
 
     @staticmethod
-    def _contract_field_violations(tool: Tool, result: ToolResult) -> list[str]:
+    def _contract_field_violations(tool: Tool, result: ToolResult, step: ActionStep) -> list[str]:
         contract = getattr(tool.spec, "causal_contract", None)
         if contract is None or not hasattr(contract, "field_violations"):
             return []
-        return list(contract.field_violations(result.observed_state_delta))
+        return list(contract.field_violations(result.observed_state_delta, step=step))
 
     def _hydrate_step_metadata(self, step: ActionStep, tool: Tool) -> None:
         step.required_permissions = tuple(tool.spec.permissions)
@@ -632,7 +648,7 @@ class TransactionManager:
                     )
                     return True
 
-            if Permission.NETWORK in required:
+            if tool.spec.network_access or Permission.NETWORK in required:
                 network_requests += 1
                 if budget.max_network_requests is not None and network_requests > budget.max_network_requests:
                     self._record_budget_exceeded(
