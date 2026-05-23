@@ -93,8 +93,14 @@ the policy checks every declared forward method and every rollback or
 compensation method; allowing `GET` is not enough to authorize a tool that can
 also `PUT`, `POST`, `PATCH`, or `DELETE`. Reversible and compensatable network
 tools are blocked if rollback egress is missing or not allowed. These checks are
-policy-level semantics for auditing and fail-closed planning; production
-deployments still need OS, container, or network firewall egress enforcement.
+policy-level semantics for auditing and fail-closed planning.
+
+`GitHubRESTClient` can additionally enforce egress at runtime with
+`enforce_egress=True`. Each request URL and method is checked by
+`RuntimeEgressGuard` before the transport is called; no policy means deny-all,
+wildcards are rejected, and private or localhost hosts are blocked. This guard
+protects direct client use inside Leos, but production deployments still need
+OS, container, or network firewall egress enforcement.
 
 `GitHubIssuePlanProvider` is a deterministic bridge between GitHub observations
 and the closed loop runtime. It does not call GitHub directly. Its first
@@ -126,6 +132,14 @@ production deployment should use KMS, an OS keychain, or a cloud secret manager.
 underlying secret. Audit logs and trace rendering use the same sanitizer:
 secret-like audit payloads are replaced with `audit.secret_blocked`, and trace
 HTML/Markdown redacts token-like values before rendering.
+
+Rollback failures and blocked compensations produce `ManualRecoveryPacket`
+records. A recovery packet includes the affected step, tool, risk level, reason,
+safe resource summary, and suggested operator actions. It is designed for
+auditable manual follow-up and never contains rollback credentials or raw
+tokens. Network rollback is guarded again at runtime in `production_locked_down`:
+if rollback egress is no longer allowed, the rollback call is skipped and manual
+recovery is required.
 
 ### 6. Memory and learning
 
@@ -196,6 +210,16 @@ replan or stop
 - Use approval packets for consequential human-gated actions. Approval is bound
   to the exact step hash, profile, expiry, goal, plan, tool, permissions, risk,
   and causal contract summary.
+- Use file-based approval exchange for non-interactive local/manual workflows
+  when a human needs to review a packet out of band. Decision files still bind
+  to the packet approval id and step hash and cannot bypass production hard
+  blocks.
+- For release evidence, regenerate clean proofs and verify the manifest:
+
+  ```bash
+  python scripts/generate_proofs.py --output docs/proofs --require-clean
+  python scripts/check_release_proof.py
+  ```
 
 ## Current readiness boundaries
 
@@ -205,6 +229,13 @@ replan or stop
   bounded failure-driven replanning, and anti-replay approval packets.
 - Implemented: policy-level egress method checks for GitHub forward and
   rollback paths, plus network budget accounting for `network_access` tools.
+- Implemented: opt-in GitHub runtime egress guard and rollback egress audit.
+- Implemented: manual recovery packets for rollback failure or blocked
+  compensation.
+- Implemented: local file-based approval packet exchange for non-interactive
+  runs.
+- Implemented: release proof consistency script that checks release-grade proof
+  metadata against the current commit.
 - Partial: causal contract runtime enforcement. The causal model is
   tool-contract verification, not a full structural causal model.
 - Opt-in: Docker/Podman sandboxing requires a local container runtime and is

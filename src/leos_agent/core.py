@@ -14,6 +14,14 @@ from .approval import (
     render_approval_packet_html,
     render_approval_packet_markdown,
 )
+from .approval_exchange import (
+    FileApprovalGate,
+    build_decision_for_packet,
+    read_approval_decision,
+    read_approval_packet,
+    write_approval_decision,
+    write_approval_packet,
+)
 from .audit import AuditEvent, AuditLog
 from .causal import (
     ActionConsequence,
@@ -68,6 +76,7 @@ from .errors import (
     PostconditionFailed,
     PreconditionFailed,
     RollbackFailed,
+    RuntimeEgressBlocked,
     SchemaValidationFailed,
     SecretBoundaryViolation,
     SecretLeakedToUntrustedTool,
@@ -126,6 +135,7 @@ from .model import (  # noqa: F401
     StructuredOutputError,
 )
 from .model_adapters import AnthropicModelClient, LocalHTTPModelClient, OpenAIModelClient
+from .network_guard import RuntimeEgressDecision, RuntimeEgressGuard
 from .network_tools import (
     BrowserReadTool,
     DNSResolver,
@@ -176,6 +186,7 @@ from .prompts import (  # noqa: F401
     PromptTemplate,
 )
 from .proof import ProofManifest, exit_code_for_manifest, generate_proofs
+from .recovery import ManualRecoveryPacket
 from .replanning import FailureAnalysis, FailureAnalyzer, FailureType, PlanRepairStrategy, ReplanContext
 from .replay import AuditReplayer, ReplayResult, replay_audit_log
 from .runtime_store import InMemoryRuntimeStore, JsonlRuntimeStore, RuntimeStore, RuntimeStoreError
@@ -288,6 +299,7 @@ __all__ = [
     "FakeGitHubRepo",
     "FakePaymentSystem",
     "FakeShell",
+    "FileApprovalGate",
     "GitDiffTool",
     "GitHubAPIError",
     "GitHubAuthError",
@@ -327,6 +339,7 @@ __all__ = [
     "LeosError",
     "ListFilesTool",
     "LocalHTTPModelClient",
+    "ManualRecoveryPacket",
     "MemoryRecord",
     "MemorySensitivity",
     "MemoryStore",
@@ -366,6 +379,9 @@ __all__ = [
     "ReadFileTool",
     "RetryPolicy",
     "RollbackFailed",
+    "RuntimeEgressBlocked",
+    "RuntimeEgressDecision",
+    "RuntimeEgressGuard",
     "RuntimeTask",
     "RuntimeStore",
     "RuntimeStoreError",
@@ -411,6 +427,7 @@ __all__ = [
     "WorldState",
     "Watchdog",
     "assert_no_secrets",
+    "build_decision_for_packet",
     "default_dev_registry",
     "default_registry",
     "build_approval_request",
@@ -421,6 +438,8 @@ __all__ = [
     "load_tool_manifest_file",
     "manifest_to_json",
     "make_untrusted_observation",
+    "read_approval_decision",
+    "read_approval_packet",
     "replay_audit_log",
     "render_eval_report_markdown",
     "render_approval_packet_html",
@@ -439,6 +458,8 @@ __all__ = [
     "tool_manifest_from_mapping",
     "validate_tool_manifest",
     "verify_policy_manifest",
+    "write_approval_decision",
+    "write_approval_packet",
 ]
 
 __all__ = sorted(set(__all__))

@@ -34,6 +34,7 @@ from .errors import (
 from .goals import GoalProgress, ResourceBudget
 from .plans import ActionStep, StateCondition, TransactionPlan
 from .policy import ApprovalGate, PolicyEngine
+from .recovery import ManualRecoveryPacket
 from .sandbox import SandboxRunner
 from .state import TrustLevel, WorldState
 from .tools import (
@@ -48,6 +49,15 @@ from .tools import (
 
 def _error_type(error: LeosError | None) -> str | None:
     return type(error).__name__ if error else None
+
+
+def _affected_resources(step: ActionStep) -> list[str]:
+    resources = []
+    for key in ("repo", "path", "branch", "issue_number", "pr_number"):
+        value = step.arguments.get(key)
+        if value is not None:
+            resources.append(f"{key}:{value}")
+    return resources
 
 
 class TransactionManager:
@@ -767,6 +777,35 @@ class TransactionManager:
             self.audit_log.record(
                 "rollback_attempted", "Attempting rollback", step_id=step.step_id, tool=tool.spec.name
             )
+            egress_issue = self._rollback_egress_block_reason(tool)
+            if egress_issue is not None:
+                step.status = StepStatus.FAILED
+                rollback_failed += 1
+                host, methods, reason = egress_issue
+                self.audit_log.record(
+                    "rollback.egress_blocked",
+                    "Rollback blocked by production egress policy",
+                    step_id=step.step_id,
+                    tool=tool.spec.name,
+                    host=host,
+                    rollback_methods=list(methods),
+                    profile=self.policy.profile_name,
+                    network_access=tool.spec.network_access,
+                    reason=reason,
+                )
+                self._record_manual_recovery(step, tool, reason)
+                continue
+            if tool.spec.network_access or Permission.NETWORK in tool.spec.permissions:
+                self.audit_log.record(
+                    "rollback.egress_allowed",
+                    "Rollback egress allowed by runtime policy",
+                    step_id=step.step_id,
+                    tool=tool.spec.name,
+                    host=tool.spec.egress_host,
+                    rollback_methods=list(tool.spec.rollback_egress_methods),
+                    profile=self.policy.profile_name,
+                    network_access=tool.spec.network_access,
+                )
             try:
                 result = tool.rollback(token, state)
             except Exception as exc:  # noqa: BLE001 - rollback failures must become audit events
@@ -792,9 +831,9 @@ class TransactionManager:
                 "Rollback failed; manual recovery is required",
                 step_id=step.step_id,
                 tool=tool.spec.name,
-                rollback_token=token,
                 error_type=_error_type(error),
             )
+            self._record_manual_recovery(step, tool, result.message)
         if rollback_failed and rollback_succeeded:
             self.audit_log.record(
                 "rollback_partially_completed",
@@ -802,3 +841,49 @@ class TransactionManager:
                 succeeded=rollback_succeeded,
                 failed=rollback_failed,
             )
+
+    def _rollback_egress_block_reason(self, tool: Tool) -> tuple[str, tuple[str, ...], str] | None:
+        if self.policy.profile_name != "production_locked_down":
+            return None
+        if not (tool.spec.network_access or Permission.NETWORK in tool.spec.permissions):
+            return None
+        host = tool.spec.egress_host or ""
+        methods = tuple(str(method).upper() for method in tool.spec.rollback_egress_methods)
+        if self.policy.egress_policy is None:
+            return host, methods, "production_locked_down forbids rollback egress without an explicit policy"
+        if not host:
+            return host, methods, "production_locked_down rollback egress missing host"
+        if not methods:
+            return host, methods, f"production_locked_down requires rollback egress methods for {tool.spec.name}"
+        missing = tuple(method for method in methods if not self.policy.egress_policy.allows(host, method))
+        if missing:
+            reason = f"production_locked_down egress policy does not allow rollback {','.join(missing)} {host}"
+            return host, methods, reason
+        return None
+
+    def _record_manual_recovery(self, step: ActionStep, tool: Tool, reason: str) -> None:
+        packet = ManualRecoveryPacket.build(
+            step_id=step.step_id,
+            tool_name=tool.spec.name,
+            reason=reason,
+            risk_level=step.risk.value,
+            profile=self.policy.profile_name,
+            rollback_summary=(
+                f"{step.reversibility.value}; compensation={step.compensation_strategy.value}; "
+                f"rollback_reliability={step.rollback_reliability:.2f}"
+            ),
+            affected_resources=_affected_resources(step),
+        )
+        self.audit_log.record(
+            "recovery.packet_created",
+            "Manual recovery packet created",
+            packet=packet.as_dict(),
+        )
+        self.audit_log.record(
+            "recovery.manual_action_required",
+            "Manual recovery action is required",
+            recovery_id=packet.recovery_id,
+            step_id=step.step_id,
+            tool=tool.spec.name,
+            reason=reason,
+        )

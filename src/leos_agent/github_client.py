@@ -11,7 +11,9 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 from urllib.parse import quote, urlencode
 
+from .egress import EgressPolicy
 from .errors import LeosError
+from .network_guard import RuntimeEgressGuard
 
 BODY_PREVIEW_LIMIT = 512
 DEFAULT_BASE_URL = "https://api.github.com"
@@ -114,11 +116,16 @@ class GitHubRESTClient:
         transport: GitHubTransport | None = None,
         timeout_seconds: float = 30.0,
         user_agent: str = "leos-agent/0.1",
+        egress_policy: EgressPolicy | None = None,
+        enforce_egress: bool = False,
+        egress_guard: RuntimeEgressGuard | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.transport = transport or UrllibGitHubTransport()
         self.timeout_seconds = timeout_seconds
         self.user_agent = user_agent
+        self.enforce_egress = enforce_egress
+        self.egress_guard = egress_guard or RuntimeEgressGuard(egress_policy)
 
     def read_issue(self, repo: str, issue_number: int, token: str | None = None) -> dict[str, Any]:
         owner, name = parse_repo(repo)
@@ -355,9 +362,12 @@ class GitHubRESTClient:
             headers["Content-Type"] = "application/json"
         if token is not None:
             headers["Authorization"] = f"Bearer {token}"
+        url = f"{self.base_url}{path}"
+        if self.enforce_egress:
+            self.egress_guard.require_url(url, method)
         response = self.transport.request(
             method,
-            f"{self.base_url}{path}",
+            url,
             headers=headers,
             body=body,
             timeout_seconds=self.timeout_seconds,

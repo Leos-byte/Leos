@@ -52,7 +52,8 @@ def main() -> int:
     idempotency_key = f"leos-real-write-smoke-{work_branch}"
     content = f"Leos real-write gated smoke test.\nbranch={work_branch}\n"
     token = Secret(token_value)
-    client = GitHubRESTClient()
+    policy = _production_github_policy()
+    client = GitHubRESTClient(egress_policy=policy.egress_policy, enforce_egress=True)
     registry = ToolRegistry()
     registry.register(GitHubGetFileTool(client))
     registry.register(GitHubCreateBranchTool(client))
@@ -60,7 +61,7 @@ def main() -> int:
     registry.register(GitHubOpenPRTool(client))
     kernel = AgentKernel(
         registry=registry,
-        policy=_production_github_policy(),
+        policy=policy,
         approval_gate=ApprovalGate(lambda step: True),
     )
 

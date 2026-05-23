@@ -1,4 +1,4 @@
-.PHONY: test safety bench lint format-check type coverage security mutation-smoke fuzz-smoke proof-light check
+.PHONY: test safety bench lint format-check type coverage security mutation-smoke fuzz-smoke proof-light proof-check check
 
 test:
 	PYTHONPATH=src python -m unittest discover -s tests
@@ -33,6 +33,9 @@ fuzz-smoke:
 
 proof-light:
 	PYTHONPATH=src python scripts/generate_proofs.py --output docs/proofs --allow-dirty --no-run
+
+proof-check:
+	python scripts/check_release_proof.py
 
 check:
 	ruff check .

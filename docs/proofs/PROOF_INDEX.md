@@ -2,8 +2,8 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-05-23T00:59:34.475695+00:00`
-- Commit SHA: `e7589e2f96ed927675c659ee654dde7502162db4`
+- Generated at: `2026-05-23T08:31:43.351874+00:00`
+- Commit SHA: `fbc8b5cf9642d5866ed387e2ccdb416a5f7fc320`
 - Branch: `fix/production-egress-semantics`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
