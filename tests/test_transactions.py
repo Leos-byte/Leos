@@ -48,6 +48,14 @@ class _RollbackNetworkTool:
         self.rollback_called = True
         return ToolResult(True, "rollback")
 
+    def runtime_attestations(self):
+        return {
+            "runtime_egress_enforced": True,
+            "runtime_egress_policy_configured": True,
+            "runtime_egress_mode": "in_memory",
+            "runtime_egress_host": "api.github.com",
+        }
+
 
 class _FailingSecondTool:
     spec = ToolSpec("failing_second", "fails", (), output_schema={"type": "object", "required": ["missing"]})
@@ -60,6 +68,24 @@ class _FailingSecondTool:
 
     def rollback(self, token, state):
         return ToolResult(True, "rollback")
+
+
+class _FailingRollbackTool:
+    spec = ToolSpec(
+        "failing_rollback",
+        "failing rollback test",
+        (),
+        reversibility=Reversibility.REVERSIBLE,
+    )
+
+    def dry_run(self, arguments, state):
+        return ToolResult(True, "dry")
+
+    def execute(self, arguments, state):
+        return ToolResult(True, "exec", observed_state_delta={"ok": True}, rollback_token={"id": "safe"})
+
+    def rollback(self, token, state):
+        return ToolResult(False, "rollback failed")
 
 
 class _EgressPolicyBlocksRollbackAfterPlanning(EgressPolicy):
@@ -245,7 +271,44 @@ class TransactionGoalStatusTests(unittest.TestCase):
         self.assertIn("rollback.egress_blocked", event_types)
         self.assertIn("recovery.packet_created", event_types)
         self.assertIn("recovery.manual_action_required", event_types)
+        recovery = next(event for event in agent.audit_log.events if event.event_type == "recovery.packet_created")
+        packet = recovery.payload["packet"]
+        self.assertEqual(packet["goal_id"], goal.goal_id)
+        self.assertEqual(packet["plan_id"], plan.plan_id)
+        manual = next(
+            event for event in agent.audit_log.events if event.event_type == "recovery.manual_action_required"
+        )
+        self.assertEqual(manual.payload["goal_id"], goal.goal_id)
+        self.assertEqual(manual.payload["plan_id"], plan.plan_id)
         self.assertNotIn("must-not-leak", repr(agent.audit_log.records()))
+
+    def test_rollback_failure_recovery_packet_includes_goal_and_plan(self) -> None:
+        registry = ToolRegistry()
+        registry.register(_FailingRollbackTool())
+        registry.register(_FailingSecondTool())
+        agent = AgentKernel(registry=registry, policy=PolicyEngine())
+        goal = Goal(
+            "rollback failure",
+            ["blocked"],
+            criteria=({"key": "ok", "op": "exists"},),
+            stop_conditions=["blocked"],
+        )
+        plan = agent.build_plan(
+            goal,
+            [ActionStep("failing_rollback", {}, "first"), ActionStep("failing_second", {}, "fail")],
+        )
+
+        agent.run(plan)
+
+        recovery = next(event for event in agent.audit_log.events if event.event_type == "recovery.packet_created")
+        packet = recovery.payload["packet"]
+        self.assertEqual(packet["goal_id"], goal.goal_id)
+        self.assertEqual(packet["plan_id"], plan.plan_id)
+        manual = next(
+            event for event in agent.audit_log.events if event.event_type == "recovery.manual_action_required"
+        )
+        self.assertEqual(manual.payload["goal_id"], goal.goal_id)
+        self.assertEqual(manual.payload["plan_id"], plan.plan_id)
 
 
 if __name__ == "__main__":

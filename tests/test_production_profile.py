@@ -14,6 +14,7 @@ from leos_agent import (
     GitHubGetFileTool,
     GitHubOpenPRTool,
     GitHubReadIssueTool,
+    GitHubRESTClient,
     GitHubUpdateFileTool,
     Goal,
     InMemoryGitHubClient,
@@ -45,6 +46,14 @@ class _Tool:
 
     def rollback(self, token, state):
         return ToolResult(True, "rollback")
+
+    def runtime_attestations(self):
+        return {
+            "runtime_egress_enforced": True,
+            "runtime_egress_policy_configured": True,
+            "runtime_egress_mode": "in_memory",
+            "runtime_egress_host": self.spec.egress_host or "api.github.com",
+        }
 
 
 def _contract() -> CausalContract:
@@ -183,6 +192,112 @@ class ProductionProfileTests(unittest.TestCase):
             self.assertTrue(tool.spec.network_access, tool.spec.name)
             self.assertEqual(tool.spec.egress_host, "api.github.com")
             self.assertTrue(tool.spec.egress_methods, tool.spec.name)
+
+    def test_production_blocks_github_rest_client_without_runtime_egress(self) -> None:
+        client = GitHubRESTClient(enforce_egress=False)
+        tool = GitHubCreateBranchTool(client)
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(
+            allowed_hosts=("api.github.com",), allowed_methods=("GET", "POST", "DELETE")
+        )
+
+        kernel, plan = _run_tool(
+            tool,
+            approve=False,
+            policy=policy,
+            arguments={"repo": "o/r", "branch": "feature", "base": "main"},
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(any(event.event_type == "runtime.attestation_failed" for event in kernel.audit_log.events))
+        self.assertTrue(
+            any(
+                "runtime egress enforcement" in str(event.payload.get("reason", ""))
+                for event in kernel.audit_log.events
+            )
+        )
+
+    def test_production_allows_github_rest_client_with_runtime_egress(self) -> None:
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(
+            allowed_hosts=("api.github.com",), allowed_methods=("GET", "POST", "DELETE")
+        )
+        client = GitHubRESTClient(egress_policy=policy.egress_policy, enforce_egress=True)
+        tool = GitHubCreateBranchTool(client)
+
+        kernel, plan = _run_tool(
+            tool,
+            approve=False,
+            policy=policy,
+            arguments={"repo": "o/r", "branch": "feature", "base": "main"},
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(any(event.event_type == "runtime.attestation_checked" for event in kernel.audit_log.events))
+        self.assertFalse(any(event.event_type == "runtime.attestation_failed" for event in kernel.audit_log.events))
+        self.assertTrue(any(event.event_type == "approval.rejected" for event in kernel.audit_log.events))
+
+    def test_production_blocks_network_tool_without_runtime_attestation_method(self) -> None:
+        class UnattestedTool:
+            spec = ToolSpec(
+                "unattested_net",
+                "network",
+                (),
+                network_access=True,
+                egress_host="api.github.com",
+                egress_methods=("GET",),
+            )
+
+            def dry_run(self, arguments, state):
+                return ToolResult(True, "dry")
+
+            def execute(self, arguments, state):
+                return ToolResult(True, "exec", observed_state_delta={"ok": True})
+
+            def rollback(self, token, state):
+                return ToolResult(True, "rollback")
+
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET",))
+
+        kernel, plan = _run_tool(UnattestedTool(), policy=policy)
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(any(event.event_type == "runtime.attestation_failed" for event in kernel.audit_log.events))
+
+    def test_developer_local_does_not_require_runtime_attestation(self) -> None:
+        class UnattestedTool:
+            spec = ToolSpec("unattested_net", "network", (), network_access=True, egress_methods=("GET",))
+
+            def __init__(self) -> None:
+                self.executed = False
+
+            def dry_run(self, arguments, state):
+                return ToolResult(True, "dry")
+
+            def execute(self, arguments, state):
+                self.executed = True
+                return ToolResult(True, "exec", observed_state_delta={"ok": True})
+
+            def rollback(self, token, state):
+                return ToolResult(True, "rollback")
+
+        tool = UnattestedTool()
+        registry = ToolRegistry()
+        registry.register(tool)
+        kernel = AgentKernel(registry, PolicyEngine.from_profile("developer_local"), allow_network_tools=True)
+        goal = Goal(
+            "g",
+            ["ok"],
+            criteria=({"key": "ok", "op": "equals", "value": True},),
+            stop_conditions=["done"],
+        )
+        plan = kernel.build_plan(goal, [ActionStep(tool.spec.name, {}, "run")])
+        result = kernel.run(plan)
+
+        self.assertEqual(result.steps[0].status.value, "verified")
+        self.assertTrue(tool.executed)
+        self.assertFalse(any(event.event_type == "runtime.attestation_failed" for event in kernel.audit_log.events))
 
     def test_github_update_requires_all_declared_forward_methods(self) -> None:
         client = InMemoryGitHubClient()
