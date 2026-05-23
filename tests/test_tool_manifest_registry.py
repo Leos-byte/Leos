@@ -131,6 +131,27 @@ class ToolManifestRegistryTests(unittest.TestCase):
 
             self.assertFalse(registry.get("echo").secrets_allowed)
 
+    def test_unregister_existing_succeeds(self) -> None:
+        registry = ToolManifestRegistry()
+        registry.register(_manifest())
+        registry.unregister("echo")
+        self.assertEqual(registry.names(), [])
+
+    def test_unregister_nonexistent_raises(self) -> None:
+        registry = ToolManifestRegistry()
+        with self.assertRaises(ToolManifestRegistryError):
+            registry.unregister("nonexistent")
+
+    def test_get_nonexistent_raises(self) -> None:
+        registry = ToolManifestRegistry()
+        with self.assertRaises(ToolManifestRegistryError):
+            registry.get("nonexistent")
+
+    def test_register_empty_name_rejected(self) -> None:
+        registry = ToolManifestRegistry()
+        with self.assertRaises(ToolManifestRegistryError):
+            registry.register(_manifest(name=""))
+
 
 if __name__ == "__main__":
     unittest.main()
