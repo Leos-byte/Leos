@@ -1,0 +1,60 @@
+from __future__ import annotations
+
+import importlib.util
+import unittest
+from pathlib import Path
+from unittest import mock
+
+_SCRIPT = Path("scripts/check_release_proof.py").resolve()
+_SPEC = importlib.util.spec_from_file_location("check_release_proof", _SCRIPT)
+assert _SPEC is not None and _SPEC.loader is not None
+check_release_proof = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(check_release_proof)
+
+
+class ReleaseProofCheckTests(unittest.TestCase):
+    def test_matching_release_grade_manifest_passes(self) -> None:
+        manifest = _manifest()
+        with mock.patch.object(check_release_proof, "_git", return_value="abc"):
+            self.assertEqual(check_release_proof._proof_failures(manifest, Path.cwd()), [])
+
+    def test_precommit_dirty_fails(self) -> None:
+        manifest = _manifest(proof_status="precommit_dirty")
+        with mock.patch.object(check_release_proof, "_git", return_value="abc"):
+            failures = check_release_proof._proof_failures(manifest, Path.cwd())
+        self.assertTrue(any("proof_status" in failure for failure in failures))
+
+    def test_release_grade_false_and_dirty_fail(self) -> None:
+        manifest = _manifest(release_grade=False, dirty_worktree=True)
+        manifest["git"]["dirty_worktree"] = True
+        with mock.patch.object(check_release_proof, "_git", return_value="abc"):
+            failures = check_release_proof._proof_failures(manifest, Path.cwd())
+        self.assertTrue(any("release_grade" in failure for failure in failures))
+        self.assertTrue(any("dirty_worktree" in failure for failure in failures))
+
+    def test_commit_mismatch_fails(self) -> None:
+        manifest = _manifest()
+        with mock.patch.object(check_release_proof, "_git", return_value="different"):
+            failures = check_release_proof._proof_failures(manifest, Path.cwd())
+        self.assertTrue(any("commit_sha" in failure for failure in failures))
+
+    def test_missing_git_metadata_fails_cleanly(self) -> None:
+        manifest = _manifest()
+        manifest["git"] = None
+        failures = check_release_proof._proof_failures(manifest, Path.cwd())
+        self.assertIn("git metadata missing", failures)
+
+
+def _manifest(**overrides):
+    data = {
+        "proof_status": "release_grade",
+        "release_grade": True,
+        "dirty_worktree": False,
+        "git": {"branch": "main", "commit_sha": "abc", "dirty_worktree": False},
+    }
+    data.update(overrides)
+    return data
+
+
+if __name__ == "__main__":
+    unittest.main()

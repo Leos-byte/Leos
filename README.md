@@ -110,6 +110,9 @@ network access or external APIs.
 | GitHub issue-to-PR orchestration | AgentLoop dry-run path with fake REST transport |
 | Production locked-down policy | fail-closed profile for typed goals, strong sandbox, schemas, causal contracts, and egress methods |
 | Approval packets | anti-replay packet binding for human-gated consequential actions |
+| File approval exchange | local non-interactive approval packet/decision files |
+| Runtime egress guard | opt-in GitHubRESTClient host/method enforcement |
+| Manual recovery packets | structured rollback failure/operator recovery records |
 | Failure-driven replanning | bounded repair loop for selected failure classes |
 | Local software engineering demo | implemented, no network/API token required |
 | Safety benchmark fixtures | implemented for regression loading |
@@ -143,6 +146,10 @@ GitHub tools declare forward and rollback egress methods. In
 `production_locked_down`, every declared method must be allowed by explicit
 egress policy; read-only `GET` access does not authorize write or rollback
 methods such as `PUT`, `POST`, `PATCH`, or `DELETE`.
+The real GitHub client can also be constructed with `enforce_egress=True`, which
+checks each runtime request against the same host/method policy before the
+transport is called. This is a runtime guard inside Leos, not a substitute for
+container, OS, or firewall-level egress controls.
 Audit, trace rendering, runtime events, and checkpoints share a sanitization
 boundary that rejects or redacts `Secret`, `SecretHandle`-unsafe payloads, and
 common token-like strings. `InMemoryGitHubClient` keeps only token fingerprints
@@ -175,6 +182,7 @@ local review only. After committing, generate release-grade evidence with:
 
 ```bash
 python scripts/generate_proofs.py --output docs/proofs --require-clean
+python scripts/check_release_proof.py
 ```
 
 Proof documents and safety evals are audit aids and regression evidence, not
@@ -210,6 +218,15 @@ cannot depend on natural-language self-assessment alone.
 Approval packets bind approval to the exact goal, plan, step, arguments,
 permissions, risk, causal contract hash, profile, and expiry. An approval for
 one action cannot be replayed onto a different tool call or changed arguments.
+For non-interactive runs, `FileApprovalGate` can write packets to a local
+directory and consume matching decision files. The decision still has to match
+the packet approval id and step hash; file exchange does not bypass
+`production_locked_down` hard blocks or anti-replay validation.
+
+If rollback fails or rollback egress is blocked, Leos emits a
+`ManualRecoveryPacket` with the affected step, tool, risk, reason, and suggested
+operator actions. Recovery packets redact secret-like values and are audit
+records for manual follow-up, not automated repair by themselves.
 
 ## Extension points
 

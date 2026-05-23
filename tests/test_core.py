@@ -1450,10 +1450,13 @@ class AgentKernelTests(unittest.TestCase):
         self.assertIn("rollback_attempted", event_types)
         self.assertIn("rollback_failed", event_types)
         self.assertIn("manual_recovery_required", event_types)
+        self.assertIn("recovery.packet_created", event_types)
         failures = [event for event in agent.audit_log.events if event.event_type == "rollback_failed"]
         self.assertEqual(failures[0].payload["error_type"], "RollbackFailed")
         manual_recovery = [event for event in agent.audit_log.events if event.event_type == "manual_recovery_required"]
-        self.assertEqual(manual_recovery[0].payload["rollback_token"], {"resource": "rollback-failure-test"})
+        self.assertNotIn("rollback_token", manual_recovery[0].payload)
+        recovery = [event for event in agent.audit_log.events if event.event_type == "recovery.packet_created"]
+        self.assertEqual(recovery[0].payload["packet"]["tool_name"], "rollback_fails")
 
     def test_mixed_rollback_results_record_partial_completion(self) -> None:
         registry = ToolRegistry()

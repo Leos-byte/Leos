@@ -68,6 +68,9 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
 - GitHub tools support idempotency and optimistic file update guards.
 - `GitHubRESTClient` uses injectable transports for tests, redacts API errors,
   rejects protected branch deletion, and uses hidden PR idempotency markers.
+- `GitHubRESTClient` can enforce runtime egress with `RuntimeEgressGuard`, so
+  production smoke paths deny hosts and methods outside the configured egress
+  policy before the HTTP transport is called.
 - GitHub issue-to-PR orchestration uses the same `AgentLoop` and transaction
   path as local tools; the planner provider observes issue/file state before
   proposing write steps and never calls GitHub directly.
@@ -86,10 +89,19 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
 - Trace rendering redacts token-like values before Markdown/HTML output.
 - `InMemoryGitHubClient` stores only token fingerprints and counts, not raw
   token strings.
+- Network rollback paths are audited separately. If rollback egress is blocked,
+  Leos skips the rollback call and creates a redacted manual recovery packet.
+- File-based approval exchange writes approval packets and consumes decision
+  files for non-interactive local workflows. It does not approve by default and
+  still relies on approval id, step hash, expiry, and profile validation before
+  execution.
+- `check_release_proof.py` verifies release-grade proof metadata against the
+  current clean commit, reducing proof drift.
 
 ## Mitigations Still Missing
 - Production-grade container or microVM isolation with integration tests against a real runtime.
 - Deployment-level egress proxy and DNS rebinding defenses.
+- Runtime egress guard is process-level validation, not an OS or firewall boundary.
 - Complete SQLite persistence for every runtime state component.
 - Stronger secret scanning across every stdout/stderr/result path.
 - Broader adversarial benchmark coverage for long-running software engineering tasks.
@@ -118,6 +130,7 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
 - Fake clients must not persist raw credentials.
 - Credential handles must match scope and must fail after revoke or expiry.
 - Rollback failures must be visible in audit records.
+- Manual recovery packets must not contain rollback credentials or secret-like values.
 - External observations cannot override system, developer, or policy constraints.
 
 ## Non-Goals

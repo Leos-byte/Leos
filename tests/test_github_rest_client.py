@@ -9,6 +9,7 @@ from io import BytesIO
 from typing import Any
 from unittest import mock
 
+from leos_agent import EgressPolicy, RuntimeEgressBlocked
 from leos_agent.github_client import (
     GitHubAPIError,
     GitHubAuthError,
@@ -54,6 +55,85 @@ def _json_response(status: int, payload: Any, headers: dict[str, str] | None = N
 
 
 class GitHubRESTClientTests(unittest.TestCase):
+    def test_enforced_egress_without_policy_blocks_request_before_transport(self) -> None:
+        transport = FakeGitHubTransport([_json_response(200, {})])
+        client = GitHubRESTClient(transport=transport, enforce_egress=True)
+
+        with self.assertRaises(RuntimeEgressBlocked):
+            client.read_issue("o/r", 1)
+
+        self.assertEqual(transport.calls, [])
+
+    def test_enforced_egress_allows_api_github_get(self) -> None:
+        transport = FakeGitHubTransport(
+            [_json_response(200, {"number": 1, "title": "t", "body": "b", "state": "open"})]
+        )
+        client = GitHubRESTClient(
+            transport=transport,
+            egress_policy=EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET",)),
+            enforce_egress=True,
+        )
+
+        issue = client.read_issue("o/r", 1)
+
+        self.assertEqual(issue["state"], "open")
+        self.assertEqual(transport.calls[0]["method"], "GET")
+
+    def test_enforced_egress_blocks_wrong_host_and_method(self) -> None:
+        transport = FakeGitHubTransport([_json_response(200, {})])
+        wrong_host = GitHubRESTClient(
+            base_url="https://example.com",
+            transport=transport,
+            egress_policy=EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET",)),
+            enforce_egress=True,
+        )
+
+        with self.assertRaises(RuntimeEgressBlocked):
+            wrong_host.read_issue("o/r", 1)
+
+        wrong_method = GitHubRESTClient(
+            transport=transport,
+            egress_policy=EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET",)),
+            enforce_egress=True,
+        )
+        with self.assertRaises(RuntimeEgressBlocked):
+            wrong_method.comment("o/r", 1, "body")
+
+        self.assertEqual(transport.calls, [])
+
+    def test_enforced_egress_blocks_private_localhost_and_wildcard(self) -> None:
+        for base_url, policy in (
+            ("https://127.0.0.1", EgressPolicy(allowed_hosts=("127.0.0.1",), allowed_methods=("GET",))),
+            ("https://localhost", EgressPolicy(allowed_hosts=("localhost",), allowed_methods=("GET",))),
+            ("https://api.github.com", EgressPolicy(allowed_hosts=("*",), allowed_methods=("GET",))),
+        ):
+            client = GitHubRESTClient(
+                base_url=base_url,
+                transport=FakeGitHubTransport([_json_response(200, {})]),
+                egress_policy=policy,
+                enforce_egress=True,
+            )
+            with self.assertRaises(RuntimeEgressBlocked):
+                client.read_issue("o/r", 1)
+
+    def test_default_egress_enforcement_false_preserves_existing_behavior(self) -> None:
+        transport = FakeGitHubTransport(
+            [_json_response(200, {"number": 1, "title": "t", "body": "b", "state": "open"})]
+        )
+        client = GitHubRESTClient(base_url="https://example.com", transport=transport)
+
+        client.read_issue("o/r", 1)
+
+        self.assertEqual(len(transport.calls), 1)
+
+    def test_egress_error_does_not_include_token(self) -> None:
+        client = GitHubRESTClient(transport=FakeGitHubTransport([]), enforce_egress=True)
+
+        with self.assertRaises(RuntimeEgressBlocked) as ctx:
+            client.read_issue("o/r", 1, token="ghp_secret")
+
+        self.assertNotIn("ghp_secret", str(ctx.exception))
+
     def test_read_issue_success_uses_authorization_and_redacts_return(self) -> None:
         transport = FakeGitHubTransport(
             [

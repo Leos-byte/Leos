@@ -178,11 +178,21 @@ class PublicAPITests(unittest.TestCase):
             FailureAnalysis,
             FailureAnalyzer,
             FailureType,
+            FileApprovalGate,
             InteractiveApprovalGate,
+            ManualRecoveryPacket,
             PlanRepairStrategy,
             ReplanContext,
+            RuntimeEgressBlocked,
+            RuntimeEgressDecision,
+            RuntimeEgressGuard,
+            build_decision_for_packet,
+            read_approval_decision,
+            read_approval_packet,
             render_approval_packet_html,
             render_approval_packet_markdown,
+            write_approval_decision,
+            write_approval_packet,
         )
 
     def test_package_exports_new_runtime_api(self) -> None:
@@ -206,6 +216,9 @@ class PublicAPITests(unittest.TestCase):
         self.assertTrue(hasattr(leos_agent, "FailureAnalyzer"))
         self.assertTrue(hasattr(leos_agent, "EgressPolicy"))
         self.assertTrue(hasattr(leos_agent, "InteractiveApprovalGate"))
+        self.assertTrue(hasattr(leos_agent, "RuntimeEgressGuard"))
+        self.assertTrue(hasattr(leos_agent, "ManualRecoveryPacket"))
+        self.assertTrue(hasattr(leos_agent, "FileApprovalGate"))
 
     def test_core_exports_network_observation_helpers(self) -> None:
         from leos_agent.core import DNSResolver, make_untrusted_observation  # noqa: F401

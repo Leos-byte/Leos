@@ -87,6 +87,10 @@ class WorkspaceEscapeBlocked(SecurityError):
     """Raised or recorded when a path escapes the configured workspace."""
 
 
+class RuntimeEgressBlocked(SecurityError):
+    """Raised when a runtime HTTP client attempts disallowed egress."""
+
+
 # -- remaining direct LeosError children -----------------------------------
 
 
