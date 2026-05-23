@@ -1,17 +1,15 @@
 # Proof Index
 
-- Proof status: `precommit_dirty`
-- Release grade: `False`
-- Generated at: `2026-05-23T00:57:07.021187+00:00`
-- Commit SHA: `46d3452eecd884bff25c743abb09c41eb00fb28d`
+- Proof status: `release_grade`
+- Release grade: `True`
+- Generated at: `2026-05-23T00:59:34.475695+00:00`
+- Commit SHA: `e7589e2f96ed927675c659ee654dde7502162db4`
 - Branch: `fix/production-egress-semantics`
-- Dirty worktree: `True`
+- Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 
 ## Warnings
-- WARNING: This proof was generated from a dirty worktree and is not release-grade evidence.
-
-**WARNING: This proof was generated from a dirty worktree. It is useful for local review but not release-grade evidence.**
+- none
 
 ## Documents
 - [SOURCE_SNAPSHOT.md](SOURCE_SNAPSHOT.md)

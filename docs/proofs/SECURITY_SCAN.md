@@ -18,13 +18,13 @@ Known warnings:
 - Command: `bandit -r src`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `1.144`
+- Duration seconds: `1.152`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Run started:2026-05-23 00:57:14.948776+00:00
+Run started:2026-05-23 00:59:42.412828+00:00
 
 Test results:
 	No issues identified.
