@@ -8,7 +8,12 @@ from typing import Any
 
 from leos_agent.audit import AuditLog
 from leos_agent.causal import CausalGraph, CausalHypothesis
-from leos_agent.causal_contract import CausalContract, ObservationFieldRequirement, github_open_pr_causal_contract
+from leos_agent.causal_contract import (
+    CausalContract,
+    ObservationFieldRequirement,
+    github_open_pr_causal_contract,
+    github_update_file_causal_contract,
+)
 from leos_agent.enums import Permission, RiskLevel
 from leos_agent.github_tools import (
     GitHubCommentTool,
@@ -21,7 +26,7 @@ from leos_agent.goals import Goal
 from leos_agent.plans import ActionStep, TransactionPlan
 from leos_agent.policy import ApprovalGate, PolicyEngine
 from leos_agent.state import WorldState
-from leos_agent.tools import EchoTool, SafeFileWriteTool, ToolRegistry, ToolResult, ToolSpec
+from leos_agent.tools import EchoTool, SafeFileWriteTool, Secret, ToolRegistry, ToolResult, ToolSpec
 from leos_agent.transactions import TransactionManager
 
 
@@ -87,6 +92,34 @@ class FieldViolationTool:
         return ToolResult(True, "rollback")
 
 
+class ArgumentBoundViolationTool:
+    spec = ToolSpec(
+        "argument_bound_violation",
+        "argument-bound violation",
+        (),
+        output_schema={"type": "object", "required": ["github_file_updated"]},
+        causal_contract=github_update_file_causal_contract(),
+    )
+
+    def __init__(self) -> None:
+        self.rollback_called = False
+
+    def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        return ToolResult(True, "dry")
+
+    def execute(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        return ToolResult(
+            True,
+            "execute",
+            observed_state_delta={"github_file_updated": {"path": "other.md", "branch": "feature", "sha": "new"}},
+            rollback_token={"ok": True},
+        )
+
+    def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult:
+        self.rollback_called = True
+        return ToolResult(True, "rollback")
+
+
 class CausalContractTests(unittest.TestCase):
     def test_safe_file_write_has_contract(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -137,12 +170,117 @@ class CausalContractTests(unittest.TestCase):
 
     def test_github_pr_open_nested_fields_pass_contract(self) -> None:
         contract = github_open_pr_causal_contract()
+        step = ActionStep("github_open_pr", {"head": "feature", "base": "main"}, "open")
 
         violations = contract.field_violations(
-            {"github_pr": {"number": 1, "state": "open", "head": "feature", "base": "main"}}
+            {"github_pr": {"number": 1, "state": "open", "head": "feature", "base": "main"}},
+            step=step,
         )
 
         self.assertEqual(violations, [])
+
+    def test_argument_bound_equals_passes_when_observed_field_matches_step_argument(self) -> None:
+        contract = github_update_file_causal_contract()
+        step = ActionStep("github_update_file", {"path": "README.md", "branch": "feature"}, "update")
+
+        violations = contract.field_violations(
+            {"github_file_updated": {"path": "README.md", "branch": "feature", "sha": "new-sha"}},
+            step=step,
+        )
+
+        self.assertEqual(violations, [])
+
+    def test_argument_bound_equals_fails_when_observed_field_differs(self) -> None:
+        contract = github_update_file_causal_contract()
+        step = ActionStep("github_update_file", {"path": "README.md", "branch": "feature"}, "update")
+
+        violations = contract.field_violations(
+            {"github_file_updated": {"path": "OTHER.md", "branch": "feature", "sha": "new-sha"}},
+            step=step,
+        )
+
+        self.assertTrue(any("github_file_updated.path" in violation for violation in violations))
+
+    def test_missing_argument_key_causes_violation(self) -> None:
+        contract = github_update_file_causal_contract()
+        step = ActionStep("github_update_file", {"branch": "feature"}, "update")
+
+        violations = contract.field_violations(
+            {"github_file_updated": {"path": "README.md", "branch": "feature", "sha": "new-sha"}},
+            step=step,
+        )
+
+        self.assertTrue(any("missing expected argument 'path'" in violation for violation in violations))
+
+    def test_argument_bound_violation_message_does_not_reveal_secret(self) -> None:
+        contract = CausalContract(
+            "secret_arg",
+            required_observations=("observed",),
+            required_fields=(
+                ObservationFieldRequirement("observed", ("token",), operator="equals", argument_key="token"),
+            ),
+        )
+        step = ActionStep("secret_arg", {"token": Secret("ghp_should_not_leak")}, "secret")
+
+        violations = contract.field_violations({"observed": {"token": "different"}}, step=step)
+
+        self.assertTrue(violations)
+        self.assertNotIn("ghp_should_not_leak", repr(violations))
+
+    def test_github_update_file_path_mismatch_fails_contract(self) -> None:
+        contract = github_update_file_causal_contract()
+        step = ActionStep("github_update_file", {"path": "README.md", "branch": "feature"}, "update")
+
+        violations = contract.field_violations(
+            {"github_file_updated": {"path": "OTHER.md", "branch": "feature", "sha": "new"}},
+            step=step,
+        )
+
+        self.assertTrue(any("github_file_updated.path" in violation for violation in violations))
+
+    def test_github_update_file_branch_mismatch_fails_contract(self) -> None:
+        contract = github_update_file_causal_contract()
+        step = ActionStep("github_update_file", {"path": "README.md", "branch": "feature"}, "update")
+
+        violations = contract.field_violations(
+            {"github_file_updated": {"path": "README.md", "branch": "other", "sha": "new"}},
+            step=step,
+        )
+
+        self.assertTrue(any("github_file_updated.branch" in violation for violation in violations))
+
+    def test_github_open_pr_head_and_base_mismatch_fail_contract(self) -> None:
+        contract = github_open_pr_causal_contract()
+        step = ActionStep("github_open_pr", {"head": "feature", "base": "main"}, "open")
+
+        violations = contract.field_violations(
+            {"github_pr": {"number": 1, "state": "open", "head": "other", "base": "release"}},
+            step=step,
+        )
+
+        self.assertTrue(any("github_pr.head" in violation for violation in violations))
+        self.assertTrue(any("github_pr.base" in violation for violation in violations))
+
+    def test_argument_bound_field_violation_rolls_back(self) -> None:
+        tool = ArgumentBoundViolationTool()
+        registry = ToolRegistry()
+        registry.register(tool)
+        audit = AuditLog()
+        manager = TransactionManager(registry, PolicyEngine(), CausalGraph(), audit, ApprovalGate(lambda step: True))
+
+        result = manager.execute_plan(
+            _plan(
+                ActionStep(
+                    "argument_bound_violation",
+                    {"path": "README.md", "branch": "feature"},
+                    "argument-bound",
+                )
+            ),
+            WorldState(),
+        )
+
+        self.assertEqual(result.steps[0].status.value, "rolled_back")
+        self.assertTrue(tool.rollback_called)
 
     def test_field_violation_fails_and_rolls_back(self) -> None:
         tool = FieldViolationTool()

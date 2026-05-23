@@ -18,6 +18,7 @@ class ObservationFieldRequirement:
     path: tuple[str, ...]
     operator: str = "exists"
     value: Any = None
+    argument_key: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "path", tuple(self.path))
@@ -27,6 +28,8 @@ class ObservationFieldRequirement:
             raise ValueError("Observation field requirement must name an observation")
         if not self.path:
             raise ValueError("Observation field requirement path must not be empty")
+        if self.argument_key is not None and self.value is not None:
+            raise ValueError("Observation field requirement cannot set both value and argument_key")
 
 
 @dataclass(frozen=True)
@@ -82,7 +85,7 @@ class CausalContract:
     def missing_required_observations(self, observed_state_delta: Mapping[str, Any]) -> list[str]:
         return [key for key in self.required_observations if key not in observed_state_delta]
 
-    def field_violations(self, observed_state_delta: Mapping[str, Any]) -> list[str]:
+    def field_violations(self, observed_state_delta: Mapping[str, Any], step: Any | None = None) -> list[str]:
         violations: list[str] = []
         for requirement in self.required_fields:
             if requirement.observation not in observed_state_delta:
@@ -95,16 +98,20 @@ class CausalContract:
                 continue
             if requirement.operator == "exists":
                 continue
-            if requirement.operator == "equals" and actual != requirement.value:
-                violations.append(f"{label} expected {requirement.value!r}")
-            elif requirement.operator == "not_equals" and actual == requirement.value:
-                violations.append(f"{label} unexpectedly matched {requirement.value!r}")
+            has_expected, expected = _expected_value(requirement, step)
+            if not has_expected:
+                violations.append(f"{label} missing expected argument {requirement.argument_key!r}")
+                continue
+            if requirement.operator == "equals" and actual != expected:
+                violations.append(f"{label} did not match expected value")
+            elif requirement.operator == "not_equals" and actual == expected:
+                violations.append(f"{label} unexpectedly matched disallowed value")
             elif requirement.operator == "in":
                 try:
-                    if actual not in requirement.value:
-                        violations.append(f"{label} expected one of {requirement.value!r}")
+                    if actual not in expected:
+                        violations.append(f"{label} was not in allowed values")
                 except TypeError:
-                    violations.append(f"{label} expected one of {requirement.value!r}")
+                    violations.append(f"{label} expected a collection of allowed values")
         return violations
 
 
@@ -132,8 +139,8 @@ def github_create_branch_causal_contract() -> CausalContract:
         rollback_effects=("github_branch_deleted",),
         required_observations=("github_branch",),
         required_fields=(
-            ObservationFieldRequirement("github_branch", ("branch",)),
-            ObservationFieldRequirement("github_branch", ("base",)),
+            ObservationFieldRequirement("github_branch", ("branch",), operator="equals", argument_key="branch"),
+            ObservationFieldRequirement("github_branch", ("base",), operator="equals", argument_key="base"),
             ObservationFieldRequirement("github_branch", ("sha",)),
         ),
         risk_notes=("Creates a remote GitHub branch and requires cleanup on rollback.",),
@@ -149,8 +156,8 @@ def github_update_file_causal_contract() -> CausalContract:
         rollback_effects=("previous_github_file_content_restored_when_available",),
         required_observations=("github_file_updated",),
         required_fields=(
-            ObservationFieldRequirement("github_file_updated", ("path",)),
-            ObservationFieldRequirement("github_file_updated", ("branch",)),
+            ObservationFieldRequirement("github_file_updated", ("path",), operator="equals", argument_key="path"),
+            ObservationFieldRequirement("github_file_updated", ("branch",), operator="equals", argument_key="branch"),
             ObservationFieldRequirement("github_file_updated", ("sha",)),
         ),
         risk_notes=("Modifies repository content on a non-protected branch with optimistic guards.",),
@@ -168,8 +175,8 @@ def github_open_pr_causal_contract() -> CausalContract:
         required_fields=(
             ObservationFieldRequirement("github_pr", ("number",)),
             ObservationFieldRequirement("github_pr", ("state",), operator="equals", value="open"),
-            ObservationFieldRequirement("github_pr", ("head",)),
-            ObservationFieldRequirement("github_pr", ("base",)),
+            ObservationFieldRequirement("github_pr", ("head",), operator="equals", argument_key="head"),
+            ObservationFieldRequirement("github_pr", ("base",), operator="equals", argument_key="base"),
         ),
         risk_notes=("Creates or reuses an idempotent GitHub pull request.",),
         confidence=0.85,
@@ -185,7 +192,10 @@ def github_comment_causal_contract() -> CausalContract:
         required_observations=("github_comment",),
         required_fields=(
             ObservationFieldRequirement("github_comment", ("id",)),
-            ObservationFieldRequirement("github_comment", ("issue_number",)),
+            ObservationFieldRequirement(
+                "github_comment", ("issue_number",), operator="equals", argument_key="issue_number"
+            ),
+            ObservationFieldRequirement("github_comment", ("body",), operator="equals", argument_key="body"),
         ),
         risk_notes=("Posts a GitHub issue or PR comment.",),
         confidence=0.85,
@@ -202,3 +212,14 @@ def _nested_get(value: Any, path: Sequence[str]) -> tuple[bool, Any]:
             continue
         return False, None
     return True, current
+
+
+def _expected_value(requirement: ObservationFieldRequirement, step: Any | None) -> tuple[bool, Any]:
+    if requirement.argument_key is None:
+        return True, requirement.value
+    if step is None:
+        return False, None
+    arguments = getattr(step, "arguments", {})
+    if not isinstance(arguments, Mapping) or requirement.argument_key not in arguments:
+        return False, None
+    return True, arguments[requirement.argument_key]

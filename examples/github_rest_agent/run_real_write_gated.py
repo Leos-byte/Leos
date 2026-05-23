@@ -23,10 +23,13 @@ from leos_agent import (
     GitHubRESTClient,
     GitHubUpdateFileTool,
     Goal,
+    GoalEvaluationStatus,
+    GoalEvaluator,
     PolicyEngine,
     Secret,
     ToolRegistry,
 )
+from leos_agent.state import TrustLevel
 
 PROTECTED_BRANCHES = {"main", "master", "trunk", "release"}
 
@@ -83,8 +86,10 @@ def main() -> int:
             "Gated GitHub real-write smoke",
             ["file updated", "PR opened"],
             criteria=(
+                {"key": "github_branch", "op": "exists"},
                 {"key": "github_file_updated", "op": "exists"},
                 {"key": "github_pr", "op": "exists"},
+                {"key": "read_back_verified", "op": "equals", "value": True},
             ),
             stop_conditions=["PR opened or blocked"],
         )
@@ -152,6 +157,8 @@ def main() -> int:
             branch=work_branch,
         )
         summary["read_back_verified"] = True
+        kernel.state.observe({"read_back_verified": True}, trust_level=TrustLevel.VERIFIED)
+        _evaluate_real_write_goal(kernel, executed, summary)
         pr = kernel.state.facts.get("github_pr", {})
         summary["pr_number"] = pr.get("number")
         summary["idempotency_key"] = idempotency_key
@@ -165,6 +172,21 @@ def main() -> int:
     print(json.dumps(summary, indent=2, sort_keys=True))
     print("token not printed")
     return 0
+
+
+def _evaluate_real_write_goal(kernel: AgentKernel, executed, summary: dict[str, object]) -> None:
+    progress = kernel.transactions.track_progress(executed)
+    evaluation = GoalEvaluator().evaluate(executed.goal, kernel.state, progress)
+    kernel.audit_log.record(
+        "github.real_write.goal_evaluated",
+        "GitHub real-write smoke evaluated typed goal criteria",
+        evaluation_status=evaluation.status.value,
+        satisfied_criteria=list(evaluation.satisfied_criteria),
+        unsatisfied_criteria=list(evaluation.unsatisfied_criteria),
+    )
+    summary["evaluation_status"] = evaluation.status.value
+    if evaluation.status is not GoalEvaluationStatus.SUCCEEDED:
+        raise GitHubConflictError("goal evaluation failed after read-back verification")
 
 
 def _required_env(name: str) -> str:

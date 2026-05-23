@@ -311,6 +311,7 @@ class GitHubReadIssueTool(_GitHubToolBase):
         network_access=True,
         egress_host=_GITHUB_EGRESS_HOST,
         egress_methods=("GET",),
+        rollback_egress_methods=(),
         input_schema={"type": "object", "required": ["repo", "issue_number"]},
         output_schema={"type": "object", "required": ["github_issue"]},
     )
@@ -343,7 +344,8 @@ class GitHubCreateBranchTool(_GitHubToolBase):
         secrets_allowed=True,
         network_access=True,
         egress_host=_GITHUB_EGRESS_HOST,
-        egress_methods=("GET", "POST", "DELETE"),
+        egress_methods=("GET", "POST"),
+        rollback_egress_methods=("DELETE",),
         input_schema={"type": "object", "required": ["repo", "branch", "base"]},
         output_schema={"type": "object", "required": ["github_branch"]},
         causal_contract=github_create_branch_causal_contract(),
@@ -400,6 +402,7 @@ class GitHubGetFileTool(_GitHubToolBase):
         network_access=True,
         egress_host=_GITHUB_EGRESS_HOST,
         egress_methods=("GET",),
+        rollback_egress_methods=(),
         input_schema={"type": "object", "required": ["repo", "path", "ref"]},
         output_schema={"type": "object", "required": ["github_file"]},
     )
@@ -433,6 +436,7 @@ class GitHubUpdateFileTool(_GitHubToolBase):
         network_access=True,
         egress_host=_GITHUB_EGRESS_HOST,
         egress_methods=("GET", "PUT"),
+        rollback_egress_methods=("GET", "PUT"),
         input_schema={"type": "object", "required": ["repo", "path", "branch", "content", "message"]},
         output_schema={"type": "object", "required": ["github_file_updated"]},
         causal_contract=github_update_file_causal_contract(),
@@ -521,7 +525,8 @@ class GitHubOpenPRTool(_GitHubToolBase):
         secrets_allowed=True,
         network_access=True,
         egress_host=_GITHUB_EGRESS_HOST,
-        egress_methods=("GET", "POST", "PATCH"),
+        egress_methods=("GET", "POST"),
+        rollback_egress_methods=("PATCH",),
         input_schema={"type": "object", "required": ["repo", "title", "body", "head", "base"]},
         output_schema={"type": "object", "required": ["github_pr"]},
         causal_contract=github_open_pr_causal_contract(),
@@ -584,7 +589,8 @@ class GitHubCommentTool(_GitHubToolBase):
         secrets_allowed=True,
         network_access=True,
         egress_host=_GITHUB_EGRESS_HOST,
-        egress_methods=("POST", "DELETE"),
+        egress_methods=("POST",),
+        rollback_egress_methods=("DELETE",),
         input_schema={"type": "object", "required": ["repo", "issue_number", "body"]},
         output_schema={"type": "object", "required": ["github_comment"]},
         causal_contract=github_comment_causal_contract(),
@@ -606,6 +612,7 @@ class GitHubCommentTool(_GitHubToolBase):
             )
         except LeosError as exc:
             return _tool_error(exc)
+        comment.setdefault("body", str(arguments["body"]))
         return ToolResult(
             True,
             "Posted GitHub comment",
@@ -638,6 +645,7 @@ class GitHubCheckCIStatusTool(_GitHubToolBase):
         network_access=True,
         egress_host=_GITHUB_EGRESS_HOST,
         egress_methods=("GET",),
+        rollback_egress_methods=(),
         input_schema={"type": "object", "required": ["repo", "ref"]},
         output_schema={"type": "object", "required": ["github_ci_status"]},
     )

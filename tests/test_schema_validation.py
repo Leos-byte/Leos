@@ -182,6 +182,9 @@ class ToolManifestSchemaTests(unittest.TestCase):
             "input_schema": {"type": "object"},
             "output_schema": {"type": "object"},
             "network_access": True,
+            "egress_host": "api.github.com",
+            "egress_methods": ["GET", "PUT"],
+            "rollback_egress_methods": ["PUT"],
             "filesystem_scope": "none",
             "secrets_allowed": False,
             "sandbox_policy": "none",
@@ -196,6 +199,8 @@ class ToolManifestSchemaTests(unittest.TestCase):
         self.assertEqual(manifest.name, "network_fetch")
         self.assertEqual([permission.value for permission in manifest.permissions], ["network"])
         self.assertTrue(manifest.network_access)
+        self.assertEqual(tuple(manifest.egress_methods), ("GET", "PUT"))
+        self.assertEqual(tuple(manifest.rollback_egress_methods), ("PUT",))
 
     def test_invalid_tool_manifest_reports_schema_issues(self) -> None:
         data = self._valid_manifest()

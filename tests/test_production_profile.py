@@ -22,6 +22,7 @@ from leos_agent import (
     PolicyDenied,
     PolicyEngine,
     PolicyRule,
+    Reversibility,
     RiskLevel,
     SandboxPolicy,
     ToolRegistry,
@@ -104,6 +105,7 @@ class ProductionProfileTests(unittest.TestCase):
                 (Permission.NETWORK,),
                 default_risk=RiskLevel.LOW,
                 network_access=True,
+                egress_methods=("GET",),
             )
         )
         kernel, plan = _run_tool(tool)
@@ -119,6 +121,7 @@ class ProductionProfileTests(unittest.TestCase):
                 (Permission.NETWORK,),
                 default_risk=RiskLevel.LOW,
                 network_access=True,
+                egress_methods=("GET",),
             )
         )
         policy = PolicyEngine.from_profile("production_locked_down")
@@ -140,6 +143,7 @@ class ProductionProfileTests(unittest.TestCase):
                 (Permission.NETWORK,),
                 default_risk=RiskLevel.LOW,
                 network_access=True,
+                egress_methods=("GET",),
             )
         )
         policy = PolicyEngine.from_profile("production_locked_down")
@@ -179,6 +183,198 @@ class ProductionProfileTests(unittest.TestCase):
             self.assertTrue(tool.spec.network_access, tool.spec.name)
             self.assertEqual(tool.spec.egress_host, "api.github.com")
             self.assertTrue(tool.spec.egress_methods, tool.spec.name)
+
+    def test_github_update_requires_all_declared_forward_methods(self) -> None:
+        client = InMemoryGitHubClient()
+        old_sha = client.seed_file("o/r", "feature", "README.md", "old")
+        tool = GitHubUpdateFileTool(client)
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET",))
+
+        _, plan = _run_tool(
+            tool,
+            approve=True,
+            policy=policy,
+            arguments={
+                "repo": "o/r",
+                "path": "README.md",
+                "branch": "feature",
+                "content": "new",
+                "message": "update",
+                "expected_sha": old_sha,
+                "method": "GET",
+            },
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(any("forward PUT" in str(event.payload.get("reason", "")) for event in _.audit_log.events))
+
+    def test_github_update_passes_egress_layer_with_get_and_put(self) -> None:
+        client = InMemoryGitHubClient()
+        old_sha = client.seed_file("o/r", "feature", "README.md", "old")
+        tool = GitHubUpdateFileTool(client)
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET", "PUT"))
+
+        kernel, plan = _run_tool(
+            tool,
+            approve=False,
+            policy=policy,
+            arguments={
+                "repo": "o/r",
+                "path": "README.md",
+                "branch": "feature",
+                "content": "new",
+                "message": "update",
+                "expected_sha": old_sha,
+            },
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(any(event.event_type == "egress.allowed" for event in kernel.audit_log.events))
+        self.assertFalse(any(event.event_type == "egress.blocked" for event in kernel.audit_log.events))
+
+    def test_github_create_branch_requires_rollback_delete_method(self) -> None:
+        client = InMemoryGitHubClient()
+        tool = GitHubCreateBranchTool(client)
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET", "POST"))
+
+        _, plan = _run_tool(
+            tool,
+            approve=True,
+            policy=policy,
+            arguments={"repo": "o/r", "branch": "feature", "base": "main"},
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(any("rollback DELETE" in str(event.payload.get("reason", "")) for event in _.audit_log.events))
+
+    def test_github_create_branch_passes_egress_layer_with_delete_rollback(self) -> None:
+        client = InMemoryGitHubClient()
+        tool = GitHubCreateBranchTool(client)
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(
+            allowed_hosts=("api.github.com",), allowed_methods=("GET", "POST", "DELETE")
+        )
+
+        kernel, plan = _run_tool(
+            tool,
+            approve=False,
+            policy=policy,
+            arguments={"repo": "o/r", "branch": "feature", "base": "main"},
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(any(event.event_type == "egress.allowed" for event in kernel.audit_log.events))
+        self.assertTrue(any(event.event_type == "approval.rejected" for event in kernel.audit_log.events))
+
+    def test_github_open_pr_requires_patch_rollback_method(self) -> None:
+        client = InMemoryGitHubClient()
+        tool = GitHubOpenPRTool(client)
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET", "POST"))
+
+        _, plan = _run_tool(
+            tool,
+            approve=True,
+            policy=policy,
+            arguments={"repo": "o/r", "title": "t", "body": "b", "head": "feature", "base": "main"},
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(any("rollback PATCH" in str(event.payload.get("reason", "")) for event in _.audit_log.events))
+
+    def test_read_only_github_get_file_passes_with_get_only(self) -> None:
+        client = InMemoryGitHubClient()
+        client.seed_file("o/r", "main", "README.md", "content")
+        tool = GitHubGetFileTool(client)
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET",))
+
+        kernel, plan = _run_tool(
+            tool,
+            policy=policy,
+            arguments={"repo": "o/r", "path": "README.md", "ref": "main"},
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "verified")
+        self.assertTrue(any(event.event_type == "egress.allowed" for event in kernel.audit_log.events))
+
+    def test_network_access_with_empty_egress_methods_blocks_in_production(self) -> None:
+        tool = _Tool(
+            ToolSpec(
+                "empty_methods",
+                "network",
+                (),
+                network_access=True,
+                egress_host="api.github.com",
+            )
+        )
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",))
+
+        _, plan = _run_tool(tool, policy=policy)
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(
+            any(
+                "declared forward egress methods" in str(event.payload.get("reason", ""))
+                for event in _.audit_log.events
+            )
+        )
+
+    def test_reversible_network_tool_requires_declared_rollback_methods(self) -> None:
+        tool = _Tool(
+            ToolSpec(
+                "reversible_net",
+                "network",
+                (),
+                network_access=True,
+                egress_host="api.github.com",
+                egress_methods=("POST",),
+                reversibility=Reversibility.REVERSIBLE,
+                output_schema={"type": "object"},
+                causal_contract=_contract(),
+            )
+        )
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("POST",))
+
+        _, plan = _run_tool(tool, policy=policy)
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(
+            any(
+                "requires rollback egress methods" in str(event.payload.get("reason", ""))
+                for event in _.audit_log.events
+            )
+        )
+
+    def test_irreversible_network_tool_does_not_require_rollback_methods(self) -> None:
+        tool = _Tool(
+            ToolSpec(
+                "irreversible_net",
+                "network",
+                (),
+                network_access=True,
+                egress_host="api.github.com",
+                egress_methods=("POST",),
+            )
+        )
+        policy = PolicyEngine.from_profile("production_locked_down")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("POST",))
+
+        kernel, plan = _run_tool(tool, policy=policy)
+
+        self.assertEqual(plan.steps[0].status.value, "verified")
+        self.assertTrue(tool.executed)
+        self.assertTrue(any(event.event_type == "egress.allowed" for event in kernel.audit_log.events))
+
+    def test_rollback_egress_methods_included_in_manifest(self) -> None:
+        manifest = GitHubCreateBranchTool(InMemoryGitHubClient()).spec.manifest()
+
+        self.assertEqual(tuple(manifest.rollback_egress_methods), ("DELETE",))
 
     def test_production_blocks_github_tool_without_egress_policy(self) -> None:
         client = InMemoryGitHubClient()

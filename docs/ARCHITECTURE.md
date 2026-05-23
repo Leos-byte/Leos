@@ -87,6 +87,15 @@ transport, but real writes remain consequential tool actions: file updates need
 `expected_sha` or `expected_previous`, PR creation uses an idempotency marker,
 and protected branches are not deleted by rollback or cleanup.
 
+GitHub tools explicitly declare `network_access`, `egress_host`,
+`egress_methods`, and `rollback_egress_methods`. In `production_locked_down`,
+the policy checks every declared forward method and every rollback or
+compensation method; allowing `GET` is not enough to authorize a tool that can
+also `PUT`, `POST`, `PATCH`, or `DELETE`. Reversible and compensatable network
+tools are blocked if rollback egress is missing or not allowed. These checks are
+policy-level semantics for auditing and fail-closed planning; production
+deployments still need OS, container, or network firewall egress enforcement.
+
 `GitHubIssuePlanProvider` is a deterministic bridge between GitHub observations
 and the closed loop runtime. It does not call GitHub directly. Its first
 proposal reads the issue and target file through normal tools. Once those facts
@@ -194,6 +203,8 @@ replan or stop
 - Implemented with fake-transport tests: GitHub REST client for issue/file/branch/PR/comment/CI workflows and issue-to-PR AgentLoop orchestration.
 - Implemented: production locked-down policy checks, typed goal criteria,
   bounded failure-driven replanning, and anti-replay approval packets.
+- Implemented: policy-level egress method checks for GitHub forward and
+  rollback paths, plus network budget accounting for `network_access` tools.
 - Partial: causal contract runtime enforcement. The causal model is
   tool-contract verification, not a full structural causal model.
 - Opt-in: Docker/Podman sandboxing requires a local container runtime and is

@@ -1,15 +1,17 @@
 # Proof Index
 
-- Proof status: `release_grade`
-- Release grade: `True`
-- Generated at: `2026-05-22T10:12:24.074345+00:00`
-- Commit SHA: `23012acee3d4d56137a271ecb1eea39ca23fec11`
-- Branch: `fix/github-egress-causal-hardening`
-- Dirty worktree: `False`
+- Proof status: `precommit_dirty`
+- Release grade: `False`
+- Generated at: `2026-05-23T00:57:07.021187+00:00`
+- Commit SHA: `46d3452eecd884bff25c743abb09c41eb00fb28d`
+- Branch: `fix/production-egress-semantics`
+- Dirty worktree: `True`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 
 ## Warnings
-- none
+- WARNING: This proof was generated from a dirty worktree and is not release-grade evidence.
+
+**WARNING: This proof was generated from a dirty worktree. It is useful for local review but not release-grade evidence.**
 
 ## Documents
 - [SOURCE_SNAPSHOT.md](SOURCE_SNAPSHOT.md)
