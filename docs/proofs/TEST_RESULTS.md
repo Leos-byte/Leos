@@ -5,12 +5,18 @@
 - Command: `python -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `2.093`
+- Duration seconds: `2.13`
 - Truncated: `False`
 
 ### stdout
 
 ```text
+No anomalies detected.
+OK: Would echo: hi
+echo                  risk=low       rev=irreversible  perm=none
+  Return a message and record it in observed state.
+safe_file_write       risk=medium    rev=reversible    perm=write_files
+  Write a UTF-8 file inside the configured workspace root.
 safety: 15/15 passed, 0 failed
 workspace_escape: passed severity=critical
 prompt_injection_untrusted_network: passed severity=high
@@ -105,7 +111,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: a2995a96-eabe-409f-883d-1014ac2986c2
+Enqueued: 6c16c484-9320-46c4-b783-a8d16adcc88b
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -117,7 +123,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=7bda656c6ef306020f0fa27baad00f429ce40b7b6b931784874882cc6f22dbef observed=768505972d23db6b95641a59ca004ec33704ed00d0efd33f217d6fe2e954dc9a
+  [0] event_hash_mismatch: expected=c68e82b9e18987067c72c1595356d16d7591832886dd5fa633102823b87c79b6 observed=d479bdcd51b735fe59cd10c8574aee543b344d846efe9360b88353424fa4d1ca
 Integrity: OK
 Applied events: 1
 Facts:
@@ -131,17 +137,34 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpfv33qagr/signed.json
+Signed manifest written to /tmp/tmpfbwtf0b4/signed.json
 Policy configuration is valid. Signature verified.
+report.md: pattern=aws-access-key
+report.md: pattern=bearer-token
+<redacted> pattern=github-fine-grained-token
+<redacted> pattern=openai-token
+<redacted> pattern=private-key
 report.md: pattern=github-classic-token
-<redacted> written to /tmp/tmpur9jyndg/trace.html
+<redacted> pattern=slack-bot-token
+<redacted> written to /tmp/tmpq5s06g1x/trace.html
 
 ```
 
 ### stderr
 
 ```text
-..............................................................................................Issue: $: 'steps' is a required property
+...............................................................................................Error: file not found: /tmp/tmpqm150x_d/nonexistent.txt
+..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
+.Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
+...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
+.Error: file not found: /nonexistent/notfound.json
+..Error: --secret <redacted> be KEY=VALUE, got: badformat
+.Error: /goal: type
+Error: /steps: minItems
+.Error: $: required
+Error: /steps: minItems
+..Error: validate-policy requires a file or --profile
+.......Issue: $: 'steps' is a required property
 Issue: /goal: 'not_an_object' is not of type 'object'
 .Unknown tool: nonexistent
 ..............................................................................Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
@@ -153,9 +176,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-..................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 673 tests in 1.807s
+Ran 746 tests in 1.846s
 
 OK
 

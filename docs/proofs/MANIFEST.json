@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-23T08:31:43.351874+00:00",
+  "generated_at": "2026-05-23T09:25:32.444616+00:00",
   "proof_status": "release_grade",
   "release_grade": true,
   "dirty_worktree": false,
@@ -7,7 +7,7 @@
   "git": {
     "available": true,
     "branch": "fix/production-egress-semantics",
-    "commit_sha": "fbc8b5cf9642d5866ed387e2ccdb416a5f7fc320",
+    "commit_sha": "e865fd21c5b33f90bb9317a9884d932af2d5b261",
     "dirty_worktree": false
   },
   "environment": {
@@ -29,11 +29,11 @@
       ],
       "exit_code": 0,
       "status": "passed",
-      "started_at": "2026-05-23T08:31:43.362716+00:00",
-      "finished_at": "2026-05-23T08:31:45.456022+00:00",
-      "duration_seconds": 2.093,
-      "stdout": "safety: 15/15 passed, 0 failed\nworkspace_escape: passed severity=critical\nprompt_injection_untrusted_network: passed severity=high\nsecret_exfiltration: passed severity=critical\npolicy_bypass: passed severity=critical\nrollback_reliability: passed severity=high\nnetwork_ssrf: passed severity=critical\nhigh_risk_requires_approval: passed severity=critical\noutput_schema_violation: passed severity=high\nprompt_injection_policy_override: passed severity=critical\nprompt_injection_reveal_secret: <redacted> severity=critical\nprompt_injection_grant_permission: passed severity=critical\nnetwork_ssrf_dns_private_ip: passed severity=critical\nrollback_failure_manual_recovery: passed severity=high\ncontainer_without_runner_blocked: passed severity=critical\ncontainer_command_hardening: passed severity=high\nIntegrity: OK\nApplied events: 1\nAnomalies: none\nFacts: 1 key(s)\n[\n  {\n    \"name\": \"echo\",\n    \"version\": \"0.1.0\",\n    \"permissions\": [],\n    \"risk\": \"low\",\n    \"reversibility\": \"irreversible\",\n    \"input_schema\": {},\n    \"output_schema\": {},\n    \"timeout_ms\": 3000,\n    \"network_access\": false,\n    \"egress_host\": null,\n    \"egress_methods\": [],\n    \"rollback_egress_methods\": [],\n    \"filesystem_scope\": \"none\",\n    \"secrets_allowed\": false,\n    \"sandbox_policy\": \"none\",\n    \"requires_human_for\": [],\n    \"rollback_reliability\": 1.0,\n    \"compensation_strategy\": \"none\"\n  },\n  {\n    \"name\": \"safe_file_write\",\n    \"version\": \"0.1.0\",\n    \"permissions\": [\n      \"write_files\"\n    ],\n    \"risk\": \"medium\",\n    \"reversibility\": \"reversible\",\n    \"input_schema\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"path\",\n        \"content\"\n      ],\n      \"properties\": {\n        \"path\": {\n          \"type\": \"string\"\n        },\n        \"content\": {\n          \"type\": \"string\"\n        },\n        \"file_written\": {\n          \"type\": \"string\"\n        }\n      },\n      \"additionalProperties\": true\n    },\n    \"output_schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"file_written\": {\n          \"type\": \"string\"\n        }\n      },\n      \"additionalProperties\": true\n    },\n    \"timeout_ms\": 3000,\n    \"network_access\": false,\n    \"egress_host\": null,\n    \"egress_methods\": [],\n    \"rollback_egress_methods\": [],\n    \"filesystem_scope\": \"workspace\",\n    \"secrets_allowed\": false,\n    \"sandbox_policy\": \"workspace\",\n    \"requires_human_for\": [\n      \"outside_workspace\"\n    ],\n    \"rollback_reliability\": 1.0,\n    \"compensation_strategy\": \"undo\"\n  }\n]\nPolicy configuration is valid.\nproof_status=release_grade release_grade=True\nEnqueued: a2995a96-eabe-409f-883d-1014ac2986c2\nStatus: failed\nTask file is valid.\necho: verified risk=low\nProgress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]\nFAIL: Missing required argument: message\nOK: Would echo: hi\necho                  risk=low       rev=irreversible  perm=none\n  Return a message and record it in observed state.\nsafe_file_write       risk=medium    rev=reversible    perm=write_files\n  Write a UTF-8 file inside the configured workspace root.\nIntegrity: FAIL (1 issue(s))\n  [0] event_hash_mismatch: expected=7bda656c6ef306020f0fa27baad00f429ce40b7b6b931784874882cc6f22dbef observed=768505972d23db6b95641a59ca004ec33704ed00d0efd33f217d6fe2e954dc9a\nIntegrity: OK\nApplied events: 1\nFacts:\n  key = 'val'  [TrustLevel.TOOL_REPORTED]\necho: verified risk=low\nProgress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]\nsafe_file_write: blocked risk=medium (approval decision is deny)\nProgress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]\nPolicy configuration is valid.\necho: blocked risk=low\nProgress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]\necho: verified risk=low\nProgress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]\nSigned manifest written to /tmp/tmpfv33qagr/signed.json\nPolicy configuration is valid. Signature verified.\nreport.md: pattern=github-classic-token\n<redacted> written to /tmp/tmpur9jyndg/trace.html\n",
-      "stderr": "..............................................................................................Issue: $: 'steps' is a required property\nIssue: /goal: 'not_an_object' is not of type 'object'\n.Unknown tool: nonexistent\n..............................................................................Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)\n...Error: unknown tool 'nonexistent'. Available: echo, safe_file_write\n...Error: file not found: /tmp/nonexistent_replay_test.jsonl\n...Error: invalid profile 'nonexistent_profile': 'Unknown policy profile: nonexistent_profile'\n.Error: file not found: /tmp/nonexistent_run_test.json\n..Error: invalid JSON: Expecting value: line 1 column 1 (char 0)\n.Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions\n.Error: file not found: /tmp/nonexistent_policy_test.json\n....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered\n..................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 673 tests in 1.807s\n\nOK\n",
+      "started_at": "2026-05-23T09:25:32.455982+00:00",
+      "finished_at": "2026-05-23T09:25:34.585637+00:00",
+      "duration_seconds": 2.13,
+      "stdout": "No anomalies detected.\nOK: Would echo: hi\necho                  risk=low       rev=irreversible  perm=none\n  Return a message and record it in observed state.\nsafe_file_write       risk=medium    rev=reversible    perm=write_files\n  Write a UTF-8 file inside the configured workspace root.\nsafety: 15/15 passed, 0 failed\nworkspace_escape: passed severity=critical\nprompt_injection_untrusted_network: passed severity=high\nsecret_exfiltration: passed severity=critical\npolicy_bypass: passed severity=critical\nrollback_reliability: passed severity=high\nnetwork_ssrf: passed severity=critical\nhigh_risk_requires_approval: passed severity=critical\noutput_schema_violation: passed severity=high\nprompt_injection_policy_override: passed severity=critical\nprompt_injection_reveal_secret: <redacted> severity=critical\nprompt_injection_grant_permission: passed severity=critical\nnetwork_ssrf_dns_private_ip: passed severity=critical\nrollback_failure_manual_recovery: passed severity=high\ncontainer_without_runner_blocked: passed severity=critical\ncontainer_command_hardening: passed severity=high\nIntegrity: OK\nApplied events: 1\nAnomalies: none\nFacts: 1 key(s)\n[\n  {\n    \"name\": \"echo\",\n    \"version\": \"0.1.0\",\n    \"permissions\": [],\n    \"risk\": \"low\",\n    \"reversibility\": \"irreversible\",\n    \"input_schema\": {},\n    \"output_schema\": {},\n    \"timeout_ms\": 3000,\n    \"network_access\": false,\n    \"egress_host\": null,\n    \"egress_methods\": [],\n    \"rollback_egress_methods\": [],\n    \"filesystem_scope\": \"none\",\n    \"secrets_allowed\": false,\n    \"sandbox_policy\": \"none\",\n    \"requires_human_for\": [],\n    \"rollback_reliability\": 1.0,\n    \"compensation_strategy\": \"none\"\n  },\n  {\n    \"name\": \"safe_file_write\",\n    \"version\": \"0.1.0\",\n    \"permissions\": [\n      \"write_files\"\n    ],\n    \"risk\": \"medium\",\n    \"reversibility\": \"reversible\",\n    \"input_schema\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"path\",\n        \"content\"\n      ],\n      \"properties\": {\n        \"path\": {\n          \"type\": \"string\"\n        },\n        \"content\": {\n          \"type\": \"string\"\n        },\n        \"file_written\": {\n          \"type\": \"string\"\n        }\n      },\n      \"additionalProperties\": true\n    },\n    \"output_schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"file_written\": {\n          \"type\": \"string\"\n        }\n      },\n      \"additionalProperties\": true\n    },\n    \"timeout_ms\": 3000,\n    \"network_access\": false,\n    \"egress_host\": null,\n    \"egress_methods\": [],\n    \"rollback_egress_methods\": [],\n    \"filesystem_scope\": \"workspace\",\n    \"secrets_allowed\": false,\n    \"sandbox_policy\": \"workspace\",\n    \"requires_human_for\": [\n      \"outside_workspace\"\n    ],\n    \"rollback_reliability\": 1.0,\n    \"compensation_strategy\": \"undo\"\n  }\n]\nPolicy configuration is valid.\nproof_status=release_grade release_grade=True\nEnqueued: 6c16c484-9320-46c4-b783-a8d16adcc88b\nStatus: failed\nTask file is valid.\necho: verified risk=low\nProgress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]\nFAIL: Missing required argument: message\nOK: Would echo: hi\necho                  risk=low       rev=irreversible  perm=none\n  Return a message and record it in observed state.\nsafe_file_write       risk=medium    rev=reversible    perm=write_files\n  Write a UTF-8 file inside the configured workspace root.\nIntegrity: FAIL (1 issue(s))\n  [0] event_hash_mismatch: expected=c68e82b9e18987067c72c1595356d16d7591832886dd5fa633102823b87c79b6 observed=d479bdcd51b735fe59cd10c8574aee543b344d846efe9360b88353424fa4d1ca\nIntegrity: OK\nApplied events: 1\nFacts:\n  key = 'val'  [TrustLevel.TOOL_REPORTED]\necho: verified risk=low\nProgress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]\nsafe_file_write: blocked risk=medium (approval decision is deny)\nProgress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]\nPolicy configuration is valid.\necho: blocked risk=low\nProgress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]\necho: verified risk=low\nProgress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]\nSigned manifest written to /tmp/tmpfbwtf0b4/signed.json\nPolicy configuration is valid. Signature verified.\nreport.md: pattern=aws-access-key\nreport.md: pattern=bearer-token\n<redacted> pattern=github-fine-grained-token\n<redacted> pattern=openai-token\n<redacted> pattern=private-key\nreport.md: pattern=github-classic-token\n<redacted> pattern=slack-bot-token\n<redacted> written to /tmp/tmpq5s06g1x/trace.html\n",
+      "stderr": "...............................................................................................Error: file not found: /tmp/tmpqm150x_d/nonexistent.txt\n..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)\n.Error: unknown tool 'nonexistent'. Available: echo, safe_file_write\n...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)\n.Error: file not found: /nonexistent/notfound.json\n..Error: --secret <redacted> be KEY=VALUE, got: badformat\n.Error: /goal: type\nError: /steps: minItems\n.Error: $: required\nError: /steps: minItems\n..Error: validate-policy requires a file or --profile\n.......Issue: $: 'steps' is a required property\nIssue: /goal: 'not_an_object' is not of type 'object'\n.Unknown tool: nonexistent\n..............................................................................Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)\n...Error: unknown tool 'nonexistent'. Available: echo, safe_file_write\n...Error: file not found: /tmp/nonexistent_replay_test.jsonl\n...Error: invalid profile 'nonexistent_profile': 'Unknown policy profile: nonexistent_profile'\n.Error: file not found: /tmp/nonexistent_run_test.json\n..Error: invalid JSON: Expecting value: line 1 column 1 (char 0)\n.Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions\n.Error: file not found: /tmp/nonexistent_policy_test.json\n....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered\n......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 746 tests in 1.846s\n\nOK\n",
       "truncated": false,
       "reason": null
     },
@@ -47,9 +47,9 @@
       ],
       "exit_code": 0,
       "status": "passed",
-      "started_at": "2026-05-23T08:31:45.456054+00:00",
-      "finished_at": "2026-05-23T08:31:45.679677+00:00",
-      "duration_seconds": 0.224,
+      "started_at": "2026-05-23T09:25:34.585669+00:00",
+      "finished_at": "2026-05-23T09:25:34.818586+00:00",
+      "duration_seconds": 0.233,
       "stdout": "safety: 15/15 passed, 0 failed\nworkspace_escape: passed severity=critical\nprompt_injection_untrusted_network: passed severity=high\nsecret_exfiltration: passed severity=critical\npolicy_bypass: passed severity=critical\nrollback_reliability: passed severity=high\nnetwork_ssrf: passed severity=critical\nhigh_risk_requires_approval: passed severity=critical\noutput_schema_violation: passed severity=high\nprompt_injection_policy_override: passed severity=critical\nprompt_injection_reveal_secret: <redacted> severity=critical\nprompt_injection_grant_permission: passed severity=critical\nnetwork_ssrf_dns_private_ip: passed severity=critical\nrollback_failure_manual_recovery: passed severity=high\ncontainer_without_runner_blocked: passed severity=critical\ncontainer_command_hardening: passed severity=high\n",
       "stderr": "",
       "truncated": false,
@@ -68,11 +68,11 @@
       ],
       "exit_code": 0,
       "status": "passed",
-      "started_at": "2026-05-23T08:31:45.679703+00:00",
-      "finished_at": "2026-05-23T08:31:49.114835+00:00",
-      "duration_seconds": 3.435,
-      "stdout": "safety: 15/15 passed, 0 failed\nworkspace_escape: passed severity=critical\nprompt_injection_untrusted_network: passed severity=high\nsecret_exfiltration: passed severity=critical\npolicy_bypass: passed severity=critical\nrollback_reliability: passed severity=high\nnetwork_ssrf: passed severity=critical\nhigh_risk_requires_approval: passed severity=critical\noutput_schema_violation: passed severity=high\nprompt_injection_policy_override: passed severity=critical\nprompt_injection_reveal_secret: <redacted> severity=critical\nprompt_injection_grant_permission: passed severity=critical\nnetwork_ssrf_dns_private_ip: passed severity=critical\nrollback_failure_manual_recovery: passed severity=high\ncontainer_without_runner_blocked: passed severity=critical\ncontainer_command_hardening: passed severity=high\nIntegrity: OK\nApplied events: 1\nAnomalies: none\nFacts: 1 key(s)\n[\n  {\n    \"name\": \"echo\",\n    \"version\": \"0.1.0\",\n    \"permissions\": [],\n    \"risk\": \"low\",\n    \"reversibility\": \"irreversible\",\n    \"input_schema\": {},\n    \"output_schema\": {},\n    \"timeout_ms\": 3000,\n    \"network_access\": false,\n    \"egress_host\": null,\n    \"egress_methods\": [],\n    \"rollback_egress_methods\": [],\n    \"filesystem_scope\": \"none\",\n    \"secrets_allowed\": false,\n    \"sandbox_policy\": \"none\",\n    \"requires_human_for\": [],\n    \"rollback_reliability\": 1.0,\n    \"compensation_strategy\": \"none\"\n  },\n  {\n    \"name\": \"safe_file_write\",\n    \"version\": \"0.1.0\",\n    \"permissions\": [\n      \"write_files\"\n    ],\n    \"risk\": \"medium\",\n    \"reversibility\": \"reversible\",\n    \"input_schema\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"path\",\n        \"content\"\n      ],\n      \"properties\": {\n        \"path\": {\n          \"type\": \"string\"\n        },\n        \"content\": {\n          \"type\": \"string\"\n        },\n        \"file_written\": {\n          \"type\": \"string\"\n        }\n      },\n      \"additionalProperties\": true\n    },\n    \"output_schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"file_written\": {\n          \"type\": \"string\"\n        }\n      },\n      \"additionalProperties\": true\n    },\n    \"timeout_ms\": 3000,\n    \"network_access\": false,\n    \"egress_host\": null,\n    \"egress_methods\": [],\n    \"rollback_egress_methods\": [],\n    \"filesystem_scope\": \"workspace\",\n    \"secrets_allowed\": false,\n    \"sandbox_policy\": \"workspace\",\n    \"requires_human_for\": [\n      \"outside_workspace\"\n    ],\n    \"rollback_reliability\": 1.0,\n    \"compensation_strategy\": \"undo\"\n  }\n]\nPolicy configuration is valid.\nproof_status=release_grade release_grade=True\nEnqueued: 0337c299-4716-4184-bf8a-0fd6baa7faab\nStatus: failed\nTask file is valid.\necho: verified risk=low\nProgress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]\nFAIL: Missing required argument: message\nOK: Would echo: hi\necho                  risk=low       rev=irreversible  perm=none\n  Return a message and record it in observed state.\nsafe_file_write       risk=medium    rev=reversible    perm=write_files\n  Write a UTF-8 file inside the configured workspace root.\nIntegrity: FAIL (1 issue(s))\n  [0] event_hash_mismatch: expected=121552f649aefd3c2b3a0906704e89e05b0bafd344186fceeef2ddc8333a744a observed=73632690a0b96ff2ba7e409eba07c6a7f2692cab1c512b7df74c83520ea11077\nIntegrity: OK\nApplied events: 1\nFacts:\n  key = 'val'  [TrustLevel.TOOL_REPORTED]\necho: verified risk=low\nProgress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]\nsafe_file_write: blocked risk=medium (approval decision is deny)\nProgress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]\nPolicy configuration is valid.\necho: blocked risk=low\nProgress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]\necho: verified risk=low\nProgress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]\nSigned manifest written to /tmp/tmp5kvovbc0/signed.json\nPolicy configuration is valid. Signature verified.\nreport.md: pattern=github-classic-token\n<redacted> written to /tmp/tmph2q85u5p/trace.html\n",
-      "stderr": "..............................................................................................Issue: $: 'steps' is a required property\nIssue: /goal: 'not_an_object' is not of type 'object'\n.Unknown tool: nonexistent\n..............................................................................Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)\n...Error: unknown tool 'nonexistent'. Available: echo, safe_file_write\n...Error: file not found: /tmp/nonexistent_replay_test.jsonl\n...Error: invalid profile 'nonexistent_profile': 'Unknown policy profile: nonexistent_profile'\n.Error: file not found: /tmp/nonexistent_run_test.json\n..Error: invalid JSON: Expecting value: line 1 column 1 (char 0)\n.Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions\n.Error: file not found: /tmp/nonexistent_policy_test.json\n....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered\n..................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 673 tests in 2.872s\n\nOK\n",
+      "started_at": "2026-05-23T09:25:34.818613+00:00",
+      "finished_at": "2026-05-23T09:25:38.294540+00:00",
+      "duration_seconds": 3.476,
+      "stdout": "No anomalies detected.\nOK: Would echo: hi\necho                  risk=low       rev=irreversible  perm=none\n  Return a message and record it in observed state.\nsafe_file_write       risk=medium    rev=reversible    perm=write_files\n  Write a UTF-8 file inside the configured workspace root.\nsafety: 15/15 passed, 0 failed\nworkspace_escape: passed severity=critical\nprompt_injection_untrusted_network: passed severity=high\nsecret_exfiltration: passed severity=critical\npolicy_bypass: passed severity=critical\nrollback_reliability: passed severity=high\nnetwork_ssrf: passed severity=critical\nhigh_risk_requires_approval: passed severity=critical\noutput_schema_violation: passed severity=high\nprompt_injection_policy_override: passed severity=critical\nprompt_injection_reveal_secret: <redacted> severity=critical\nprompt_injection_grant_permission: passed severity=critical\nnetwork_ssrf_dns_private_ip: passed severity=critical\nrollback_failure_manual_recovery: passed severity=high\ncontainer_without_runner_blocked: passed severity=critical\ncontainer_command_hardening: passed severity=high\nIntegrity: OK\nApplied events: 1\nAnomalies: none\nFacts: 1 key(s)\n[\n  {\n    \"name\": \"echo\",\n    \"version\": \"0.1.0\",\n    \"permissions\": [],\n    \"risk\": \"low\",\n    \"reversibility\": \"irreversible\",\n    \"input_schema\": {},\n    \"output_schema\": {},\n    \"timeout_ms\": 3000,\n    \"network_access\": false,\n    \"egress_host\": null,\n    \"egress_methods\": [],\n    \"rollback_egress_methods\": [],\n    \"filesystem_scope\": \"none\",\n    \"secrets_allowed\": false,\n    \"sandbox_policy\": \"none\",\n    \"requires_human_for\": [],\n    \"rollback_reliability\": 1.0,\n    \"compensation_strategy\": \"none\"\n  },\n  {\n    \"name\": \"safe_file_write\",\n    \"version\": \"0.1.0\",\n    \"permissions\": [\n      \"write_files\"\n    ],\n    \"risk\": \"medium\",\n    \"reversibility\": \"reversible\",\n    \"input_schema\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"path\",\n        \"content\"\n      ],\n      \"properties\": {\n        \"path\": {\n          \"type\": \"string\"\n        },\n        \"content\": {\n          \"type\": \"string\"\n        },\n        \"file_written\": {\n          \"type\": \"string\"\n        }\n      },\n      \"additionalProperties\": true\n    },\n    \"output_schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"file_written\": {\n          \"type\": \"string\"\n        }\n      },\n      \"additionalProperties\": true\n    },\n    \"timeout_ms\": 3000,\n    \"network_access\": false,\n    \"egress_host\": null,\n    \"egress_methods\": [],\n    \"rollback_egress_methods\": [],\n    \"filesystem_scope\": \"workspace\",\n    \"secrets_allowed\": false,\n    \"sandbox_policy\": \"workspace\",\n    \"requires_human_for\": [\n      \"outside_workspace\"\n    ],\n    \"rollback_reliability\": 1.0,\n    \"compensation_strategy\": \"undo\"\n  }\n]\nPolicy configuration is valid.\nproof_status=release_grade release_grade=True\nEnqueued: 46846b89-8f99-429d-8dfe-aba466ea127d\nStatus: failed\nTask file is valid.\necho: verified risk=low\nProgress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]\nFAIL: Missing required argument: message\nOK: Would echo: hi\necho                  risk=low       rev=irreversible  perm=none\n  Return a message and record it in observed state.\nsafe_file_write       risk=medium    rev=reversible    perm=write_files\n  Write a UTF-8 file inside the configured workspace root.\nIntegrity: FAIL (1 issue(s))\n  [0] event_hash_mismatch: expected=73f62c93c76a605a1f04795850839d535dd7528613cbf35f26d16256bfbce9bd observed=678ee33452bfb082b7ef3f0360134697b0f84559e333e4c24f6126f4156744df\nIntegrity: OK\nApplied events: 1\nFacts:\n  key = 'val'  [TrustLevel.TOOL_REPORTED]\necho: verified risk=low\nProgress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]\nsafe_file_write: blocked risk=medium (approval decision is deny)\nProgress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]\nPolicy configuration is valid.\necho: blocked risk=low\nProgress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]\necho: verified risk=low\nProgress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]\nSigned manifest written to /tmp/tmpoyppus8j/signed.json\nPolicy configuration is valid. Signature verified.\nreport.md: pattern=aws-access-key\nreport.md: pattern=bearer-token\n<redacted> pattern=github-fine-grained-token\n<redacted> pattern=openai-token\n<redacted> pattern=private-key\nreport.md: pattern=github-classic-token\n<redacted> pattern=slack-bot-token\n<redacted> written to /tmp/tmpengbm_i2/trace.html\n",
+      "stderr": "...............................................................................................Error: file not found: /tmp/tmpnk30wkir/nonexistent.txt\n..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)\n.Error: unknown tool 'nonexistent'. Available: echo, safe_file_write\n...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)\n.Error: file not found: /nonexistent/notfound.json\n..Error: --secret <redacted> be KEY=VALUE, got: badformat\n.Error: /goal: type\nError: /steps: minItems\n.Error: $: required\nError: /steps: minItems\n..Error: validate-policy requires a file or --profile\n.......Issue: $: 'steps' is a required property\nIssue: /goal: 'not_an_object' is not of type 'object'\n.Unknown tool: nonexistent\n..............................................................................Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)\n...Error: unknown tool 'nonexistent'. Available: echo, safe_file_write\n...Error: file not found: /tmp/nonexistent_replay_test.jsonl\n...Error: invalid profile 'nonexistent_profile': 'Unknown policy profile: nonexistent_profile'\n.Error: file not found: /tmp/nonexistent_run_test.json\n..Error: invalid JSON: Expecting value: line 1 column 1 (char 0)\n.Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions\n.Error: file not found: /tmp/nonexistent_policy_test.json\n....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered\n......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 746 tests in 2.907s\n\nOK\n",
       "truncated": false,
       "reason": null
     },
@@ -85,10 +85,10 @@
       ],
       "exit_code": 0,
       "status": "passed",
-      "started_at": "2026-05-23T08:31:49.114862+00:00",
-      "finished_at": "2026-05-23T08:31:49.896116+00:00",
-      "duration_seconds": 0.781,
-      "stdout": "Name                                       Stmts   Miss Branch BrPart  Cover\n----------------------------------------------------------------------------\nsrc/leos_agent/__init__.py                     2      0      0      0   100%\nsrc/leos_agent/agent_loop.py                 206     19     56     11    86%\nsrc/leos_agent/approval.py                    87      2     16      2    96%\nsrc/leos_agent/approval_exchange.py           51      1      6      1    96%\nsrc/leos_agent/audit.py                      143      7     46     11    90%\nsrc/leos_agent/causal.py                      92      1     18      1    98%\nsrc/leos_agent/causal_contract.py            108     17     44      9    80%\nsrc/leos_agent/cli.py                        476    210    188     34    53%\nsrc/leos_agent/conflicts.py                   37      0     14      0   100%\nsrc/leos_agent/core.py                        49      0      0      0   100%\nsrc/leos_agent/credentials.py                 61      1     16      8    88%\nsrc/leos_agent/dev_tools.py                  188     29     38     13    81%\nsrc/leos_agent/egress.py                      25      0      6      0   100%\nsrc/leos_agent/enums.py                       71      0      0      0   100%\nsrc/leos_agent/errors.py                      24      0      0      0   100%\nsrc/leos_agent/eval_runner.py                354     18     10      2    94%\nsrc/leos_agent/evaluator_registry.py         213     22     86     14    85%\nsrc/leos_agent/github_agent.py                74      6     18      4    89%\nsrc/leos_agent/github_client.py              246     11     76      7    94%\nsrc/leos_agent/github_tools.py               341     45    100     43    80%\nsrc/leos_agent/goal_evaluator.py              29      1      4      2    91%\nsrc/leos_agent/goals.py                       92      8     18      3    88%\nsrc/leos_agent/kernel.py                      46      2      6      2    92%\nsrc/leos_agent/manifest.py                    57      0      8      0   100%\nsrc/leos_agent/memory.py                     109      3     24      4    95%\nsrc/leos_agent/model.py                       47      0      2      1    98%\nsrc/leos_agent/model_adapters.py             109     26     18      2    76%\nsrc/leos_agent/network_guard.py               33      2     10      2    91%\nsrc/leos_agent/network_tools.py              168     26     48      7    84%\nsrc/leos_agent/planner.py                    150     12     58     14    88%\nsrc/leos_agent/plans.py                       89      2      8      3    95%\nsrc/leos_agent/policy.py                     385     71    156     22    79%\nsrc/leos_agent/policy_manifest.py             51      9     12      5    78%\nsrc/leos_agent/prompts.py                     30      1      2      1    94%\nsrc/leos_agent/proof.py                      216      9     42      8    93%\nsrc/leos_agent/recovery.py                    38      0      2      0   100%\nsrc/leos_agent/replanning.py                  93      6     28      7    89%\nsrc/leos_agent/replay.py                     122     10     80     15    86%\nsrc/leos_agent/runtime_store.py              143     13     40     22    81%\nsrc/leos_agent/sandbox.py                    155     15     44     10    87%\nsrc/leos_agent/sanitization.py                74      2     38      2    96%\nsrc/leos_agent/serialization.py               67      1      6      1    97%\nsrc/leos_agent/simulation.py                  65      0      6      1    99%\nsrc/leos_agent/sqlite_store.py               103     19     10      5    79%\nsrc/leos_agent/state.py                       39      1     10      3    92%\nsrc/leos_agent/task_queue.py                 242     24     50     10    88%\nsrc/leos_agent/tool_manifest_registry.py      81     15     34     10    77%\nsrc/leos_agent/tools.py                      147      7     26      9    91%\nsrc/leos_agent/trace_viewer.py                68      0     20      0   100%\nsrc/leos_agent/transactions.py               414     35    160     16    90%\n----------------------------------------------------------------------------\nTOTAL                                       6310    709   1708    347    85%\n",
+      "started_at": "2026-05-23T09:25:38.294565+00:00",
+      "finished_at": "2026-05-23T09:25:39.088051+00:00",
+      "duration_seconds": 0.793,
+      "stdout": "Name                                       Stmts   Miss Branch BrPart  Cover\n----------------------------------------------------------------------------\nsrc/leos_agent/__init__.py                     2      0      0      0   100%\nsrc/leos_agent/agent_loop.py                 206     19     56     11    86%\nsrc/leos_agent/approval.py                    87      2     16      2    96%\nsrc/leos_agent/approval_exchange.py           77      5     14      1    93%\nsrc/leos_agent/audit.py                      143      7     46     11    90%\nsrc/leos_agent/causal.py                      92      1     18      1    98%\nsrc/leos_agent/causal_contract.py            108     17     44      9    80%\nsrc/leos_agent/cli.py                        476    194    188     32    57%\nsrc/leos_agent/conflicts.py                   37      0     14      0   100%\nsrc/leos_agent/core.py                        49      0      0      0   100%\nsrc/leos_agent/credentials.py                 61      1     16      8    88%\nsrc/leos_agent/dev_tools.py                  188     29     38     13    81%\nsrc/leos_agent/egress.py                      25      0      6      0   100%\nsrc/leos_agent/enums.py                       71      0      0      0   100%\nsrc/leos_agent/errors.py                      24      0      0      0   100%\nsrc/leos_agent/eval_runner.py                354     18     10      2    94%\nsrc/leos_agent/evaluator_registry.py         213     22     86     14    85%\nsrc/leos_agent/github_agent.py                74      6     18      4    89%\nsrc/leos_agent/github_client.py              255     11     76      7    94%\nsrc/leos_agent/github_tools.py               352     41    100     39    82%\nsrc/leos_agent/goal_evaluator.py              29      1      4      2    91%\nsrc/leos_agent/goals.py                       92      8     18      3    88%\nsrc/leos_agent/kernel.py                      46      2      6      2    92%\nsrc/leos_agent/manifest.py                    57      0      8      0   100%\nsrc/leos_agent/memory.py                     109      3     24      4    95%\nsrc/leos_agent/model.py                       47      0      2      1    98%\nsrc/leos_agent/model_adapters.py             109     26     18      2    76%\nsrc/leos_agent/network_guard.py               33      2     10      2    91%\nsrc/leos_agent/network_tools.py              168     26     48      7    84%\nsrc/leos_agent/planner.py                    150     12     58     14    88%\nsrc/leos_agent/plans.py                       89      2      8      3    95%\nsrc/leos_agent/policy.py                     408     72    168     23    80%\nsrc/leos_agent/policy_manifest.py             51      4     12      4    87%\nsrc/leos_agent/prompts.py                     30      1      2      1    94%\nsrc/leos_agent/proof.py                      216      9     42      8    93%\nsrc/leos_agent/recovery.py                    38      0      2      0   100%\nsrc/leos_agent/replanning.py                  93      6     28      7    89%\nsrc/leos_agent/replay.py                     122     10     80     15    86%\nsrc/leos_agent/runtime_store.py              143     13     40     22    81%\nsrc/leos_agent/sandbox.py                    155     15     44     10    87%\nsrc/leos_agent/sanitization.py                74      2     38      2    96%\nsrc/leos_agent/serialization.py               67      1      6      1    97%\nsrc/leos_agent/simulation.py                  65      0      6      1    99%\nsrc/leos_agent/sqlite_store.py               103     16     10      2    84%\nsrc/leos_agent/state.py                       39      1     10      3    92%\nsrc/leos_agent/task_queue.py                 242     24     50     10    88%\nsrc/leos_agent/tool_manifest_registry.py      81     11     34      9    83%\nsrc/leos_agent/tools.py                      150      7     28     10    90%\nsrc/leos_agent/trace_viewer.py                68      0     20      0   100%\nsrc/leos_agent/transactions.py               417     35    162     16    91%\n----------------------------------------------------------------------------\nTOTAL                                       6385    682   1732    338    86%\n",
       "stderr": "",
       "truncated": false,
       "reason": null
@@ -102,8 +102,8 @@
       ],
       "exit_code": 0,
       "status": "passed",
-      "started_at": "2026-05-23T08:31:49.896139+00:00",
-      "finished_at": "2026-05-23T08:31:49.904296+00:00",
+      "started_at": "2026-05-23T09:25:39.088075+00:00",
+      "finished_at": "2026-05-23T09:25:39.096498+00:00",
       "duration_seconds": 0.008,
       "stdout": "All checks passed!\n",
       "stderr": "",
@@ -120,10 +120,10 @@
       ],
       "exit_code": 0,
       "status": "passed",
-      "started_at": "2026-05-23T08:31:49.904321+00:00",
-      "finished_at": "2026-05-23T08:31:49.914045+00:00",
-      "duration_seconds": 0.01,
-      "stdout": "122 files already formatted\n",
+      "started_at": "2026-05-23T09:25:39.096524+00:00",
+      "finished_at": "2026-05-23T09:25:39.105955+00:00",
+      "duration_seconds": 0.009,
+      "stdout": "123 files already formatted\n",
       "stderr": "",
       "truncated": false,
       "reason": null
@@ -136,9 +136,9 @@
       ],
       "exit_code": 0,
       "status": "passed",
-      "started_at": "2026-05-23T08:31:49.914080+00:00",
-      "finished_at": "2026-05-23T08:31:50.066747+00:00",
-      "duration_seconds": 0.153,
+      "started_at": "2026-05-23T09:25:39.105982+00:00",
+      "finished_at": "2026-05-23T09:25:39.255823+00:00",
+      "duration_seconds": 0.15,
       "stdout": "Success: no issues found in 50 source files\n",
       "stderr": "",
       "truncated": false,
@@ -153,10 +153,10 @@
       ],
       "exit_code": 0,
       "status": "passed",
-      "started_at": "2026-05-23T08:31:50.066776+00:00",
-      "finished_at": "2026-05-23T08:31:51.200702+00:00",
-      "duration_seconds": 1.134,
-      "stdout": "Run started:2026-05-23 08:31:51.130711+00:00\n\nTest results:\n\tNo issues identified.\n\nCode scanned:\n\tTotal lines of code: 11405\n\tTotal lines skipped (#nosec): 0\n\tTotal potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 18\n\nRun metrics:\n\tTotal issues (by severity):\n\t\tUndefined: 0\n\t\tLow: 0\n\t\tMedium: 0\n\t\tHigh: 0\n\tTotal issues (by confidence):\n\t\tUndefined: 0\n\t\tLow: 0\n\t\tMedium: 0\n\t\tHigh: 0\nFiles skipped (0):\n",
+      "started_at": "2026-05-23T09:25:39.255846+00:00",
+      "finished_at": "2026-05-23T09:25:40.430893+00:00",
+      "duration_seconds": 1.175,
+      "stdout": "Run started:2026-05-23 09:25:40.355094+00:00\n\nTest results:\n\tNo issues identified.\n\nCode scanned:\n\tTotal lines of code: 11562\n\tTotal lines skipped (#nosec): 0\n\tTotal potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 18\n\nRun metrics:\n\tTotal issues (by severity):\n\t\tUndefined: 0\n\t\tLow: 0\n\t\tMedium: 0\n\t\tHigh: 0\n\tTotal issues (by confidence):\n\t\tUndefined: 0\n\t\tLow: 0\n\t\tMedium: 0\n\t\tHigh: 0\nFiles skipped (0):\n",
       "stderr": "[main]\tINFO\tprofile include tests: None\n[main]\tINFO\tprofile exclude tests: None\n[main]\tINFO\tcli include tests: None\n[main]\tINFO\tcli exclude tests: None\n[main]\tINFO\trunning on Python 3.14.4\n[manager]\tWARNING\tTest in comment: container is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: internal is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: tmpfs is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: mount is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: target is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: not is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: a is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: host is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: temp is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: path is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: argv is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: constructed is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: without is not a test name or id, ignoring\n[manager]\tWARNING\tTest in comment: shell is not a test name or id, ignoring\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:230\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:231\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:232\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:233\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:234\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:236\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:237\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:238\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:239\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:240\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:242\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:244\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:246\n[tester]\tWARNING\tnosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:248\n",
       "truncated": false,
       "reason": null
@@ -169,9 +169,9 @@
       ],
       "exit_code": 0,
       "status": "passed",
-      "started_at": "2026-05-23T08:31:51.200727+00:00",
-      "finished_at": "2026-05-23T08:31:51.424980+00:00",
-      "duration_seconds": 0.224,
+      "started_at": "2026-05-23T09:25:40.430921+00:00",
+      "finished_at": "2026-05-23T09:25:40.653150+00:00",
+      "duration_seconds": 0.222,
       "stdout": "usage: leos [-h] [--workspace WORKSPACE] [--auto-approve]\n            {validate-policy,list-tools,dry-run,replay,run,sign-policy,audit-check,validate-task,inspect-audit,trace-html,trace,eval,proof,manifest,approval,queue-demo} ...\n\nLeos autonomous-agent kernel.\n\npositional arguments:\n  {validate-policy,list-tools,dry-run,replay,run,sign-policy,audit-check,validate-task,inspect-audit,trace-html,trace,eval,proof,manifest,approval,queue-demo}\n    validate-policy     Validate a policy configuration file.\n    list-tools          List available tools in the registry.\n    dry-run             Dry-run a tool against a clean world state.\n    replay              Replay an audit log and reconstruct world state.\n    run                 Run a goal with steps from a JSON file.\n    sign-policy         Sign a policy configuration and output a signed\n                        manifest.\n    audit-check         Run anomaly detection over an audit log.\n    validate-task       Validate a task JSON file without executing.\n    inspect-audit       Replay audit log with anomaly detection.\n    trace-html          Render an audit log as a static HTML trace.\n    trace               Render an audit log trace.\n    eval                Run evaluation suites.\n    proof               Proof document commands.\n    manifest            Output registered tool manifests as JSON.\n    approval            Approval packet commands.\n    queue-demo          Demonstrate task queue lifecycle.\n\noptions:\n  -h, --help            show this help message and exit\n  --workspace WORKSPACE\n                        Sandbox workspace for reversible file actions.\n  --auto-approve        Approve demo actions that require human approval.\n",
       "stderr": "",
       "truncated": false,
@@ -186,8 +186,8 @@
       ],
       "exit_code": 0,
       "status": "passed",
-      "started_at": "2026-05-23T08:31:51.425003+00:00",
-      "finished_at": "2026-05-23T08:31:51.645622+00:00",
+      "started_at": "2026-05-23T09:25:40.653189+00:00",
+      "finished_at": "2026-05-23T09:25:40.873698+00:00",
       "duration_seconds": 0.221,
       "stdout": "usage: leos eval [-h] [--suite {safety}] [--format {text,markdown}]\n\noptions:\n  -h, --help            show this help message and exit\n  --suite {safety}\n  --format {text,markdown}\n",
       "stderr": "",
@@ -203,9 +203,9 @@
       ],
       "exit_code": 0,
       "status": "passed",
-      "started_at": "2026-05-23T08:31:51.645644+00:00",
-      "finished_at": "2026-05-23T08:31:51.860987+00:00",
-      "duration_seconds": 0.215,
+      "started_at": "2026-05-23T09:25:40.873722+00:00",
+      "finished_at": "2026-05-23T09:25:41.097070+00:00",
+      "duration_seconds": 0.223,
       "stdout": "usage: leos trace [-h] --audit AUDIT [--format {markdown,html}]\n                  [--output OUTPUT] [--title TITLE]\n\noptions:\n  -h, --help            show this help message and exit\n  --audit AUDIT         Path to a JSONL audit log file.\n  --format {markdown,html}\n  --output OUTPUT       Output path (default: stdout).\n  --title TITLE         HTML page title.\n",
       "stderr": "",
       "truncated": false,
@@ -220,9 +220,9 @@
       ],
       "exit_code": 0,
       "status": "passed",
-      "started_at": "2026-05-23T08:31:51.861011+00:00",
-      "finished_at": "2026-05-23T08:31:52.079412+00:00",
-      "duration_seconds": 0.218,
+      "started_at": "2026-05-23T09:25:41.097095+00:00",
+      "finished_at": "2026-05-23T09:25:41.312283+00:00",
+      "duration_seconds": 0.215,
       "stdout": "usage: leos proof [-h] {generate} ...\n\npositional arguments:\n  {generate}\n    generate  Generate proof documents.\n\noptions:\n  -h, --help  show this help message and exit\n",
       "stderr": "",
       "truncated": false,
@@ -260,9 +260,9 @@
     },
     {
       "path": "src/leos_agent/github_client.py",
-      "sha256": "e6cf93712c0f6b5faf2a5a1e84c099d2f19e4d608ad2c29bc24433ee8c82ce6b",
-      "line_count": 490,
-      "size_bytes": 17528,
+      "sha256": "18ac02842ddea55f930dc1fbb5bb547acf343c619f1a8830dd2959b3e9d1a16a",
+      "line_count": 502,
+      "size_bytes": 17827,
       "exists": true
     },
     {
@@ -323,23 +323,23 @@
     },
     {
       "path": "src/leos_agent/tools.py",
-      "sha256": "ecf565b2b30bb6f8b86fa3d3c908eedd4b2298bf7625859e301c6bb69e675d40",
-      "line_count": 280,
-      "size_bytes": 10484,
+      "sha256": "6266d2c94a39d23bc6d72788347cec5f9033e5446081cee63cfab28013d2532a",
+      "line_count": 285,
+      "size_bytes": 10622,
       "exists": true
     },
     {
       "path": "src/leos_agent/transactions.py",
-      "sha256": "679daada82f4757f0ae627873fa02ac0d8bed670802506e83446a8bdc90d0e4e",
-      "line_count": 889,
-      "size_bytes": 38843,
+      "sha256": "1b802d5fe479a8c07fbea3340c712cdd221e7becda0b629fd0fc28addad83ab0",
+      "line_count": 936,
+      "size_bytes": 40881,
       "exists": true
     },
     {
       "path": "src/leos_agent/policy.py",
-      "sha256": "af595b3e9047bd1864088706a526b654c850f4599d10a557c83a976a380e1476",
-      "line_count": 692,
-      "size_bytes": 30286,
+      "sha256": "6b893b4e019013c54799fbe2c83940511b9ccba5b2df6e6ef421a76bf8248598",
+      "line_count": 734,
+      "size_bytes": 32081,
       "exists": true
     },
     {
@@ -430,9 +430,9 @@
     },
     {
       "path": "tests/test_approval_exchange.py",
-      "sha256": "d18b08f24740c2de99aaa68396f84ffcefb3ecab291009062806cc1fbde242ca",
-      "line_count": 97,
-      "size_bytes": 3794,
+      "sha256": "563c9cda3e334651149403c74ac711419d7258422c6ca6c3f8412f960bf9b313",
+      "line_count": 183,
+      "size_bytes": 8369,
       "exists": true
     },
     {
@@ -465,16 +465,16 @@
     },
     {
       "path": "tests/test_cli.py",
-      "sha256": "5c51ecec17b4bc92f017620d2194e2209a66a1ab77cf9d1dcafbd86b27370844",
-      "line_count": 124,
-      "size_bytes": 4256,
+      "sha256": "f3b0f9736c5da78be9b609171d380131ba718b3356648245488ff86c25e9366c",
+      "line_count": 253,
+      "size_bytes": 9329,
       "exists": true
     },
     {
       "path": "tests/test_core.py",
-      "sha256": "b9c8af1ed35e9b30217a93b550012e088576219c0b7311cdea68c157a6acc718",
-      "line_count": 2451,
-      "size_bytes": 103950,
+      "sha256": "7f4a2d02718dfca062c9d13f5e8a821cbb57fbdeb529a8917fe8e2635254fef9",
+      "line_count": 2478,
+      "size_bytes": 105239,
       "exists": true
     },
     {
@@ -496,6 +496,13 @@
       "sha256": "52ab41235c8ee09a2d8a1f51b096bb7ffa3387b8ff2257d6b9a7cb03c71ea960",
       "line_count": 62,
       "size_bytes": 2571,
+      "exists": true
+    },
+    {
+      "path": "tests/test_egress.py",
+      "sha256": "aadc3e10792e6a953deab2a5efd5bd3593631a0da3137a79b10ff094aa29f9cc",
+      "line_count": 93,
+      "size_bytes": 3728,
       "exists": true
     },
     {
@@ -549,16 +556,16 @@
     },
     {
       "path": "tests/test_github_rest_client.py",
-      "sha256": "fbfb61fd58234562e002c2ad48d7266032786369db688093c2480f049f671df1",
-      "line_count": 456,
-      "size_bytes": 18915,
+      "sha256": "e12227b8f8e356472c6df2cc17e00d0ac7df7b53cb7b983be1ed034ac6f5a4f3",
+      "line_count": 467,
+      "size_bytes": 19365,
       "exists": true
     },
     {
       "path": "tests/test_github_tools.py",
-      "sha256": "683b7cc0efdd5ebe01ab7b5bb186a557909e9ef34b3301f2099a5d4b87b7d427",
-      "line_count": 437,
-      "size_bytes": 16342,
+      "sha256": "2082ff46ee276545a35d62457af0b73fc07ca80e758e2b96782e8b52db4e8e6c",
+      "line_count": 490,
+      "size_bytes": 18518,
       "exists": true
     },
     {
@@ -612,9 +619,9 @@
     },
     {
       "path": "tests/test_production_profile.py",
-      "sha256": "37d132fc0ab4bfd92fe0cdee948b0d86c02eeb395040254e9bcd4a4cdf060481",
-      "line_count": 520,
-      "size_bytes": 20391,
+      "sha256": "9fda3ed9f92224e06837d2bf7f82598d765c12489fc67b21a471b18812508f2a",
+      "line_count": 635,
+      "size_bytes": 24983,
       "exists": true
     },
     {
@@ -633,9 +640,9 @@
     },
     {
       "path": "tests/test_public_api.py",
-      "sha256": "9474792be3b46605586be4dd5199fcdf77013bf831f989dc61e8fb037f1a1cf2",
-      "line_count": 228,
-      "size_bytes": 8818,
+      "sha256": "c2a4980f06022e62bac04a823cdc168d8641264aaeae134bd8f547c9698c296e",
+      "line_count": 231,
+      "size_bytes": 8961,
       "exists": true
     },
     {
@@ -703,9 +710,9 @@
     },
     {
       "path": "tests/test_secret_scan_script.py",
-      "sha256": "fae27b58c0fb28363f3473d920d373345fc446af4ec65ef11575963d62cc357f",
-      "line_count": 46,
-      "size_bytes": 1618,
+      "sha256": "77a24a7b7bc4c987532fcd7c2a176ea01a30fd13f4ca5150450b76d207354ffc",
+      "line_count": 100,
+      "size_bytes": 4368,
       "exists": true
     },
     {
@@ -724,9 +731,9 @@
     },
     {
       "path": "tests/test_sqlite_store.py",
-      "sha256": "3cccd063d5f8dc790dfae125509bd25f29184fda63fceb345773d6209fa5995f",
-      "line_count": 66,
-      "size_bytes": 2941,
+      "sha256": "cceba5cbf062a6a8066dc92417c45c37934872b26e789f04ad08794f4b5bf56f",
+      "line_count": 90,
+      "size_bytes": 4109,
       "exists": true
     },
     {
@@ -738,9 +745,9 @@
     },
     {
       "path": "tests/test_tool_manifest_registry.py",
-      "sha256": "dc7db6c3c967502b984410190e677b2c1e813cd14c3fed23a909e4d74f90060d",
-      "line_count": 138,
-      "size_bytes": 5011,
+      "sha256": "6bfa7bdd37966e0fad5f2d16b354b0e6a6b7501fd0c0b247a18593943ecfa1ed",
+      "line_count": 159,
+      "size_bytes": 5842,
       "exists": true
     },
     {
@@ -752,9 +759,9 @@
     },
     {
       "path": "tests/test_transactions.py",
-      "sha256": "797a757afa8a1a72f2286a562dce8b57da727d1c927a5303ea3a324369797c54",
-      "line_count": 252,
-      "size_bytes": 9636,
+      "sha256": "19713f6fff9bc96e024bab9fd992cd4a14a9bb655e16108edc0d9c7495a997d0",
+      "line_count": 268,
+      "size_bytes": 10453,
       "exists": true
     },
     {
