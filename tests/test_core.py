@@ -81,6 +81,7 @@ from leos_agent.planner import validate_llm_proposals
 from leos_agent.policy import CapabilityGrant
 from leos_agent.policy_manifest import (
     load_policy_from_file,
+    manifest_to_json,
     sign_policy,
     verify_policy_manifest,
 )
@@ -1913,6 +1914,30 @@ class SignedPolicyManifestTests(unittest.TestCase):
             self.assertEqual(
                 _run(str(goal_path), str(ws), auto_approve=False, profile=str(manifest_path), secret="secret"), 0
             )
+
+    def test_load_policy_from_nonexistent_file(self) -> None:
+        with self.assertRaises(PolicyConfigurationError):
+            load_policy_from_file(Path("/nonexistent/manifest.json"), "secret")
+
+    def test_load_policy_from_invalid_json_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "manifest.json"
+            path.write_text("not json")
+            with self.assertRaises(PolicyConfigurationError):
+                load_policy_from_file(path, "secret")
+
+    def test_verify_missing_signature_key(self) -> None:
+        with self.assertRaises(PolicyIntegrityError):
+            verify_policy_manifest({"policy": {}}, "secret")
+
+    def test_manifest_to_json_round_trip(self) -> None:
+        policy = {"name": "roundtrip", "granted_permissions": ["read_files"]}
+        manifest = sign_policy(policy, "secret")
+        serialized = manifest_to_json(manifest)
+        loaded = json.loads(serialized)
+        self.assertIn("policy", loaded)
+        self.assertIn("signature", loaded)
+        verify_policy_manifest(loaded, "secret")
 
 
 class CapabilityGrantTests(unittest.TestCase):

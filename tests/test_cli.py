@@ -10,11 +10,18 @@ from pathlib import Path
 from leos_agent.audit import AuditLog
 from leos_agent.cli import (
     _approval_render,
+    _audit_check,
+    _check_file_exists,
+    _dry_run,
     _eval,
     _inspect_audit,
+    _list_tools,
+    _load_json_file,
     _manifest,
     _proof_generate,
     _queue_demo,
+    _run,
+    _sign_policy,
     _validate_policy,
     _validate_task,
 )
@@ -118,6 +125,128 @@ class ProofCliTests(unittest.TestCase):
 
             self.assertIn(code, {0, 2})
             self.assertTrue((Path(tmp) / "MANIFEST.json").exists())
+
+
+class CliHelperTests(unittest.TestCase):
+    def test_check_file_exists_returns_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "exists.txt"
+            path.write_text("hi")
+            result = _check_file_exists(str(path))
+            self.assertIsInstance(result, Path)
+            self.assertEqual(result, path)
+
+    def test_check_file_exists_returns_none_for_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = _check_file_exists(str(Path(tmp) / "nonexistent.txt"))
+            self.assertIsNone(result)
+
+    def test_load_json_file_returns_data(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "valid.json"
+            path.write_text('{"key": "value"}')
+            data, code = _load_json_file(str(path))
+            self.assertEqual(code, 0)
+            self.assertEqual(data, {"key": "value"})
+
+    def test_load_json_file_not_found(self) -> None:
+        data, code = _load_json_file("/nonexistent/notfound.json")
+        self.assertIsNone(data)
+        self.assertEqual(code, 2)
+
+    def test_load_json_file_invalid_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bad.json"
+            path.write_text("not json")
+            data, code = _load_json_file(str(path))
+            self.assertIsNone(data)
+            self.assertEqual(code, 2)
+
+    def test_list_tools_returns_zero(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(_list_tools(tmp), 0)
+
+    def test_dry_run_valid_tool_returns_zero(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(_dry_run("echo", '{"message": "hi"}', tmp), 0)
+
+    def test_dry_run_unknown_tool_returns_one(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(_dry_run("nonexistent", "{}", tmp), 1)
+
+    def test_dry_run_bad_json_args_returns_two(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(_dry_run("echo", "not json", tmp), 2)
+
+    def test_run_missing_goal_field(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "task.json"
+            path.write_text(json.dumps({"steps": []}))
+            self.assertEqual(_run(str(path), tmp, auto_approve=False, profile="developer_local"), 2)
+
+    def test_run_invalid_goal_not_dict(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "task.json"
+            path.write_text(json.dumps({"goal": "not_a_dict", "steps": []}))
+            self.assertEqual(_run(str(path), tmp, auto_approve=False, profile="developer_local"), 2)
+
+    def test_run_bad_secret_format(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "task.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "goal": {
+                            "description": "t",
+                            "success_criteria": ["ok"],
+                            "stop_conditions": ["done"],
+                        },
+                        "steps": [
+                            {
+                                "tool_name": "echo",
+                                "arguments": {},
+                                "reason": "test",
+                            }
+                        ],
+                    }
+                )
+            )
+            self.assertEqual(
+                _run(
+                    str(path),
+                    tmp,
+                    auto_approve=True,
+                    profile="developer_local",
+                    cli_secrets=["badformat"],
+                ),
+                2,
+            )
+
+    def test_validate_policy_with_both_none(self) -> None:
+        self.assertEqual(_validate_policy(None, profile=None), 2)
+
+    def test_sign_policy_writes_to_stdout(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            import io
+            from contextlib import redirect_stdout
+
+            policy_path = Path(tmp) / "policy.json"
+            policy_path.write_text(
+                json.dumps({"max_risk": "high", "require_human_for": []}),
+                encoding="utf-8",
+            )
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                code = _sign_policy(str(policy_path), "secret", output=None)
+            self.assertEqual(code, 0)
+            self.assertIn('"policy"', stdout.getvalue())
+
+    def test_audit_check_clean_log_returns_zero(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "audit.jsonl"
+            log = AuditLog(path=path)
+            log.record("step.executed", "ok", observed={"key": "val"})
+            self.assertEqual(_audit_check(str(path)), 0)
 
 
 if __name__ == "__main__":

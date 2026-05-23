@@ -2,6 +2,8 @@
 
 Leos is a bounded, auditable agent runtime. It is not production-ready autonomous infrastructure and this document is not a formal proof.
 
+> **Leos is not a production autonomous employee and not a general open-world agent.**
+
 ## Assets
 - Secrets and scoped secret references.
 - Workspace files and generated patches.
@@ -49,6 +51,10 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
   that would otherwise appear in HTML or Markdown reports.
 - Test fake-client token persistence: a fake integration client stores raw
   credentials in helper state and later leaks them through `repr` or failure logs.
+- Secret scanner pattern gaps: new or uncommon token formats (AWS keys,
+  bearer tokens, private key headers, Slack tokens) are not recognized
+  by the static artifact scanner and could leak in generated `.md`,
+  `.jsonl`, or `.html` files.
 
 ## Mitigations Already Implemented
 - `PolicyEngine`, `ApprovalGate`, and `TransactionManager` gate all transaction execution.
@@ -97,6 +103,11 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
   execution.
 - `check_release_proof.py` verifies release-grade proof metadata against the
   current clean commit, reducing proof drift.
+- `scripts/check_no_secret_literals.py` scans generated artifacts (.jsonl,
+  .json, .md, .html) for GitHub tokens, OpenAI keys, AWS access keys, private
+  key headers, bearer tokens, Slack tokens, and literal demo secrets.
+  Detection is validated with fake-sample tests in
+  `tests/test_secret_scan_script.py`.
 
 ## Mitigations Still Missing
 - Production-grade container or microVM isolation with integration tests against a real runtime.

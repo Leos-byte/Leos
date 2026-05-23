@@ -17,8 +17,10 @@ from leos_agent import (
     TransactionManager,
     TransactionPlan,
 )
+from leos_agent.errors import LeosError
 from leos_agent.github_client import GitHubHTTPResponse, GitHubRESTClient
 from leos_agent.github_tools import (
+    GitHubCheckCIStatusTool,
     GitHubCommentTool,
     GitHubCreateBranchTool,
     GitHubGetFileTool,
@@ -431,6 +433,57 @@ class GitHubToolsTests(unittest.TestCase):
         result = tool.execute({"repo": "o/r", "path": "app.py", "ref": "main"}, WorldState())
 
         self.assertFalse(result.ok)
+
+    def test_check_ci_status_dry_run_ok(self) -> None:
+        tool = GitHubCheckCIStatusTool(InMemoryGitHubClient())
+        result = tool.dry_run({"repo": "o/r", "ref": "main"}, WorldState())
+        self.assertTrue(result.ok)
+
+    def test_check_ci_status_dry_run_missing_args(self) -> None:
+        tool = GitHubCheckCIStatusTool(InMemoryGitHubClient())
+        result = tool.dry_run({"repo": "o/r"}, WorldState())
+        self.assertFalse(result.ok)
+
+    def test_comment_dry_run_missing_args(self) -> None:
+        tool = GitHubCommentTool(InMemoryGitHubClient())
+        result = tool.dry_run({"repo": "o/r"}, WorldState())
+        self.assertFalse(result.ok)
+
+    def test_update_file_rollback_no_previous_content(self) -> None:
+        tool = GitHubUpdateFileTool(InMemoryGitHubClient())
+        result = tool.rollback(
+            {"repo": "o/r", "path": "new.py", "branch": "b"},
+            WorldState(),
+        )
+        self.assertTrue(result.ok)
+        self.assertIn("No previous", result.message)
+
+    def test_protected_branch_delete_blocked(self) -> None:
+        client = InMemoryGitHubClient()
+        client.seed_file("o/r", "main", "app.py", "content")
+        tool = GitHubCreateBranchTool(client)
+        tool.execute(
+            {"repo": "o/r", "branch": "main", "base": "main", "token": "t"},
+            WorldState(),
+        )
+        with self.assertRaises(LeosError):
+            client.delete_branch("o/r", "main")
+
+    def test_all_tools_dry_run_reject_empty_args(self) -> None:
+        client = InMemoryGitHubClient()
+        tools = [
+            GitHubReadIssueTool(client),
+            GitHubCreateBranchTool(client),
+            GitHubGetFileTool(client),
+            GitHubUpdateFileTool(client),
+            GitHubOpenPRTool(client),
+            GitHubCommentTool(client),
+            GitHubCheckCIStatusTool(client),
+        ]
+        for tool in tools:
+            with self.subTest(tool=tool.spec.name):
+                result = tool.dry_run({}, WorldState())
+                self.assertFalse(result.ok, f"{tool.spec.name} dry_run with empty args should fail")
 
 
 if __name__ == "__main__":
