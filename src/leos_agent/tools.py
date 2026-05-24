@@ -140,6 +140,12 @@ class Tool(Protocol):
     def rollback(self, token: Mapping[str, Any], state: WorldState) -> ToolResult: ...
 
 
+class RuntimeAttestedTool(Protocol):
+    """Tool interface for runtime safety attestations checked by production profiles."""
+
+    def runtime_attestations(self) -> Mapping[str, Any]: ...
+
+
 class ToolRegistry:
     def __init__(self) -> None:
         self._tools: dict[str, Tool] = {}

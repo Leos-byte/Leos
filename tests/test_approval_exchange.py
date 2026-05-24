@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -51,6 +52,117 @@ class ApprovalExchangeTests(unittest.TestCase):
             returned = gate.request_packet(packet, ActionStep("tool", {}, "run"))
 
             self.assertEqual(returned.decision, ApprovalDecisionValue.APPROVE)
+
+    def test_file_approval_gate_allows_approved_approver(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            packet_dir = Path(tmp) / "packets"
+            decision_dir = Path(tmp) / "decisions"
+            packet = _packet()
+            decision = build_decision_for_packet(packet, ApprovalDecisionValue.APPROVE, "alice")
+            write_approval_decision(decision, decision_dir / f"{packet.approval_id}.json")
+            gate = FileApprovalGate(packet_dir, decision_dir, allowed_approvers={"alice"})
+
+            returned = gate.request_packet(packet, ActionStep("tool", {}, "run"))
+
+            self.assertEqual(returned.decision, ApprovalDecisionValue.APPROVE)
+
+    def test_file_approval_gate_denies_unlisted_approver(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            packet_dir = Path(tmp) / "packets"
+            decision_dir = Path(tmp) / "decisions"
+            packet = _packet()
+            decision = build_decision_for_packet(packet, ApprovalDecisionValue.APPROVE, "bob")
+            write_approval_decision(decision, decision_dir / f"{packet.approval_id}.json")
+            gate = FileApprovalGate(packet_dir, decision_dir, allowed_approvers={"alice"})
+
+            returned = gate.request_packet(packet, ActionStep("tool", {}, "run"))
+
+            self.assertEqual(returned.decision, ApprovalDecisionValue.DENY)
+            self.assertEqual(returned.reason, "approver not allowed")
+
+    def test_file_approval_gate_denies_missing_approver_when_allowlist_set(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            packet_dir = Path(tmp) / "packets"
+            decision_dir = Path(tmp) / "decisions"
+            packet = _packet()
+            decision = build_decision_for_packet(packet, ApprovalDecisionValue.APPROVE, None)
+            write_approval_decision(decision, decision_dir / f"{packet.approval_id}.json")
+            gate = FileApprovalGate(packet_dir, decision_dir, allowed_approvers={"alice"})
+
+            returned = gate.request_packet(packet, ActionStep("tool", {}, "run"))
+
+            self.assertEqual(returned.decision, ApprovalDecisionValue.DENY)
+            self.assertEqual(returned.reason, "approver required")
+
+    @unittest.skipIf(os.name == "nt", "POSIX mode checks do not apply on Windows")
+    def test_file_approval_gate_accepts_private_decision_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            packet_dir = Path(tmp) / "packets"
+            decision_dir = Path(tmp) / "decisions"
+            packet = _packet()
+            decision_path = decision_dir / f"{packet.approval_id}.json"
+            write_approval_decision(
+                build_decision_for_packet(packet, ApprovalDecisionValue.APPROVE, "human"),
+                decision_path,
+            )
+            decision_path.chmod(0o600)
+            gate = FileApprovalGate(packet_dir, decision_dir)
+
+            returned = gate.request_packet(packet, ActionStep("tool", {}, "run"))
+
+            self.assertEqual(returned.decision, ApprovalDecisionValue.APPROVE)
+
+    @unittest.skipIf(os.name == "nt", "POSIX mode checks do not apply on Windows")
+    def test_file_approval_gate_rejects_broad_decision_file_permissions(self) -> None:
+        for mode in (0o644, 0o666):
+            with self.subTest(mode=oct(mode)), tempfile.TemporaryDirectory() as tmp:
+                packet_dir = Path(tmp) / "packets"
+                decision_dir = Path(tmp) / "decisions"
+                packet = _packet()
+                decision_path = decision_dir / f"{packet.approval_id}.json"
+                write_approval_decision(
+                    build_decision_for_packet(packet, ApprovalDecisionValue.APPROVE, "human"), decision_path
+                )
+                decision_path.chmod(mode)
+                gate = FileApprovalGate(packet_dir, decision_dir)
+
+                returned = gate.request_packet(packet, ActionStep("tool", {}, "run"))
+
+                self.assertEqual(returned.decision, ApprovalDecisionValue.DENY)
+                self.assertEqual(returned.reason, "decision file permissions too broad")
+
+    @unittest.skipIf(os.name == "nt", "POSIX mode checks do not apply on Windows")
+    def test_file_approval_gate_can_skip_private_decision_file_check(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            packet_dir = Path(tmp) / "packets"
+            decision_dir = Path(tmp) / "decisions"
+            packet = _packet()
+            decision_path = decision_dir / f"{packet.approval_id}.json"
+            write_approval_decision(
+                build_decision_for_packet(packet, ApprovalDecisionValue.APPROVE, "human"),
+                decision_path,
+            )
+            decision_path.chmod(0o666)
+            gate = FileApprovalGate(packet_dir, decision_dir, require_private_decision_files=False)
+
+            returned = gate.request_packet(packet, ActionStep("tool", {}, "run"))
+
+            self.assertEqual(returned.decision, ApprovalDecisionValue.APPROVE)
+
+    @unittest.skipIf(os.name == "nt", "POSIX mode checks do not apply on Windows")
+    def test_approval_exchange_writes_private_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            packet = _packet()
+            decision = build_decision_for_packet(packet, ApprovalDecisionValue.APPROVE, "human")
+            packet_path = root / "packet.json"
+            decision_path = root / "decision.json"
+
+            write_approval_packet(packet, packet_path)
+            write_approval_decision(decision, decision_path)
+
+            self.assertEqual(packet_path.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(decision_path.stat().st_mode & 0o777, 0o600)
 
     def test_approval_exchange_files_do_not_contain_secret_values(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

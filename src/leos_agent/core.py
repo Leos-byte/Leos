@@ -232,6 +232,7 @@ from .task_queue import (
 from .tool_manifest_registry import ToolManifestRegistry, ToolManifestRegistryError
 from .tools import (
     EchoTool,
+    RuntimeAttestedTool,
     SafeFileWriteTool,
     Secret,
     Tool,
@@ -379,6 +380,7 @@ __all__ = [
     "ReadFileTool",
     "RetryPolicy",
     "RollbackFailed",
+    "RuntimeAttestedTool",
     "RuntimeEgressBlocked",
     "RuntimeEgressDecision",
     "RuntimeEgressGuard",

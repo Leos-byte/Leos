@@ -117,7 +117,7 @@ class TransactionManager:
                     reason=str(exc),
                     error_type=type(error).__name__,
                 )
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
             self._hydrate_step_metadata(step, tool)
 
@@ -137,6 +137,24 @@ class TransactionManager:
                     reason=egress_assessment.reason,
                 )
 
+            attestation_issue = self._runtime_attestation_block_reason(step, tool)
+            if attestation_issue:
+                step.status = StepStatus.BLOCKED
+                error = PolicyDenied(attestation_issue)
+                self.audit_log.record(
+                    "step.blocked",
+                    "Step blocked by runtime attestation policy",
+                    step_id=step.step_id,
+                    tool=step.tool_name,
+                    decision="denied",
+                    risk=step.risk.value,
+                    profile=self.policy.profile_name,
+                    reason=attestation_issue,
+                    error_type=type(error).__name__,
+                )
+                self._rollback(rollback_stack, state, plan=plan)
+                break
+
             production_issue = self.policy.production_block_reason(step, tool)
             if production_issue:
                 step.status = StepStatus.BLOCKED
@@ -153,7 +171,7 @@ class TransactionManager:
                     reason=production_issue,
                     error_type=type(error).__name__,
                 )
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
 
             sandbox_issue = self._enforce_sandbox(tool)
@@ -169,7 +187,7 @@ class TransactionManager:
                     error_type=type(error).__name__,
                     reason=sandbox_issue,
                 )
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
 
             if _contains_secrets(step.arguments) and not tool.spec.secrets_allowed:
@@ -183,7 +201,7 @@ class TransactionManager:
                     decision="denied",
                     error_type=type(error).__name__,
                 )
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
 
             contract = getattr(tool.spec, "causal_contract", None)
@@ -207,7 +225,7 @@ class TransactionManager:
             step.counterfactual_report = self.counterfactual_review.review(step, state, step.predictions)
 
             if self._idempotency_conflict(step, state):
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
 
             precondition_issues = self._check_conditions((*step.preconditions, *step.invariants), state)
@@ -222,7 +240,7 @@ class TransactionManager:
                     issues=precondition_issues,
                     error_type=type(error).__name__,
                 )
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
 
             decision_result = self.policy.decide(step)
@@ -247,7 +265,7 @@ class TransactionManager:
                         data=dry_run.data,
                         error_type=_error_type(error),
                     )
-                    self._rollback(rollback_stack, state)
+                    self._rollback(rollback_stack, state, plan=plan)
                     break
                 step.status = StepStatus.DRY_RUN_OK
                 self.audit_log.record("step.dry_run_ok", dry_run.message, step_id=step.step_id, tool=step.tool_name)
@@ -320,7 +338,7 @@ class TransactionManager:
                         reason=approval_issue,
                         error_type=type(error).__name__,
                     )
-                    self._rollback(rollback_stack, state)
+                    self._rollback(rollback_stack, state, plan=plan)
                     break
                 self.audit_log.record(
                     "approval.used",
@@ -345,7 +363,7 @@ class TransactionManager:
                     compensation_strategy=step.compensation_strategy.value,
                     error_type=type(error).__name__,
                 )
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
 
             if dry_run is None:
@@ -360,7 +378,7 @@ class TransactionManager:
                     data=dry_run.data,
                     error_type=_error_type(error),
                 )
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
             step.status = StepStatus.DRY_RUN_OK
             if not dry_run_recorded:
@@ -376,7 +394,7 @@ class TransactionManager:
                     data=result.data,
                     error_type=_error_type(result.error),
                 )
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
 
             step.status = StepStatus.EXECUTED
@@ -395,7 +413,7 @@ class TransactionManager:
                     data={"schema_issues": output_schema_issues},
                     error_type=type(error).__name__,
                 )
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
 
             contract_missing = self._missing_contract_observations(tool, result)
@@ -414,7 +432,7 @@ class TransactionManager:
                     observed=list(result.observed_state_delta),
                     error_type=type(error).__name__,
                 )
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
             if contract is not None:
                 self.audit_log.record(
@@ -444,7 +462,7 @@ class TransactionManager:
                     data=verification.data,
                     error_type=_error_type(verification.error),
                 )
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
 
             postcondition_issues = self._check_conditions((*step.postconditions, *step.invariants), state)
@@ -459,7 +477,7 @@ class TransactionManager:
                     issues=postcondition_issues,
                     error_type=type(error).__name__,
                 )
-                self._rollback(rollback_stack, state)
+                self._rollback(rollback_stack, state, plan=plan)
                 break
 
             state.mark_trust(result.observed_state_delta.keys(), TrustLevel.VERIFIED)
@@ -769,7 +787,79 @@ class TransactionManager:
                 )
         return issues
 
-    def _rollback(self, rollback_stack: list[tuple[Tool, dict[str, Any], ActionStep]], state: WorldState) -> None:
+    def _runtime_attestation_block_reason(self, step: ActionStep, tool: Tool) -> str | None:
+        if self.policy.profile_name != "production_locked_down":
+            return None
+        if not (tool.spec.network_access or Permission.NETWORK in tool.spec.permissions):
+            return None
+
+        attestations: Mapping[str, Any]
+        runtime_attestations = getattr(tool, "runtime_attestations", None)
+        if callable(runtime_attestations):
+            try:
+                raw = runtime_attestations()
+                attestations = raw if isinstance(raw, Mapping) else {}
+            except Exception:  # noqa: BLE001 - attestation failure must fail closed
+                attestations = {}
+        else:
+            attestations = {}
+
+        self.audit_log.record(
+            "runtime.attestation_checked",
+            "Runtime attestations checked for production network tool",
+            step_id=step.step_id,
+            tool=step.tool_name,
+            profile=self.policy.profile_name,
+            network_access=tool.spec.network_access,
+            runtime_egress_enforced=attestations.get("runtime_egress_enforced"),
+            runtime_egress_policy_configured=attestations.get("runtime_egress_policy_configured"),
+            runtime_egress_mode=attestations.get("runtime_egress_mode"),
+            runtime_egress_host=attestations.get("runtime_egress_host"),
+        )
+
+        reason = "production_locked_down requires runtime egress enforcement for network tools"
+        if not attestations:
+            self.audit_log.record(
+                "runtime.attestation_failed",
+                "Runtime attestation failed for production network tool",
+                step_id=step.step_id,
+                tool=step.tool_name,
+                profile=self.policy.profile_name,
+                network_access=tool.spec.network_access,
+                reason=reason,
+            )
+            return reason
+        mode = str(attestations.get("runtime_egress_mode", "unknown"))
+        if (
+            attestations.get("runtime_egress_enforced") is not True
+            or attestations.get("runtime_egress_policy_configured") is not True
+            or mode not in {"enforced", "in_memory"}
+        ):
+            self.audit_log.record(
+                "runtime.attestation_failed",
+                "Runtime attestation failed for production network tool",
+                step_id=step.step_id,
+                tool=step.tool_name,
+                profile=self.policy.profile_name,
+                network_access=tool.spec.network_access,
+                runtime_egress_enforced=attestations.get("runtime_egress_enforced"),
+                runtime_egress_policy_configured=attestations.get("runtime_egress_policy_configured"),
+                runtime_egress_mode=mode,
+                runtime_egress_host=attestations.get("runtime_egress_host"),
+                reason=reason,
+            )
+            return reason
+        return None
+
+    def _rollback(
+        self,
+        rollback_stack: list[tuple[Tool, dict[str, Any], ActionStep]],
+        state: WorldState,
+        *,
+        plan: TransactionPlan | None = None,
+    ) -> None:
+        goal_id = plan.goal.goal_id if plan is not None else None
+        plan_id = plan.plan_id if plan is not None else None
         rollback_succeeded = 0
         rollback_failed = 0
         while rollback_stack:
@@ -793,7 +883,7 @@ class TransactionManager:
                     network_access=tool.spec.network_access,
                     reason=reason,
                 )
-                self._record_manual_recovery(step, tool, reason)
+                self._record_manual_recovery(step, tool, reason, goal_id=goal_id, plan_id=plan_id)
                 continue
             if tool.spec.network_access or Permission.NETWORK in tool.spec.permissions:
                 self.audit_log.record(
@@ -833,7 +923,7 @@ class TransactionManager:
                 tool=tool.spec.name,
                 error_type=_error_type(error),
             )
-            self._record_manual_recovery(step, tool, result.message)
+            self._record_manual_recovery(step, tool, result.message, goal_id=goal_id, plan_id=plan_id)
         if rollback_failed and rollback_succeeded:
             self.audit_log.record(
                 "rollback_partially_completed",
@@ -861,8 +951,18 @@ class TransactionManager:
             return host, methods, reason
         return None
 
-    def _record_manual_recovery(self, step: ActionStep, tool: Tool, reason: str) -> None:
+    def _record_manual_recovery(
+        self,
+        step: ActionStep,
+        tool: Tool,
+        reason: str,
+        *,
+        goal_id: str | None = None,
+        plan_id: str | None = None,
+    ) -> None:
         packet = ManualRecoveryPacket.build(
+            goal_id=goal_id,
+            plan_id=plan_id,
             step_id=step.step_id,
             tool_name=tool.spec.name,
             reason=reason,
@@ -883,6 +983,8 @@ class TransactionManager:
             "recovery.manual_action_required",
             "Manual recovery action is required",
             recovery_id=packet.recovery_id,
+            goal_id=goal_id,
+            plan_id=plan_id,
             step_id=step.step_id,
             tool=tool.spec.name,
             reason=reason,

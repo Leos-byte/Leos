@@ -7,6 +7,8 @@ claims release-grade evidence for the current commit:
 ```bash
 python scripts/generate_proofs.py --output docs/proofs --require-clean
 python scripts/check_release_proof.py
+git add docs/proofs
+git commit -m "chore(proofs): refresh release-grade evidence"
 ```
 
 `check_release_proof.py` verifies that `docs/proofs/MANIFEST.json` has
@@ -18,3 +20,8 @@ then commit the generated proof documents.
 
 Dirty proofs generated with `--allow-dirty` are useful for local review only and
 must not be treated as release-grade evidence.
+
+CI runs `check_release_proof.py` only on `main`, before generating local proof
+documents for the workflow run. Pull request CI still generates local proof
+artifacts, but it does not require contributors to refresh release proof metadata
+on every ordinary code change.
