@@ -135,6 +135,8 @@ class PolicyProfile:
     require_output_schema_for_medium_risk: bool = False
     require_typed_goal_criteria: bool = False
     egress_policy: EgressPolicy | None = None
+    allowed_tools: Sequence[str] = ()
+    require_signed_approval: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "granted_permissions", _permissions(self.granted_permissions))
@@ -154,6 +156,7 @@ class PolicyProfile:
                 for grant in self.grants
             ),
         )
+        object.__setattr__(self, "allowed_tools", tuple(str(tool) for tool in self.allowed_tools))
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> PolicyProfile:
@@ -173,6 +176,8 @@ class PolicyProfile:
             require_timeout_for_medium_risk=bool(data.get("require_timeout_for_medium_risk", False)),
             require_output_schema_for_medium_risk=bool(data.get("require_output_schema_for_medium_risk", False)),
             require_typed_goal_criteria=bool(data.get("require_typed_goal_criteria", False)),
+            allowed_tools=tuple(str(tool) for tool in data.get("allowed_tools", ())),
+            require_signed_approval=bool(data.get("require_signed_approval", False)),
             egress_policy=(
                 EgressPolicy(
                     allowed_hosts=tuple(data["egress_policy"].get("allowed_hosts", ())),
@@ -186,6 +191,20 @@ class PolicyProfile:
                 else None
             ),
         )
+
+
+PRODUCTION_PROFILE_NAMES = {"production_locked_down", "production_github_only"}
+
+PRODUCTION_GITHUB_ONLY_TOOLS = (
+    "github_read_issue",
+    "github_get_file",
+    "github_create_branch",
+    "github_update_file",
+    "github_open_pr",
+    "github_comment",
+    "github_check_ci_status",
+    "echo",
+)
 
 
 BUILT_IN_POLICY_PROFILES = {
@@ -230,6 +249,27 @@ BUILT_IN_POLICY_PROFILES = {
         require_timeout_for_medium_risk=True,
         require_output_schema_for_medium_risk=True,
         require_typed_goal_criteria=True,
+    ),
+    "production_github_only": PolicyProfile(
+        name="production_github_only",
+        max_auto_risk=RiskLevel.LOW,
+        require_human_for=(
+            Permission.WRITE_FILES,
+            Permission.SEND_MESSAGE,
+            Permission.EXECUTE_CODE,
+            Permission.READ_MEMORY,
+            Permission.WRITE_MEMORY,
+        ),
+        deny_permissions=(Permission.FINANCIAL, Permission.SYSTEM_CONFIG),
+        require_strong_sandbox_for_execute=True,
+        network_default_deny=True,
+        require_causal_contract_for_medium_risk=True,
+        require_timeout_for_medium_risk=True,
+        require_output_schema_for_medium_risk=True,
+        require_typed_goal_criteria=True,
+        egress_policy=EgressPolicy(allowed_hosts=("api.github.com",)),
+        allowed_tools=PRODUCTION_GITHUB_ONLY_TOOLS,
+        require_signed_approval=True,
     ),
 }
 
@@ -281,6 +321,8 @@ class PolicyEngine:
         self.require_timeout_for_medium_risk = False
         self.require_output_schema_for_medium_risk = False
         self.require_typed_goal_criteria = False
+        self.allowed_tools: tuple[str, ...] = ()
+        self.require_signed_approval = False
 
     @classmethod
     def from_profile(cls, profile: str | PolicyProfile, *, principal: str | None = None) -> PolicyEngine:
@@ -305,6 +347,8 @@ class PolicyEngine:
         engine.require_output_schema_for_medium_risk = profile.require_output_schema_for_medium_risk
         engine.require_typed_goal_criteria = profile.require_typed_goal_criteria
         engine.egress_policy = profile.egress_policy
+        engine.allowed_tools = tuple(profile.allowed_tools)
+        engine.require_signed_approval = profile.require_signed_approval
         return engine
 
     @classmethod
@@ -325,8 +369,10 @@ class PolicyEngine:
     def production_block_reason(self, step: ActionStep, tool: Tool) -> str | None:
         """Return a non-overridable production profile block reason."""
 
-        if self.profile_name != "production_locked_down":
+        if self.profile_name not in PRODUCTION_PROFILE_NAMES:
             return None
+        if self.allowed_tools and tool.spec.name not in self.allowed_tools:
+            return f"{self.profile_name} allows only bounded GitHub tools"
         egress = self.production_egress_assessment(step, tool)
         if egress is not None and not egress.allowed:
             return egress.reason
@@ -335,20 +381,20 @@ class PolicyEngine:
             and Permission.EXECUTE_CODE in tool.spec.permissions
             and tool.spec.sandbox_policy is SandboxPolicy.WORKSPACE
         ):
-            return "production_locked_down forbids workspace subprocess execution as a production sandbox"
+            return f"{self.profile_name} forbids workspace subprocess execution as a production sandbox"
         if _risk_value(step.risk) >= _risk_value(RiskLevel.MEDIUM):
             if self.require_causal_contract_for_medium_risk and tool.spec.causal_contract is None:
-                return "production_locked_down requires causal contracts for medium+ tools"
+                return f"{self.profile_name} requires causal contracts for medium+ tools"
             if self.require_timeout_for_medium_risk and tool.spec.timeout_ms <= 0:
-                return "production_locked_down requires timeout_ms for medium+ tools"
+                return f"{self.profile_name} requires timeout_ms for medium+ tools"
             if self.require_output_schema_for_medium_risk and not tool.spec.output_schema:
-                return "production_locked_down requires output_schema for medium+ tools"
+                return f"{self.profile_name} requires output_schema for medium+ tools"
         return None
 
     def production_egress_assessment(self, step: ActionStep, tool: Tool) -> EgressAssessment | None:
         """Assess production egress for network tools without approving the action."""
 
-        if self.profile_name != "production_locked_down":
+        if self.profile_name not in PRODUCTION_PROFILE_NAMES:
             return None
         if not (tool.spec.network_access or Permission.NETWORK in tool.spec.permissions):
             return None
@@ -363,7 +409,7 @@ class PolicyEngine:
                 forward_methods=forward_methods,
                 rollback_methods=rollback_methods,
                 allowed=False,
-                reason="production_locked_down forbids network tools without an explicit egress policy",
+                reason=f"{self.profile_name} forbids network tools without an explicit egress policy",
             )
         if not host:
             return EgressAssessment(
@@ -371,7 +417,7 @@ class PolicyEngine:
                 forward_methods=forward_methods,
                 rollback_methods=rollback_methods,
                 allowed=False,
-                reason="production_locked_down egress policy does not allow <missing-host>",
+                reason=f"{self.profile_name} egress policy does not allow <missing-host>",
             )
         if not forward_methods:
             return EgressAssessment(
@@ -379,7 +425,7 @@ class PolicyEngine:
                 forward_methods=forward_methods,
                 rollback_methods=rollback_methods,
                 allowed=False,
-                reason=f"production_locked_down requires declared forward egress methods for {tool.spec.name}",
+                reason=f"{self.profile_name} requires declared forward egress methods for {tool.spec.name}",
             )
         missing_forward = tuple(method for method in forward_methods if not self.egress_policy.allows(host, method))
         if missing_forward:
@@ -388,9 +434,7 @@ class PolicyEngine:
                 forward_methods=forward_methods,
                 rollback_methods=rollback_methods,
                 allowed=False,
-                reason=(
-                    f"production_locked_down egress policy does not allow forward {','.join(missing_forward)} {host}"
-                ),
+                reason=(f"{self.profile_name} egress policy does not allow forward {','.join(missing_forward)} {host}"),
             )
         rollback_required = tool.spec.reversibility in {Reversibility.REVERSIBLE, Reversibility.COMPENSATABLE}
         if rollback_required:
@@ -401,7 +445,7 @@ class PolicyEngine:
                     rollback_methods=rollback_methods,
                     allowed=False,
                     reason=(
-                        "production_locked_down requires rollback egress methods for reversible "
+                        f"{self.profile_name} requires rollback egress methods for reversible "
                         f"network tool {tool.spec.name}"
                     ),
                 )
@@ -415,8 +459,7 @@ class PolicyEngine:
                     rollback_methods=rollback_methods,
                     allowed=False,
                     reason=(
-                        "production_locked_down egress policy does not allow rollback "
-                        f"{','.join(missing_rollback)} {host}"
+                        f"{self.profile_name} egress policy does not allow rollback {','.join(missing_rollback)} {host}"
                     ),
                 )
         return EgressAssessment(
@@ -427,14 +470,10 @@ class PolicyEngine:
         )
 
     def validate_goal(self, goal: Any) -> None:
-        if (
-            self.profile_name == "production_locked_down"
-            and self.require_typed_goal_criteria
-            and not getattr(goal, "criteria", ())
-        ):
+        if self.require_typed_goal_criteria and not getattr(goal, "criteria", ()):
             from .errors import PolicyDenied
 
-            raise PolicyDenied("production_locked_down requires at least one typed goal criterion")
+            raise PolicyDenied(f"{self.profile_name} requires at least one typed goal criterion")
 
     def _matching_grant(self, tool_name: str) -> CapabilityGrant | None:
         if not self.principal:

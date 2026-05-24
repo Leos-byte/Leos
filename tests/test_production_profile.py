@@ -5,6 +5,8 @@ import unittest
 from leos_agent import (
     ActionStep,
     AgentKernel,
+    ApprovalDecision,
+    ApprovalDecisionValue,
     ApprovalGate,
     CausalContract,
     EgressPolicy,
@@ -54,6 +56,14 @@ class _Tool:
             "runtime_egress_mode": "in_memory",
             "runtime_egress_host": self.spec.egress_host or "api.github.com",
         }
+
+
+class _SignedApprovalGate(ApprovalGate):
+    signed_approval_enforced = True
+
+    def request_packet(self, packet, step):
+        del step
+        return ApprovalDecision(packet.approval_id, packet.step_hash, ApprovalDecisionValue.APPROVE)
 
 
 def _contract() -> CausalContract:
@@ -627,8 +637,153 @@ class ProductionProfileTests(unittest.TestCase):
         with self.assertRaises(PolicyDenied):
             kernel.build_plan(Goal("g", ["ok"], stop_conditions=["done"]), [])
 
+    def test_production_github_only_profile_exists_with_github_egress(self) -> None:
+        policy = PolicyEngine.from_profile("production_github_only")
+
+        self.assertEqual(policy.max_auto_risk, RiskLevel.LOW)
+        self.assertTrue(policy.network_default_deny)
+        self.assertTrue(policy.require_typed_goal_criteria)
+        self.assertTrue(policy.require_signed_approval)
+        self.assertIsNotNone(policy.egress_policy)
+        self.assertEqual(policy.egress_policy.allowed_hosts, ("api.github.com",))
+        self.assertIn("github_update_file", policy.allowed_tools)
+
+    def test_production_github_only_blocks_non_allowlisted_file_tool(self) -> None:
+        tool = _Tool(
+            ToolSpec(
+                "safe_file_write",
+                "write",
+                (Permission.WRITE_FILES,),
+                default_risk=RiskLevel.MEDIUM,
+                output_schema={"type": "object"},
+                causal_contract=_contract(),
+            )
+        )
+        kernel, plan = _run_tool(tool, profile="production_github_only")
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertFalse(tool.executed)
+        self.assertTrue(
+            any("bounded GitHub tools" in str(event.payload.get("reason", "")) for event in kernel.audit_log.events)
+        )
+
+    def test_production_github_only_blocks_generic_network_tool(self) -> None:
+        tool = _Tool(
+            ToolSpec(
+                "fetch_url",
+                "network",
+                (Permission.NETWORK,),
+                network_access=True,
+                egress_host="api.github.com",
+                egress_methods=("GET",),
+            )
+        )
+        kernel, plan = _run_tool(tool, profile="production_github_only")
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertFalse(tool.executed)
+
+    def test_production_github_only_requires_signed_approval_gate(self) -> None:
+        client = InMemoryGitHubClient()
+        tool = GitHubCreateBranchTool(client)
+
+        kernel, plan = _run_tool(
+            tool,
+            profile="production_github_only",
+            approve=True,
+            arguments={"repo": "o/r", "branch": "feature", "base": "main"},
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertFalse(tool.executed if hasattr(tool, "executed") else ("o/r", "feature") in client.branches)
+        self.assertTrue(any(event.event_type == "approval.signature_required" for event in kernel.audit_log.events))
+
+    def test_production_github_only_accepts_signed_approval_gate_for_github_tool(self) -> None:
+        client = InMemoryGitHubClient()
+        tool = GitHubCreateBranchTool(client)
+        registry = ToolRegistry()
+        registry.register(tool)
+        kernel = AgentKernel(
+            registry,
+            PolicyEngine.from_profile("production_github_only"),
+            approval_gate=_SignedApprovalGate(),
+        )
+        goal = Goal(
+            "create branch",
+            ["branch created"],
+            criteria=({"key": "github_branch", "op": "exists"},),
+            stop_conditions=["done"],
+        )
+        plan = kernel.build_plan(
+            goal,
+            [ActionStep("github_create_branch", {"repo": "o/r", "branch": "feature", "base": "main"}, "run")],
+        )
+
+        result = kernel.run(plan)
+
+        self.assertEqual(result.steps[0].status.value, "verified")
+        self.assertIn(("o/r", "feature"), client.branches)
+
+    def test_runtime_attestation_blocks_wrong_base_url_host(self) -> None:
+        policy = PolicyEngine.from_profile("production_github_only")
+        client = GitHubRESTClient(
+            base_url="https://evil.example",
+            egress_policy=policy.egress_policy,
+            enforce_egress=True,
+        )
+        tool = GitHubGetFileTool(client)
+
+        kernel, plan = _run_tool(
+            tool,
+            profile="production_github_only",
+            arguments={"repo": "o/r", "path": "README.md", "ref": "main"},
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(any("egress host" in str(event.payload.get("reason", "")) for event in kernel.audit_log.events))
+
+    def test_runtime_attestation_blocks_missing_forward_method(self) -> None:
+        policy = PolicyEngine.from_profile("production_github_only")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET",))
+        client = GitHubRESTClient(egress_policy=policy.egress_policy, enforce_egress=True)
+        tool = GitHubUpdateFileTool(client)
+
+        kernel, plan = _run_tool(
+            tool,
+            policy=policy,
+            arguments={
+                "repo": "o/r",
+                "path": "README.md",
+                "branch": "main",
+                "content": "x",
+                "message": "msg",
+                "expected_previous": "",
+            },
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(
+            any("forward methods" in str(event.payload.get("reason", "")) for event in kernel.audit_log.events)
+        )
+
+    def test_runtime_attestation_blocks_missing_rollback_method(self) -> None:
+        policy = PolicyEngine.from_profile("production_github_only")
+        policy.egress_policy = EgressPolicy(allowed_hosts=("api.github.com",), allowed_methods=("GET", "POST"))
+        client = GitHubRESTClient(egress_policy=policy.egress_policy, enforce_egress=True)
+        tool = GitHubCreateBranchTool(client)
+
+        kernel, plan = _run_tool(
+            tool,
+            policy=policy,
+            arguments={"repo": "o/r", "branch": "feature", "base": "main"},
+        )
+
+        self.assertEqual(plan.steps[0].status.value, "blocked")
+        self.assertTrue(any("rollback" in str(event.payload.get("reason", "")) for event in kernel.audit_log.events))
+
     def test_validate_policy_profile_cli_target_exists(self) -> None:
         self.assertIsInstance(PolicyEngine.from_profile("production_locked_down"), PolicyEngine)
+        self.assertIsInstance(PolicyEngine.from_profile("production_github_only"), PolicyEngine)
 
 
 if __name__ == "__main__":
