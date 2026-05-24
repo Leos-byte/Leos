@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-05-23T13:48:51.450643+00:00`
+Generated: `2026-05-24T04:28:05.170675+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -12,7 +12,7 @@ Generated: `2026-05-23T13:48:51.450643+00:00`
 | `tests/redteam/test_workspace_escape.py` | `869767479000d0a24d1f71527696bb963dc2f6d0351da2e5705dea446d419963` | 54 | 2176 | True |
 | `tests/test_agent_loop.py` | `6087b0d5b6f4623a746c34a3a1d65a972fbca83a6a2e771a5e09f1b0fee86e35` | 289 | 10989 | True |
 | `tests/test_agent_loop_runtime_store.py` | `68deb22fbc404b5b930b6b22358fdce01a6e303cae95dc90bb6df2f6770b819d` | 100 | 3580 | True |
-| `tests/test_approval_exchange.py` | `8f64c17ba3ca6b492499178ca892114131c41be0b654ae5ed4af851929d633b8` | 209 | 9541 | True |
+| `tests/test_approval_exchange.py` | `709df1f20e9fbe21bd5d9d6eee4a6dfe5b5eb43a303fda77f6859f61f28e5a0f` | 284 | 13067 | True |
 | `tests/test_approval_packet.py` | `306f3632979d2f14439da9b4c54d80106abdd87679099af5fc63c5838ac04065` | 231 | 9768 | True |
 | `tests/test_approval_request.py` | `5fd64240db4fadb130ffdb22048ea1fdc21fb2525be3fb8ad8f55498da6cf657` | 47 | 2073 | True |
 | `tests/test_audit_sanitization.py` | `ba95edcbaab5d8693706807369f4d80094d44b87449144b7bdef04e5fb8b6f87` | 58 | 1984 | True |
@@ -29,8 +29,8 @@ Generated: `2026-05-23T13:48:51.450643+00:00`
 | `tests/test_examples.py` | `605bee79614b3f0c5396d202e7807137012f53bf5f03a52e8e95302982f72099` | 56 | 2066 | True |
 | `tests/test_extensibility_demo.py` | `e073cceedcb66772b2328dc8a48aa9664c738eab597237774229692172f0d3b0` | 28 | 917 | True |
 | `tests/test_github_agent_orchestration.py` | `dd82d5ae345fb27a8822a79ad66981225c94d6a44a5ff19fc897f1974d3e01b9` | 320 | 12502 | True |
-| `tests/test_github_real_write_gated.py` | `7453d04324f5985eb05cd2691dc0c602aa295023dc0d8e17dcb850303946b68e` | 193 | 6913 | True |
-| `tests/test_github_rest_client.py` | `10effbea117bc339be2e0729db3505109b1369266b7d340dcbd9e7c52d219c07` | 466 | 19322 | True |
+| `tests/test_github_real_write_gated.py` | `889cd6fc04ce6d88adecbbbd77821f45cefd74c3488b2a6a564a478a7d7ab654` | 243 | 9185 | True |
+| `tests/test_github_rest_client.py` | `c001380a3a6370f8a34c446791135403652d723aaf1cc1127ea1f142d8d34fd4` | 469 | 19550 | True |
 | `tests/test_github_tools.py` | `2082ff46ee276545a35d62457af0b73fc07ca80e758e2b96782e8b52db4e8e6c` | 490 | 18518 | True |
 | `tests/test_github_tools_credentials.py` | `2227a920470d0398065b792c71fe8e5ec735c0301c8d6348751c1f56b9a22003` | 93 | 3736 | True |
 | `tests/test_goal_evaluator.py` | `f29ee7f1fb1565be2aecfd9e173528c97794cdbb1a2e2a892d200b0c6d56d82f` | 214 | 8535 | True |
@@ -39,10 +39,11 @@ Generated: `2026-05-23T13:48:51.450643+00:00`
 | `tests/test_model_adapters.py` | `59f4bedd8f56cdd6a78a102bf5e54485111876ff2134d25a825f6d448785157c` | 82 | 3391 | True |
 | `tests/test_network_tools.py` | `91362d989c57f9d98632c0a1283bbc3b99c88ff6a576a80a42214d7d2e97739d` | 215 | 8706 | True |
 | `tests/test_planner.py` | `f749bb4546f5623f281581ccf33c7dcba64e8641a1bf872c9f6db35e688e493f` | 70 | 3190 | True |
-| `tests/test_production_profile.py` | `b0edcee3730f2152aeb76cc5756338b90eff7b61547de31613f7854850d74ed8` | 635 | 25232 | True |
+| `tests/test_production_profile.py` | `987d8d6e906590c7933b1b533e3939c3fd44342782cf8a3d29cdd9232812ea39` | 790 | 31520 | True |
+| `tests/test_production_readiness.py` | `9f2409d033e717cb3297298cb0897aed1570a9dcbd9d08a4c716c19e00dbbb77` | 55 | 1956 | True |
 | `tests/test_proof_generation.py` | `6d3688c9d0a9905693ec2a3228b5d5026627a4272e006f631ed8287346d92a5e` | 146 | 6270 | True |
 | `tests/test_properties.py` | `c79e170732b4853a1404712a485b85cca756b49ec0e0fe201f9f7080daa0a558` | 173 | 6762 | True |
-| `tests/test_public_api.py` | `454202ee96571d5fcf47bd98719eea6469055b3e810ab46288252dcff27a5eb3` | 230 | 8919 | True |
+| `tests/test_public_api.py` | `becc67b1e609ee4a8cf465d23d17d7a1a69ee5981ca857e00e35c223d267912c` | 234 | 9157 | True |
 | `tests/test_recovery.py` | `cd2e83ca67da4a15d42b5e70aae882544e666548063c0f3feacfbab073a109d4` | 34 | 1108 | True |
 | `tests/test_release_proof_check.py` | `2cd24ce81cfdd89ea9794a261ee1a6d6d27d1c880946a5355d491a18b7c7063a` | 91 | 3987 | True |
 | `tests/test_replanning.py` | `2a82c80388536e36a149d3e163433410b65b67f20a52ce7eff6a85ba538bd163` | 155 | 5787 | True |

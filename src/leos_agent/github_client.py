@@ -9,7 +9,7 @@ import urllib.request
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, urlencode, urlparse
 
 from .egress import EgressPolicy
 from .errors import LeosError
@@ -138,6 +138,13 @@ class GitHubRESTClient:
     @property
     def runtime_egress_mode(self) -> str:
         return "enforced" if self.enforce_egress else "unrestricted"
+
+    @property
+    def runtime_egress_host(self) -> str:
+        return (urlparse(self.base_url).hostname or "").lower()
+
+    def runtime_allows_egress(self, host: str, method: str) -> bool:
+        return self.egress_guard.policy is not None and self.egress_guard.policy.allows(host, method)
 
     def read_issue(self, repo: str, issue_number: int, token: str | None = None) -> dict[str, Any]:
         owner, name = parse_repo(repo)

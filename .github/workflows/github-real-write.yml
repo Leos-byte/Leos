@@ -24,12 +24,15 @@ jobs:
       - name: Install package
         run: pip install -e ".[dev]"
 
-      - name: Run gated GitHub real-write smoke
+      - name: Run production GitHub real-write smoke
         env:
           LEOS_ENABLE_REAL_GITHUB_WRITES: "1"
           LEOS_GITHUB_TEST_REPO: ${{ inputs.test_repo }}
+          LEOS_GITHUB_TEST_REPO_MUST_BE_DISPOSABLE: "1"
           LEOS_GITHUB_BASE_BRANCH: ${{ inputs.base_branch }}
           LEOS_GITHUB_WORK_BRANCH_PREFIX: "leos/"
           LEOS_GITHUB_TOKEN_SECRET_REF: "LEOS_GITHUB_TOKEN"
           LEOS_GITHUB_TOKEN: ${{ secrets.LEOS_GITHUB_TOKEN }}
-        run: python examples/github_rest_agent/run_real_write_gated.py
+          LEOS_APPROVAL_HMAC_SECRET_REF: "LEOS_APPROVAL_HMAC_SECRET"
+          LEOS_APPROVAL_HMAC_SECRET: ${{ secrets.LEOS_APPROVAL_HMAC_SECRET }}
+        run: python examples/github_rest_agent/run_production_github_smoke.py

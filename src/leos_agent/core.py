@@ -19,6 +19,8 @@ from .approval_exchange import (
     build_decision_for_packet,
     read_approval_decision,
     read_approval_packet,
+    sign_approval_decision,
+    verify_approval_decision_signature,
     write_approval_decision,
     write_approval_packet,
 )
@@ -454,12 +456,14 @@ __all__ = [
     "safe_json_dumps",
     "safe_file_write_causal_contract",
     "sanitize_for_boundary",
+    "sign_approval_decision",
     "sign_policy",
     "validate_policy_config",
     "validate_json_schema",
     "tool_manifest_from_mapping",
     "validate_tool_manifest",
     "verify_policy_manifest",
+    "verify_approval_decision_signature",
     "write_approval_decision",
     "write_approval_packet",
 ]

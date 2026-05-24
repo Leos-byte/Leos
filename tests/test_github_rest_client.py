@@ -88,6 +88,9 @@ class GitHubRESTClientTests(unittest.TestCase):
         self.assertTrue(client.runtime_egress_enforced)
         self.assertTrue(client.runtime_egress_policy_configured)
         self.assertEqual(client.runtime_egress_mode, "enforced")
+        self.assertEqual(client.runtime_egress_host, "api.github.com")
+        self.assertTrue(client.runtime_allows_egress("api.github.com", "GET"))
+        self.assertFalse(client.runtime_allows_egress("evil.example", "GET"))
 
     def test_enforced_egress_blocks_wrong_host_and_method(self) -> None:
         transport = FakeGitHubTransport([_json_response(200, {})])

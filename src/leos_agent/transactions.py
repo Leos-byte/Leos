@@ -33,7 +33,7 @@ from .errors import (
 )
 from .goals import GoalProgress, ResourceBudget
 from .plans import ActionStep, StateCondition, TransactionPlan
-from .policy import ApprovalGate, PolicyEngine
+from .policy import PRODUCTION_PROFILE_NAMES, ApprovalGate, PolicyEngine
 from .recovery import ManualRecoveryPacket
 from .sandbox import SandboxRunner
 from .state import TrustLevel, WorldState
@@ -104,7 +104,7 @@ class TransactionManager:
             try:
                 tool = self.registry.get(step.tool_name)
             except KeyError as exc:
-                if self.policy.profile_name != "production_locked_down":
+                if self.policy.profile_name not in PRODUCTION_PROFILE_NAMES:
                     raise
                 step.status = StepStatus.BLOCKED
                 error: LeosError = PolicyDenied(f"Unknown tool: {step.tool_name}")
@@ -132,7 +132,7 @@ class TransactionManager:
                     forward_methods=list(egress_assessment.forward_methods),
                     rollback_methods=list(egress_assessment.rollback_methods),
                     profile=self.policy.profile_name,
-                    policy_name="production_locked_down",
+                    policy_name=self.policy.profile_name,
                     network_access=tool.spec.network_access,
                     reason=egress_assessment.reason,
                 )
@@ -270,6 +270,35 @@ class TransactionManager:
                 step.status = StepStatus.DRY_RUN_OK
                 self.audit_log.record("step.dry_run_ok", dry_run.message, step_id=step.step_id, tool=step.tool_name)
                 dry_run_recorded = True
+                if self.policy.require_signed_approval and not bool(
+                    getattr(self.approval_gate, "signed_approval_enforced", False)
+                ):
+                    step.status = StepStatus.BLOCKED
+                    signature_issue = f"{self.policy.profile_name} requires signed approval decisions"
+                    error = PolicyDenied(signature_issue)
+                    self.audit_log.record(
+                        "approval.signature_required",
+                        "Signed approval gate is required by production policy",
+                        step_id=step.step_id,
+                        tool=step.tool_name,
+                        profile=self.policy.profile_name,
+                        reason=signature_issue,
+                        error_type=type(error).__name__,
+                    )
+                    self.audit_log.record(
+                        "step.blocked",
+                        "Step blocked by policy",
+                        step_id=step.step_id,
+                        tool=step.tool_name,
+                        decision="denied",
+                        reason=signature_issue,
+                        rule_name=decision_result.rule_name,
+                        reversibility=step.reversibility.value,
+                        compensation_strategy=step.compensation_strategy.value,
+                        error_type=type(error).__name__,
+                    )
+                    self._rollback(rollback_stack, state, plan=plan)
+                    break
                 packet = build_approval_packet(
                     plan=plan,
                     step=step,
@@ -558,7 +587,7 @@ class TransactionManager:
         if target_tool.spec.network_access and not allow_network_tools:
             if (
                 tool is not None
-                and self.policy.profile_name == "production_locked_down"
+                and self.policy.profile_name in PRODUCTION_PROFILE_NAMES
                 and self.policy.egress_policy is not None
             ):
                 return None
@@ -640,7 +669,7 @@ class TransactionManager:
             try:
                 tool = self.registry.get(step.tool_name)
             except KeyError as exc:
-                if self.policy.profile_name != "production_locked_down":
+                if self.policy.profile_name not in PRODUCTION_PROFILE_NAMES:
                     raise
                 self._record_budget_exceeded(
                     step,
@@ -788,7 +817,7 @@ class TransactionManager:
         return issues
 
     def _runtime_attestation_block_reason(self, step: ActionStep, tool: Tool) -> str | None:
-        if self.policy.profile_name != "production_locked_down":
+        if self.policy.profile_name not in PRODUCTION_PROFILE_NAMES:
             return None
         if not (tool.spec.network_access or Permission.NETWORK in tool.spec.permissions):
             return None
@@ -804,6 +833,20 @@ class TransactionManager:
         else:
             attestations = {}
 
+        expected_host = tool.spec.egress_host or ""
+        runtime_host = str(attestations.get("runtime_egress_host", ""))
+        host_match = bool(expected_host and runtime_host == expected_host)
+        forward_methods = tuple(str(method).upper() for method in tool.spec.egress_methods)
+        rollback_methods = tuple(str(method).upper() for method in tool.spec.rollback_egress_methods)
+        mode = str(attestations.get("runtime_egress_mode", "unknown"))
+        runtime_allows = getattr(getattr(tool, "client", None), "runtime_allows_egress", None)
+        if callable(runtime_allows) and expected_host and mode == "enforced":
+            missing_forward = tuple(method for method in forward_methods if not runtime_allows(expected_host, method))
+            missing_rollback = tuple(method for method in rollback_methods if not runtime_allows(expected_host, method))
+        else:
+            missing_forward = ()
+            missing_rollback = ()
+
         self.audit_log.record(
             "runtime.attestation_checked",
             "Runtime attestations checked for production network tool",
@@ -813,11 +856,17 @@ class TransactionManager:
             network_access=tool.spec.network_access,
             runtime_egress_enforced=attestations.get("runtime_egress_enforced"),
             runtime_egress_policy_configured=attestations.get("runtime_egress_policy_configured"),
-            runtime_egress_mode=attestations.get("runtime_egress_mode"),
-            runtime_egress_host=attestations.get("runtime_egress_host"),
+            runtime_egress_mode=mode,
+            runtime_egress_host=runtime_host,
+            expected_egress_host=expected_host,
+            host_match=host_match,
+            expected_forward_methods=list(forward_methods),
+            expected_rollback_methods=list(rollback_methods),
+            runtime_missing_forward_methods=list(missing_forward),
+            runtime_missing_rollback_methods=list(missing_rollback),
         )
 
-        reason = "production_locked_down requires runtime egress enforcement for network tools"
+        reason = f"{self.policy.profile_name} requires runtime egress enforcement for network tools"
         if not attestations:
             self.audit_log.record(
                 "runtime.attestation_failed",
@@ -829,7 +878,6 @@ class TransactionManager:
                 reason=reason,
             )
             return reason
-        mode = str(attestations.get("runtime_egress_mode", "unknown"))
         if (
             attestations.get("runtime_egress_enforced") is not True
             or attestations.get("runtime_egress_policy_configured") is not True
@@ -845,7 +893,68 @@ class TransactionManager:
                 runtime_egress_enforced=attestations.get("runtime_egress_enforced"),
                 runtime_egress_policy_configured=attestations.get("runtime_egress_policy_configured"),
                 runtime_egress_mode=mode,
-                runtime_egress_host=attestations.get("runtime_egress_host"),
+                runtime_egress_host=runtime_host,
+                expected_egress_host=expected_host,
+                host_match=host_match,
+                reason=reason,
+            )
+            return reason
+        if mode == "enforced" and not host_match:
+            reason = "production profile requires runtime egress host to match tool egress host"
+            self.audit_log.record(
+                "runtime.attestation_failed",
+                "Runtime attestation failed for production network tool",
+                step_id=step.step_id,
+                tool=step.tool_name,
+                profile=self.policy.profile_name,
+                network_access=tool.spec.network_access,
+                runtime_egress_mode=mode,
+                runtime_egress_host=runtime_host,
+                expected_egress_host=expected_host,
+                host_match=host_match,
+                reason=reason,
+            )
+            return reason
+        if mode == "enforced" and not callable(runtime_allows):
+            reason = "production profile requires runtime egress method attestation"
+            self.audit_log.record(
+                "runtime.attestation_failed",
+                "Runtime attestation failed for production network tool",
+                step_id=step.step_id,
+                tool=step.tool_name,
+                profile=self.policy.profile_name,
+                network_access=tool.spec.network_access,
+                runtime_egress_mode=mode,
+                runtime_egress_host=runtime_host,
+                expected_egress_host=expected_host,
+                reason=reason,
+            )
+            return reason
+        if missing_forward:
+            reason = "production profile runtime egress policy does not allow required forward methods"
+            self.audit_log.record(
+                "runtime.attestation_failed",
+                "Runtime attestation failed for production network tool",
+                step_id=step.step_id,
+                tool=step.tool_name,
+                profile=self.policy.profile_name,
+                expected_egress_host=expected_host,
+                runtime_egress_host=runtime_host,
+                runtime_missing_forward_methods=list(missing_forward),
+                reason=reason,
+            )
+            return reason
+        if missing_rollback:
+            reason = "production profile runtime egress policy does not allow required rollback methods"
+            self.audit_log.record(
+                "runtime.attestation_failed",
+                "Runtime attestation failed for production network tool",
+                step_id=step.step_id,
+                tool=step.tool_name,
+                profile=self.policy.profile_name,
+                expected_egress_host=expected_host,
+                runtime_egress_host=runtime_host,
+                runtime_missing_rollback_methods=list(missing_rollback),
                 reason=reason,
             )
             return reason
@@ -933,21 +1042,21 @@ class TransactionManager:
             )
 
     def _rollback_egress_block_reason(self, tool: Tool) -> tuple[str, tuple[str, ...], str] | None:
-        if self.policy.profile_name != "production_locked_down":
+        if self.policy.profile_name not in PRODUCTION_PROFILE_NAMES:
             return None
         if not (tool.spec.network_access or Permission.NETWORK in tool.spec.permissions):
             return None
         host = tool.spec.egress_host or ""
         methods = tuple(str(method).upper() for method in tool.spec.rollback_egress_methods)
         if self.policy.egress_policy is None:
-            return host, methods, "production_locked_down forbids rollback egress without an explicit policy"
+            return host, methods, f"{self.policy.profile_name} forbids rollback egress without an explicit policy"
         if not host:
-            return host, methods, "production_locked_down rollback egress missing host"
+            return host, methods, f"{self.policy.profile_name} rollback egress missing host"
         if not methods:
-            return host, methods, f"production_locked_down requires rollback egress methods for {tool.spec.name}"
+            return host, methods, f"{self.policy.profile_name} requires rollback egress methods for {tool.spec.name}"
         missing = tuple(method for method in methods if not self.policy.egress_policy.allows(host, method))
         if missing:
-            reason = f"production_locked_down egress policy does not allow rollback {','.join(missing)} {host}"
+            reason = f"{self.policy.profile_name} egress policy does not allow rollback {','.join(missing)} {host}"
             return host, methods, reason
         return None
 

@@ -10,6 +10,8 @@ from leos_agent.approval_exchange import (
     build_decision_for_packet,
     read_approval_decision,
     read_approval_packet,
+    sign_approval_decision,
+    verify_approval_decision_signature,
     write_approval_decision,
     write_approval_packet,
 )
@@ -52,6 +54,79 @@ class ApprovalExchangeTests(unittest.TestCase):
             returned = gate.request_packet(packet, ActionStep("tool", {}, "run"))
 
             self.assertEqual(returned.decision, ApprovalDecisionValue.APPROVE)
+
+    def test_signed_approval_decision_roundtrip(self) -> None:
+        packet = _packet()
+        decision = build_decision_for_packet(packet, ApprovalDecisionValue.APPROVE, "human")
+        signature = sign_approval_decision(decision, "approval-secret")
+
+        self.assertTrue(verify_approval_decision_signature(decision, "approval-secret", signature))
+        tampered = build_decision_for_packet(packet, ApprovalDecisionValue.DENY, "human")
+        self.assertFalse(verify_approval_decision_signature(tampered, "approval-secret", signature))
+
+    def test_file_approval_gate_requires_valid_signature(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            packet_dir = Path(tmp) / "packets"
+            decision_dir = Path(tmp) / "decisions"
+            packet = _packet()
+            decision = build_decision_for_packet(packet, ApprovalDecisionValue.APPROVE, "alice")
+            signature = sign_approval_decision(decision, "approval-secret")
+            write_approval_decision(decision, decision_dir / f"{packet.approval_id}.json", signature=signature)
+            gate = FileApprovalGate(
+                packet_dir,
+                decision_dir,
+                allowed_approvers={"alice"},
+                signature_secret="approval-secret",
+                require_signature=True,
+            )
+
+            returned = gate.request_packet(packet, ActionStep("tool", {}, "run"))
+
+            self.assertEqual(returned.decision, ApprovalDecisionValue.APPROVE)
+
+    def test_file_approval_gate_denies_missing_signature(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            packet_dir = Path(tmp) / "packets"
+            decision_dir = Path(tmp) / "decisions"
+            packet = _packet()
+            decision = build_decision_for_packet(packet, ApprovalDecisionValue.APPROVE, "alice")
+            write_approval_decision(decision, decision_dir / f"{packet.approval_id}.json")
+            gate = FileApprovalGate(
+                packet_dir,
+                decision_dir,
+                allowed_approvers={"alice"},
+                signature_secret="approval-secret",
+                require_signature=True,
+            )
+
+            returned = gate.request_packet(packet, ActionStep("tool", {}, "run"))
+
+            self.assertEqual(returned.decision, ApprovalDecisionValue.DENY)
+            self.assertEqual(returned.reason, "approval decision signature required")
+
+    def test_file_approval_gate_denies_invalid_signature(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            packet_dir = Path(tmp) / "packets"
+            decision_dir = Path(tmp) / "decisions"
+            packet = _packet()
+            decision = build_decision_for_packet(packet, ApprovalDecisionValue.APPROVE, "alice")
+            write_approval_decision(
+                decision,
+                decision_dir / f"{packet.approval_id}.json",
+                signature="hmac-sha256:not-valid",
+            )
+            gate = FileApprovalGate(
+                packet_dir,
+                decision_dir,
+                allowed_approvers={"alice"},
+                signature_secret="approval-secret",
+                require_signature=True,
+            )
+
+            returned = gate.request_packet(packet, ActionStep("tool", {}, "run"))
+
+            self.assertEqual(returned.decision, ApprovalDecisionValue.DENY)
+            self.assertEqual(returned.reason, "approval decision signature invalid")
 
     def test_file_approval_gate_allows_approved_approver(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

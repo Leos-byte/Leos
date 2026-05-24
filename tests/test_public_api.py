@@ -192,6 +192,8 @@ class PublicAPITests(unittest.TestCase):
             read_approval_packet,
             render_approval_packet_html,
             render_approval_packet_markdown,
+            sign_approval_decision,
+            verify_approval_decision_signature,
             write_approval_decision,
             write_approval_packet,
         )
@@ -221,6 +223,8 @@ class PublicAPITests(unittest.TestCase):
         self.assertTrue(hasattr(leos_agent, "RuntimeEgressGuard"))
         self.assertTrue(hasattr(leos_agent, "ManualRecoveryPacket"))
         self.assertTrue(hasattr(leos_agent, "FileApprovalGate"))
+        self.assertTrue(hasattr(leos_agent, "sign_approval_decision"))
+        self.assertTrue(hasattr(leos_agent, "verify_approval_decision_signature"))
 
     def test_core_exports_network_observation_helpers(self) -> None:
         from leos_agent.core import DNSResolver, make_untrusted_observation  # noqa: F401

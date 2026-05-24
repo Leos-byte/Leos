@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import os
 import time
@@ -13,7 +15,7 @@ from typing import Any
 from .approval import ApprovalDecision, ApprovalDecisionValue, ApprovalPacket
 from .plans import ActionStep
 from .policy import ApprovalGate
-from .sanitization import safe_json_dumps
+from .sanitization import redact_secrets, safe_json_dumps
 
 
 def write_approval_packet(packet: ApprovalPacket, path: Path) -> None:
@@ -24,21 +26,15 @@ def read_approval_packet(path: Path) -> ApprovalPacket:
     return ApprovalPacket.from_mapping(_read_json(path))
 
 
-def write_approval_decision(decision: ApprovalDecision, path: Path) -> None:
-    _write_json(path, decision.as_dict())
+def write_approval_decision(decision: ApprovalDecision, path: Path, *, signature: str | None = None) -> None:
+    data = decision.as_dict()
+    if signature is not None:
+        data["signature"] = signature
+    _write_json(path, data)
 
 
 def read_approval_decision(path: Path) -> ApprovalDecision:
-    data = _read_json(path)
-    decided_at = data.get("decided_at", time.time())
-    return ApprovalDecision(
-        approval_id=str(data["approval_id"]),
-        step_hash=str(data["step_hash"]),
-        decision=ApprovalDecisionValue(str(data["decision"])),
-        decided_at=float(decided_at) if isinstance(decided_at, (str, int, float)) else time.time(),
-        approver=str(data["approver"]) if data.get("approver") is not None else None,
-        reason=str(data["reason"]) if data.get("reason") is not None else None,
-    )
+    return _decision_from_mapping(_read_json(path))
 
 
 def build_decision_for_packet(
@@ -56,6 +52,18 @@ def build_decision_for_packet(
     )
 
 
+def sign_approval_decision(decision: ApprovalDecision, secret: str) -> str:
+    """Return an HMAC signature for an approval decision JSON payload."""
+
+    digest = hmac.new(secret.encode("utf-8"), _decision_signature_payload(decision), hashlib.sha256).hexdigest()
+    return f"hmac-sha256:{digest}"
+
+
+def verify_approval_decision_signature(decision: ApprovalDecision, secret: str, signature: str) -> bool:
+    expected = sign_approval_decision(decision, secret)
+    return hmac.compare_digest(expected, signature)
+
+
 class FileApprovalGate(ApprovalGate):
     """Writes approval packets to disk and consumes matching decision files."""
 
@@ -66,6 +74,8 @@ class FileApprovalGate(ApprovalGate):
         timeout_seconds: float = 0.0,
         allowed_approvers: set[str] | None = None,
         require_private_decision_files: bool = True,
+        signature_secret: str | None = None,
+        require_signature: bool = False,
     ) -> None:
         super().__init__(approver=None)
         self.packet_dir = packet_dir
@@ -73,6 +83,9 @@ class FileApprovalGate(ApprovalGate):
         self.timeout_seconds = timeout_seconds
         self.allowed_approvers = allowed_approvers
         self.require_private_decision_files = require_private_decision_files
+        self.signature_secret = signature_secret
+        self.require_signature = require_signature
+        self.signed_approval_enforced = bool(require_signature and signature_secret)
         self.packet_dir.mkdir(parents=True, exist_ok=True)
         self.decision_dir.mkdir(parents=True, exist_ok=True)
 
@@ -90,7 +103,8 @@ class FileApprovalGate(ApprovalGate):
                     ApprovalDecisionValue.DENY,
                     reason=permission_issue,
                 )
-            decision = read_approval_decision(decision_path)
+            decision_data = _read_json(decision_path)
+            decision = _decision_from_mapping(decision_data)
             allowlist_issue = self._approver_allowlist_issue(decision)
             if allowlist_issue is not None:
                 return ApprovalDecision(
@@ -99,6 +113,15 @@ class FileApprovalGate(ApprovalGate):
                     ApprovalDecisionValue.DENY,
                     approver=decision.approver,
                     reason=allowlist_issue,
+                )
+            signature_issue = self._signature_issue(decision, decision_data)
+            if signature_issue is not None:
+                return ApprovalDecision(
+                    packet.approval_id,
+                    packet.step_hash,
+                    ApprovalDecisionValue.DENY,
+                    approver=decision.approver,
+                    reason=signature_issue,
                 )
             return decision
         return ApprovalDecision(packet.approval_id, packet.step_hash, ApprovalDecisionValue.DENY)
@@ -110,6 +133,18 @@ class FileApprovalGate(ApprovalGate):
             return "approver required"
         if decision.approver not in self.allowed_approvers:
             return "approver not allowed"
+        return None
+
+    def _signature_issue(self, decision: ApprovalDecision, data: Mapping[str, Any]) -> str | None:
+        if not self.require_signature:
+            return None
+        if not self.signature_secret:
+            return "approval decision signature required"
+        signature = data.get("signature")
+        if not isinstance(signature, str) or not signature:
+            return "approval decision signature required"
+        if not verify_approval_decision_signature(decision, self.signature_secret, signature):
+            return "approval decision signature invalid"
         return None
 
     def _decision_file_permission_issue(self, path: Path) -> str | None:
@@ -137,6 +172,31 @@ def _read_json(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError("approval exchange file must contain a JSON object")
     return data
+
+
+def _decision_from_mapping(data: Mapping[str, Any]) -> ApprovalDecision:
+    decided_at = data.get("decided_at", time.time())
+    return ApprovalDecision(
+        approval_id=str(data["approval_id"]),
+        step_hash=str(data["step_hash"]),
+        decision=ApprovalDecisionValue(str(data["decision"])),
+        decided_at=float(decided_at) if isinstance(decided_at, (str, int, float)) else time.time(),
+        approver=str(data["approver"]) if data.get("approver") is not None else None,
+        reason=str(data["reason"]) if data.get("reason") is not None else None,
+    )
+
+
+def _decision_signature_payload(decision: ApprovalDecision) -> bytes:
+    payload = {
+        "approval_id": decision.approval_id,
+        "step_hash": decision.step_hash,
+        "decision": decision.decision.value,
+        "decided_at": decision.decided_at,
+        "approver": decision.approver,
+        "reason": decision.reason,
+    }
+    safe_payload = redact_secrets(payload)
+    return json.dumps(safe_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
 def _safe_approval_id(approval_id: str) -> str:

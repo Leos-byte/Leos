@@ -97,6 +97,13 @@ class InMemoryGitHubClient:
     def runtime_egress_mode(self) -> str:
         return "in_memory"
 
+    @property
+    def runtime_egress_host(self) -> str:
+        return _GITHUB_EGRESS_HOST
+
+    def runtime_allows_egress(self, host: str, method: str) -> bool:
+        return host == _GITHUB_EGRESS_HOST and method.upper() in {"GET", "POST", "PATCH", "PUT", "DELETE"}
+
     def seed_issue(self, repo: str, issue_number: int, *, title: str, body: str) -> None:
         self.issues[(repo, issue_number)] = {"repo": repo, "number": issue_number, "title": title, "body": body}
 
@@ -271,7 +278,7 @@ class _GitHubToolBase:
             "runtime_egress_enforced": bool(getattr(self.client, "runtime_egress_enforced", False)),
             "runtime_egress_policy_configured": bool(getattr(self.client, "runtime_egress_policy_configured", False)),
             "runtime_egress_mode": str(getattr(self.client, "runtime_egress_mode", "unknown")),
-            "runtime_egress_host": str(getattr(self.client, "base_url", self.spec.egress_host or "")),
+            "runtime_egress_host": str(getattr(self.client, "runtime_egress_host", self.spec.egress_host or "")),
         }
 
     def _remember_rollback_credential(

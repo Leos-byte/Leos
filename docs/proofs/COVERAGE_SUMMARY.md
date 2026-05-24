@@ -5,7 +5,7 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `3.556`
+- Duration seconds: `3.781`
 - Truncated: `False`
 
 ### stdout
@@ -111,7 +111,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: c995a98b-8fe9-478c-9bfc-960b64adad75
+Enqueued: efb2efab-a059-42db-9c22-7b0d572f0b37
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -123,7 +123,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=964b58d6d18a9cbfe0b0fb7a88a51092602e01691843e5b9e71f8d8e7b2c42d2 observed=d82dd9b2da2718a823906db866391f56dd08dee9daf5ce36be41d386402dcc47
+  [0] event_hash_mismatch: expected=9afdfbcff1d92903eb9ec2a384a1fe633eae005db52cd7962a8a2f1e1d1bdc19 observed=4a0476337f0cd458f2effe523d08b7897daa3084c15727f77d0f7a905f6f8ebb
 Integrity: OK
 Applied events: 1
 Facts:
@@ -137,7 +137,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmp_rmwzigg/signed.json
+Signed manifest written to /tmp/tmpi6qxy5xu/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -146,14 +146,14 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmpie_dvvki/trace.html
+<redacted> written to /tmp/tmpq03ozita/trace.html
 
 ```
 
 ### stderr
 
 ```text
-................................................................................................Error: file not found: /tmp/tmpy7fhiv2_/nonexistent.txt
+....................................................................................................Error: file not found: /tmp/tmpv_2rx86x/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -176,9 +176,92 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-.......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................./usr/lib64/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 404: 'missing'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220040>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220220>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2204f0>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2205e0>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2206d0>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2208b0>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2207c0>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2209a0>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220d60>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220f40>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221120>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221a80>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221030>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220310>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220e50>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221210>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221300>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2213f0>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2214e0>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2215d0>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2216c0>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2217b0>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2218a0>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221990>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220c70>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220a90>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221b70>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.............
 ----------------------------------------------------------------------
-Ran 748 tests in 2.978s
+Ran 767 tests in 3.193s
 
 OK
 
@@ -189,7 +272,7 @@ OK
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.771`
+- Duration seconds: `0.796`
 - Truncated: `False`
 
 ### stdout
@@ -200,7 +283,7 @@ Name                                       Stmts   Miss Branch BrPart  Cover
 src/leos_agent/__init__.py                     2      0      0      0   100%
 src/leos_agent/agent_loop.py                 206     19     56     11    86%
 src/leos_agent/approval.py                    87      2     16      2    96%
-src/leos_agent/approval_exchange.py           86      4     22      2    94%
+src/leos_agent/approval_exchange.py          120      5     34      3    95%
 src/leos_agent/audit.py                      143      7     46     11    90%
 src/leos_agent/causal.py                      92      1     18      1    98%
 src/leos_agent/causal_contract.py            108     17     44      9    80%
@@ -215,8 +298,8 @@ src/leos_agent/errors.py                      24      0      0      0   100%
 src/leos_agent/eval_runner.py                354     18     10      2    94%
 src/leos_agent/evaluator_registry.py         213     22     86     14    85%
 src/leos_agent/github_agent.py                74      6     18      4    89%
-src/leos_agent/github_client.py              255     11     76      7    94%
-src/leos_agent/github_tools.py               352     41    100     39    82%
+src/leos_agent/github_client.py              260     11     76      7    94%
+src/leos_agent/github_tools.py               357     42    100     39    82%
 src/leos_agent/goal_evaluator.py              29      1      4      2    91%
 src/leos_agent/goals.py                       92      8     18      3    88%
 src/leos_agent/kernel.py                      46      2      6      2    92%
@@ -228,7 +311,7 @@ src/leos_agent/network_guard.py               33      2     10      2    91%
 src/leos_agent/network_tools.py              168     26     48      7    84%
 src/leos_agent/planner.py                    150     12     58     14    88%
 src/leos_agent/plans.py                       89      2      8      3    95%
-src/leos_agent/policy.py                     385     71    156     22    79%
+src/leos_agent/policy.py                     396     71    158     22    80%
 src/leos_agent/policy_manifest.py             51      4     12      4    87%
 src/leos_agent/prompts.py                     30      1      2      1    94%
 src/leos_agent/proof.py                      216      9     42      8    93%
@@ -246,8 +329,8 @@ src/leos_agent/task_queue.py                 242     24     50     10    88%
 src/leos_agent/tool_manifest_registry.py      81     11     34      9    83%
 src/leos_agent/tools.py                      149      7     28     10    90%
 src/leos_agent/trace_viewer.py                68      0     20      0   100%
-src/leos_agent/transactions.py               446     37    172     16    91%
+src/leos_agent/transactions.py               481     40    184     17    91%
 ----------------------------------------------------------------------------
-TOTAL                                       6399    682   1738    338    86%
+TOTAL                                       6489    687   1764    340    86%
 
 ```

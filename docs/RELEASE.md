@@ -7,6 +7,7 @@ claims release-grade evidence for the current commit:
 ```bash
 python scripts/generate_proofs.py --output docs/proofs --require-clean
 python scripts/check_release_proof.py
+python scripts/check_production_readiness.py --profile production_github_only
 git add docs/proofs
 git commit -m "chore(proofs): refresh release-grade evidence"
 ```
@@ -25,3 +26,9 @@ CI runs `check_release_proof.py` only on `main`, before generating local proof
 documents for the workflow run. Pull request CI still generates local proof
 artifacts, but it does not require contributors to refresh release proof metadata
 on every ordinary code change.
+
+`check_production_readiness.py --profile production_github_only` is a scoped
+repository gate for the GitHub-only runtime boundary. It checks that the
+release proof is current, the profile is fail-closed to `api.github.com`, signed
+approval is required, allowed GitHub tools declare egress/rollback metadata, CI
+contains the main-only proof check, and real-write smoke remains manual.

@@ -102,6 +102,16 @@ wildcards are rejected, and private or localhost hosts are blocked. This guard
 protects direct client use inside Leos, but production deployments still need
 OS, container, or network firewall egress enforcement.
 
+`production_github_only` is a narrower profile for bounded GitHub
+software-engineering workflows. It allowlists only the GitHub issue/file/branch/
+PR/comment/CI tools plus harmless echo, fixes egress to `api.github.com`,
+requires typed goal criteria, and requires signed approval for consequential
+GitHub writes or messages. Runtime attestations bind each network tool's
+declared `egress_host`, `egress_methods`, and `rollback_egress_methods` to the
+actual client egress policy before approval is requested. This profile is scoped
+to GitHub-only workflows and is not a general production autonomous-agent
+profile.
+
 `GitHubIssuePlanProvider` is a deterministic bridge between GitHub observations
 and the closed loop runtime. It does not call GitHub directly. Its first
 proposal reads the issue and target file through normal tools. Once those facts
@@ -213,7 +223,9 @@ replan or stop
 - Use file-based approval exchange for non-interactive local/manual workflows
   when a human needs to review a packet out of band. Decision files still bind
   to the packet approval id and step hash and cannot bypass production hard
-  blocks.
+  blocks. When HMAC signatures are required, the decision JSON must carry a
+  signature over the approval id, step hash, decision, approver, reason, and
+  timestamp.
 - For release evidence, regenerate clean proofs and verify the manifest:
 
   ```bash

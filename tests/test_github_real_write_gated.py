@@ -6,6 +6,7 @@ import sys
 import unittest
 from pathlib import Path
 
+from examples.github_rest_agent import run_production_github_smoke
 from examples.github_rest_agent.run_real_write_gated import (
     _evaluate_real_write_goal,
     _production_github_policy,
@@ -43,6 +44,55 @@ class GitHubRealWriteGatedTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0)
         self.assertIn("real write disabled", result.stdout)
+
+    def test_production_smoke_disabled_by_default(self) -> None:
+        script = Path("examples/github_rest_agent/run_production_github_smoke.py")
+        env = dict(os.environ)
+        env.pop("LEOS_ENABLE_REAL_GITHUB_WRITES", None)
+        result = subprocess.run(  # noqa: S603
+            [sys.executable, str(script)],
+            check=False,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("real write disabled", result.stdout)
+
+    def test_production_smoke_refuses_without_disposable_repo_flag(self) -> None:
+        env = {
+            "LEOS_ENABLE_REAL_GITHUB_WRITES": "1",
+            "LEOS_GITHUB_TEST_REPO": "owner/leos-smoke-test",
+            "LEOS_GITHUB_TOKEN_SECRET_REF": "TOKEN_ENV",
+            "TOKEN_ENV": "ghp_test_secret",
+            "LEOS_APPROVAL_HMAC_SECRET_REF": "APPROVAL_ENV",
+            "APPROVAL_ENV": "approval-secret",
+            "LEOS_GITHUB_SMOKE_FAKE": "1",
+        }
+        with unittest.mock.patch.dict(os.environ, env, clear=True), unittest.mock.patch("sys.stdout"):
+            result = run_production_github_smoke.main()
+
+        self.assertEqual(result, 1)
+
+    def test_production_smoke_fake_path_succeeds_without_token_leak(self) -> None:
+        env = {
+            "LEOS_ENABLE_REAL_GITHUB_WRITES": "1",
+            "LEOS_GITHUB_TEST_REPO": "owner/leos-smoke-test",
+            "LEOS_GITHUB_TEST_REPO_MUST_BE_DISPOSABLE": "1",
+            "LEOS_GITHUB_TOKEN_SECRET_REF": "TOKEN_ENV",
+            "TOKEN_ENV": "ghp_test_secret",
+            "LEOS_APPROVAL_HMAC_SECRET_REF": "APPROVAL_ENV",
+            "APPROVAL_ENV": "approval-secret",
+            "LEOS_GITHUB_SMOKE_FAKE": "1",
+        }
+        with unittest.mock.patch.dict(os.environ, env, clear=True), unittest.mock.patch("sys.stdout") as stdout:
+            result = run_production_github_smoke.main()
+
+        self.assertEqual(result, 0)
+        output = "".join(str(call.args[0]) for call in stdout.write.call_args_list if call.args)
+        self.assertIn("production_github_only", output)
+        self.assertIn("succeeded", output)
+        self.assertNotIn("ghp_test_secret", output)
 
     def test_protected_branch_cleanup_rejected(self) -> None:
         client = InMemoryGitHubClient()
