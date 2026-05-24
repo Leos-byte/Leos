@@ -2,9 +2,9 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-05-23T13:48:51.450643+00:00`
-- Commit SHA: `aab757cd3b05615a48b0b28052cfe6f3fe6e182e`
-- Branch: `fix/production-runtime-hardening`
+- Generated at: `2026-05-24T04:28:05.170675+00:00`
+- Commit SHA: `5d982d1b25c482a71b2e60a9ca74df0dd610a47e`
+- Branch: `fix/github-only-production-readiness`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 
