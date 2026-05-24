@@ -109,9 +109,11 @@ network access or external APIs.
 | GitHub REST client | implemented with fake-transport tests; real writes gated |
 | GitHub issue-to-PR orchestration | AgentLoop dry-run path with fake REST transport |
 | Production locked-down policy | fail-closed profile for typed goals, strong sandbox, schemas, causal contracts, and egress methods |
+| Production GitHub-only profile | scoped fail-closed profile for bounded GitHub SE workflows only |
 | Approval packets | anti-replay packet binding for human-gated consequential actions |
-| File approval exchange | local non-interactive approval packet/decision files |
+| File approval exchange | local non-interactive approval packet/decision files with optional HMAC signatures |
 | Runtime egress guard | opt-in GitHubRESTClient host/method enforcement |
+| Production readiness check | repository check for scoped `production_github_only` readiness gates |
 | Manual recovery packets | structured rollback failure/operator recovery records |
 | Failure-driven replanning | bounded repair loop for selected failure classes |
 | Local software engineering demo | implemented, no network/API token required |
@@ -158,9 +160,13 @@ and counts for test evidence, never raw token strings.
 Real GitHub writes are disabled by default. The gated smoke path requires
 `LEOS_ENABLE_REAL_GITHUB_WRITES=1`, a test repository, and a token secret
 reference. It writes only through GitHub tools under `PolicyEngine`,
-`ApprovalGate`, and `TransactionManager`, uses optimistic guards and PR
-idempotency markers, and is exposed only through a `workflow_dispatch` GitHub
-Actions workflow.
+`ApprovalGate`, and `TransactionManager`. The narrower `production_github_only`
+profile allows only bounded GitHub tools, fixes egress to `api.github.com`,
+requires typed goal criteria, requires runtime egress attestation, and requires
+signed approval for write/message actions. It is a scoped software-engineering
+runtime boundary, not a general production autonomous-agent profile. The smoke
+path uses optimistic guards and PR idempotency markers, and is exposed only
+through a `workflow_dispatch` GitHub Actions workflow.
 
 Run the end-to-end GitHub issue orchestration demo:
 
