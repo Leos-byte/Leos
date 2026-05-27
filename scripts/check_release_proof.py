@@ -51,17 +51,33 @@ def _proof_failures(manifest: dict[str, Any], root: Path) -> list[str]:
     if current is None:
         failures.append("current git commit unavailable")
     elif not _commit_matches_release_flow(root, str(git.get("commit_sha", "")), current):
-        failures.append("git.commit_sha does not match current HEAD or proof-refresh parent")
+        failures.append("git.commit_sha does not match current HEAD, proof-refresh parent, or proof-refresh merge flow")
     return failures
 
 
 def _commit_matches_release_flow(root: Path, manifest_commit: str, current: str) -> bool:
     if manifest_commit == current:
         return True
-    parent = _git(root, "rev-parse", "HEAD^")
+    if _commit_matches_direct_proof_refresh(root, manifest_commit, current):
+        return True
+    return _commit_matches_merge_proof_refresh(root, manifest_commit, current)
+
+
+def _commit_matches_direct_proof_refresh(root: Path, manifest_commit: str, current: str) -> bool:
+    parent = _git(root, "rev-parse", f"{current}^")
     if manifest_commit != parent:
         return False
-    changed = _git(root, "diff", "--name-only", parent, current)
+    return _only_docs_proofs_changed(root, parent, current)
+
+
+def _commit_matches_merge_proof_refresh(root: Path, manifest_commit: str, current: str) -> bool:
+    if _git_returncode(root, "merge-base", "--is-ancestor", manifest_commit, current) != 0:
+        return False
+    return _only_docs_proofs_changed(root, manifest_commit, current)
+
+
+def _only_docs_proofs_changed(root: Path, base: str, head: str) -> bool:
+    changed = _git(root, "diff", "--name-only", base, head)
     if changed is None:
         return False
     paths = [line.strip() for line in changed.splitlines() if line.strip()]
@@ -81,6 +97,21 @@ def _git(root: Path, *args: str) -> str | None:
     except Exception:
         return None
     return proc.stdout.strip() if proc.returncode == 0 else None
+
+
+def _git_returncode(root: Path, *args: str) -> int | None:
+    try:
+        proc = subprocess.run(  # nosec B603,B607
+            ["git", *args],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=5,
+            shell=False,
+        )
+    except Exception:
+        return None
+    return proc.returncode
 
 
 if __name__ == "__main__":

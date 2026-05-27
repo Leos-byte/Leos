@@ -24,13 +24,36 @@ class ReleaseProofCheckTests(unittest.TestCase):
         def fake_git(_root: Path, *args: str) -> str:
             if args == ("rev-parse", "HEAD"):
                 return "proof-refresh"
-            if args == ("rev-parse", "HEAD^"):
+            if args == ("rev-parse", "proof-refresh^"):
                 return "abc"
             if args == ("diff", "--name-only", "abc", "proof-refresh"):
                 return "docs/proofs/MANIFEST.json\ndocs/proofs/PROOF_INDEX.md"
             raise AssertionError(args)
 
         with mock.patch.object(check_release_proof, "_git", side_effect=fake_git):
+            self.assertEqual(check_release_proof._proof_failures(manifest, Path.cwd()), [])
+
+    def test_merge_commit_passes_when_manifest_ancestor_and_only_proofs_changed(self) -> None:
+        manifest = _manifest()
+
+        def fake_git(_root: Path, *args: str) -> str:
+            if args == ("rev-parse", "HEAD"):
+                return "merge-commit"
+            if args == ("rev-parse", "merge-commit^"):
+                return "main-parent"
+            if args == ("diff", "--name-only", "abc", "merge-commit"):
+                return "docs/proofs/MANIFEST.json\ndocs/proofs/TEST_RESULTS.md"
+            raise AssertionError(args)
+
+        def fake_returncode(_root: Path, *args: str) -> int:
+            if args == ("merge-base", "--is-ancestor", "abc", "merge-commit"):
+                return 0
+            raise AssertionError(args)
+
+        with (
+            mock.patch.object(check_release_proof, "_git", side_effect=fake_git),
+            mock.patch.object(check_release_proof, "_git_returncode", side_effect=fake_returncode),
+        ):
             self.assertEqual(check_release_proof._proof_failures(manifest, Path.cwd()), [])
 
     def test_precommit_dirty_fails(self) -> None:
@@ -59,7 +82,7 @@ class ReleaseProofCheckTests(unittest.TestCase):
         def fake_git(_root: Path, *args: str) -> str:
             if args == ("rev-parse", "HEAD"):
                 return "proof-refresh"
-            if args == ("rev-parse", "HEAD^"):
+            if args == ("rev-parse", "proof-refresh^"):
                 return "abc"
             if args == ("diff", "--name-only", "abc", "proof-refresh"):
                 return "docs/proofs/MANIFEST.json\nsrc/leos_agent/core.py"
