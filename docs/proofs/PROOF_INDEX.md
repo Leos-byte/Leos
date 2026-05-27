@@ -2,9 +2,9 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-05-24T04:28:05.170675+00:00`
-- Commit SHA: `5d982d1b25c482a71b2e60a9ca74df0dd610a47e`
-- Branch: `fix/github-only-production-readiness`
+- Generated at: `2026-05-27T11:21:11.212931+00:00`
+- Commit SHA: `03d11f2b45baf96d3bf2be091988ac8dd3b8d05f`
+- Branch: `fix/release-proof-merge-ci`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 

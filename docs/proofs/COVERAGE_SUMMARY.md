@@ -5,7 +5,7 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `3.781`
+- Duration seconds: `3.843`
 - Truncated: `False`
 
 ### stdout
@@ -111,7 +111,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: efb2efab-a059-42db-9c22-7b0d572f0b37
+Enqueued: 7c346b8a-d630-4f8a-8062-adb1b2d4e743
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -123,7 +123,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=9afdfbcff1d92903eb9ec2a384a1fe633eae005db52cd7962a8a2f1e1d1bdc19 observed=4a0476337f0cd458f2effe523d08b7897daa3084c15727f77d0f7a905f6f8ebb
+  [0] event_hash_mismatch: expected=41f34d52ee3570aa2f9cb251021220b2f377a93230f611dbff612a9153751e83 observed=7a947d496fb6ac2a142732ce62c49a3b5cb06edc41ea1aa6ecdb7670625e8c8a
 Integrity: OK
 Applied events: 1
 Facts:
@@ -137,7 +137,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpi6qxy5xu/signed.json
+Signed manifest written to /tmp/tmpr5zdud64/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -146,14 +146,14 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmpq03ozita/trace.html
+<redacted> written to /tmp/tmpt1v8vqdt/trace.html
 
 ```
 
 ### stderr
 
 ```text
-....................................................................................................Error: file not found: /tmp/tmpv_2rx86x/nonexistent.txt
+....................................................................................................Error: file not found: /tmp/tmpw8snn2a3/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -176,92 +176,92 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................./usr/lib64/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 404: 'missing'>
+........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................../usr/lib64/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 404: 'missing'>
   _warnings.warn(self.warn_message, ResourceWarning)
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220040>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e60220>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220220>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e60400>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2204f0>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e606d0>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2205e0>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e607c0>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2206d0>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e608b0>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2208b0>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e60a90>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2207c0>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e609a0>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2209a0>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e60b80>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220d60>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e60f40>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220f40>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e61120>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221120>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e61300>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221a80>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e61c60>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221030>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e61210>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220310>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e604f0>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220e50>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e61030>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221210>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e613f0>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221300>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e614e0>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2213f0>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e615d0>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2214e0>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e616c0>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2215d0>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e617b0>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2216c0>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e618a0>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2217b0>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e61990>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d2218a0>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e61a80>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221990>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e61b70>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220c70>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e60e50>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d220a90>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e60c70>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fb09d221b70>
+/usr/lib64/python3.14/ast.py:46: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff599e61d50>
   return compile(source, filename, mode, flags,
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 .............
 ----------------------------------------------------------------------
-Ran 767 tests in 3.193s
+Ran 768 tests in 3.253s
 
 OK
 
@@ -272,7 +272,7 @@ OK
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.796`
+- Duration seconds: `0.791`
 - Truncated: `False`
 
 ### stdout
