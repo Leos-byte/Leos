@@ -5,7 +5,7 @@
 - Command: `python -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `2.381`
+- Duration seconds: `2.512`
 - Truncated: `False`
 
 ### stdout
@@ -111,7 +111,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: c32df77c-540c-4074-9f5c-cee766970ba1
+Enqueued: 62f3fe82-68af-45ab-840f-6a57c336215b
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -123,7 +123,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=670fbb7df146c0d51bdc9f0950ee8e941a0a748289f96f097094dbce2e6f709b observed=9cdb4afe91dd89e53b45520b88c6285ca411dbc15fbd0c53c6d19e432ec632b0
+  [0] event_hash_mismatch: expected=a8a8b71cafd34eaef2cc104dace36e7b4c0d146075f498e67fac4bbe3fa86eab observed=933d93cfebcfdb83f785552fb64eeb46cb86fd4367fbd949e6858c2af95e763c
 Integrity: OK
 Applied events: 1
 Facts:
@@ -137,7 +137,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmphqftjw5s/signed.json
+Signed manifest written to /tmp/tmpjft635w4/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -146,14 +146,14 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmpi5hool7g/trace.html
+<redacted> written to /tmp/tmp1g79vusl/trace.html
 
 ```
 
 ### stderr
 
 ```text
-....................................................................................................Error: file not found: /tmp/tmpk_nnit2x/nonexistent.txt
+....................................................................................................Error: file not found: /tmp/tmpb4wm5_ft/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -176,9 +176,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+.......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 767 tests in 2.097s
+Ran 768 tests in 2.116s
 
 OK
 
