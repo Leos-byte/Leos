@@ -6,6 +6,7 @@ import json
 import sqlite3
 import time
 from collections.abc import Mapping
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
@@ -25,10 +26,12 @@ class SQLiteRuntimeStore:
 
     def __init__(self, db_path: Path) -> None:
         self.db_path = db_path
+        self._closed = True
         try:
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
             self._conn = sqlite3.connect(str(self.db_path))
             self._conn.row_factory = sqlite3.Row
+            self._closed = False
             self._init_schema()
         except sqlite3.Error as exc:
             raise RuntimeStoreError(f"sqlite runtime store unavailable: {type(exc).__name__}") from exc
@@ -131,7 +134,20 @@ class SQLiteRuntimeStore:
         return _loads_object(row["payload_json"], "checkpoint")
 
     def close(self) -> None:
-        self._conn.close()
+        if not self._closed:
+            self._conn.close()
+            self._closed = True
+
+    def __enter__(self) -> SQLiteRuntimeStore:
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+        del exc_type, exc, traceback
+        self.close()
+
+    def __del__(self) -> None:
+        with suppress(Exception):
+            self.close()
 
     def _init_schema(self) -> None:
         self._conn.executescript(

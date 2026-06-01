@@ -10,6 +10,7 @@ import json
 import os
 import time
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 from leos_agent import (
     ActionStep,
@@ -22,13 +23,13 @@ from leos_agent import (
     GitHubConflictError,
     GitHubCreateBranchTool,
     GitHubGetFileTool,
+    GitHubHTTPResponse,
     GitHubOpenPRTool,
     GitHubRESTClient,
     GitHubUpdateFileTool,
     Goal,
     GoalEvaluationStatus,
     GoalEvaluator,
-    InMemoryGitHubClient,
     PolicyEngine,
     Secret,
     ToolRegistry,
@@ -238,8 +239,101 @@ def main() -> int:
 
 def _client(policy: PolicyEngine):
     if os.environ.get("LEOS_GITHUB_SMOKE_FAKE") == "1":
-        return InMemoryGitHubClient()
+        return GitHubRESTClient(
+            transport=_SmokeFakeGitHubTransport(),
+            egress_policy=policy.egress_policy,
+            enforce_egress=True,
+        )
     return GitHubRESTClient(egress_policy=policy.egress_policy, enforce_egress=True)
+
+
+class _SmokeFakeGitHubTransport:
+    """In-process fake transport that still exercises GitHubRESTClient egress attestation."""
+
+    def __init__(self) -> None:
+        self.branches: dict[str, str] = {"main": "base-sha"}
+        self.files: dict[tuple[str, str], dict[str, str]] = {}
+        self.prs: list[dict[str, object]] = []
+        self.next_pr = 1
+        self.next_comment = 1
+
+    def request(self, method: str, url: str, *, headers, body, timeout_seconds) -> GitHubHTTPResponse:
+        del headers, timeout_seconds
+        parsed = urlparse(url)
+        path = parsed.path
+        query = parse_qs(parsed.query)
+        if "/git/ref/heads/" in path:
+            branch = path.split("/git/ref/heads/", 1)[1]
+            if method == "GET":
+                sha = self.branches.get(branch)
+                if sha is None:
+                    return _fake_response(404, {"message": "not found"})
+                return _fake_response(200, {"object": {"sha": sha}})
+            if method == "POST":
+                payload = _json_body(body)
+                ref = str(payload.get("ref", ""))
+                branch = ref.removeprefix("refs/heads/")
+                sha = str(payload.get("sha", "base-sha"))
+                self.branches[branch] = sha
+                return _fake_response(201, {"object": {"sha": sha}})
+        if "/git/refs" in path and method == "POST":
+            payload = _json_body(body)
+            ref = str(payload.get("ref", ""))
+            branch = ref.removeprefix("refs/heads/")
+            sha = str(payload.get("sha", "base-sha"))
+            self.branches[branch] = sha
+            return _fake_response(201, {"object": {"sha": sha}})
+        if "/contents/" in path:
+            file_path = path.split("/contents/", 1)[1]
+            if method == "GET":
+                ref = str((query.get("ref") or [""])[0])
+                file_record = self.files.get((ref, file_path))
+                if file_record is None:
+                    return _fake_response(404, {"message": "not found"})
+                return _fake_response(200, file_record)
+            if method == "PUT":
+                payload = _json_body(body)
+                branch = str(payload.get("branch", ""))
+                content = str(payload.get("content", ""))
+                sha = f"sha-{len(self.files) + 1}"
+                self.files[(branch, file_path)] = {"content": content, "encoding": "base64", "sha": sha}
+                self.branches[branch] = sha
+                return _fake_response(200, {"content": {"sha": sha}, "commit": {"sha": f"commit-{sha}"}})
+        if path.endswith("/pulls") and method == "GET":
+            return _fake_response(200, self.prs)
+        if path.endswith("/pulls") and method == "POST":
+            payload = _json_body(body)
+            pr = {
+                "number": self.next_pr,
+                "title": payload.get("title", ""),
+                "body": payload.get("body", ""),
+                "state": "open",
+                "html_url": f"https://github.com/fake/repo/pull/{self.next_pr}",
+            }
+            self.next_pr += 1
+            self.prs.append(pr)
+            return _fake_response(201, pr)
+        if path.endswith("/comments") and method == "POST":
+            payload = _json_body(body)
+            comment = {
+                "id": self.next_comment,
+                "body": payload.get("body", ""),
+                "html_url": f"https://github.com/fake/repo/issues/comments/{self.next_comment}",
+            }
+            self.next_comment += 1
+            return _fake_response(201, comment)
+        return _fake_response(404, {"message": "not found"})
+
+
+def _json_body(body: bytes | None) -> dict[str, object]:
+    if body is None:
+        return {}
+    value = json.loads(body.decode("utf-8"))
+    return value if isinstance(value, dict) else {}
+
+
+def _fake_response(status: int, payload: object) -> GitHubHTTPResponse:
+    return GitHubHTTPResponse(status, json.dumps(payload).encode("utf-8"), {})
 
 
 def _registry(client) -> ToolRegistry:

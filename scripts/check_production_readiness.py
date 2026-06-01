@@ -173,6 +173,11 @@ def _ci_check(root: Path) -> dict[str, Any]:
         return _fail("ci", str(exc))
     if "Check release proof" not in ci or "github.ref == 'refs/heads/main'" not in ci:
         return _fail("ci", "main-only release proof check is missing")
+    if (
+        "Check production readiness" not in ci
+        or "check_production_readiness.py --profile production_github_only" not in ci
+    ):
+        return _fail("ci", "main-only production readiness check is missing")
     if "workflow_dispatch" not in real_write:
         return _fail("ci", "real-write workflow is not workflow_dispatch-only")
     forbidden_triggers = ("pull_request:", "push:")

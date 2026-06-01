@@ -50,6 +50,20 @@ class ProductionReadinessTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn("release proof", str(result["reason"]))
 
+    def test_ci_check_fails_without_main_only_production_readiness_check(self) -> None:
+        ci = "name: ci\n- name: Check release proof\n  if: github.ref == 'refs/heads/main'\n"
+        real_write = "on:\n  workflow_dispatch:\n"
+
+        def fake_read_text(path: Path, *args, **kwargs) -> str:
+            del args, kwargs
+            return real_write if path.name == "github-real-write.yml" else ci
+
+        with mock.patch.object(Path, "read_text", fake_read_text):
+            result = _ci_check(Path.cwd())
+
+        self.assertFalse(result["ok"])
+        self.assertIn("production readiness", str(result["reason"]))
+
 
 if __name__ == "__main__":
     unittest.main()

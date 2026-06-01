@@ -7,6 +7,7 @@ import json
 import urllib.error
 import urllib.request
 from collections.abc import Mapping
+from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 from urllib.parse import quote, urlencode, urlparse
@@ -97,11 +98,13 @@ class UrllibGitHubTransport:
                     headers=dict(response.headers.items()),
                 )
         except urllib.error.HTTPError as exc:
-            return GitHubHTTPResponse(
-                status_code=int(exc.code),
-                body=exc.read(),
-                headers=dict(exc.headers.items()) if exc.headers else {},
-            )
+            try:
+                body = exc.read()
+                headers = dict(exc.headers.items()) if exc.headers else {}
+                return GitHubHTTPResponse(status_code=int(exc.code), body=body, headers=headers)
+            finally:
+                with suppress(Exception):
+                    exc.close()
         except urllib.error.URLError as exc:
             raise GitHubAPIError(f"GitHub request failed: {_safe_message(str(exc))}") from exc
 

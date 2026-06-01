@@ -27,14 +27,26 @@ from leos_agent.approval import (
 
 
 class _PacketGate(ApprovalGate):
-    def __init__(self, decision: ApprovalDecisionValue = ApprovalDecisionValue.APPROVE) -> None:
+    def __init__(
+        self,
+        decision: ApprovalDecisionValue = ApprovalDecisionValue.APPROVE,
+        *,
+        approver: str | None = None,
+    ) -> None:
         super().__init__()
         self.decision_value = decision
+        self.approver = approver
         self.packets = []
 
     def request_packet(self, packet, step):
         self.packets.append(packet)
-        return ApprovalDecision(packet.approval_id, packet.step_hash, self.decision_value)
+        return ApprovalDecision(packet.approval_id, packet.step_hash, self.decision_value, approver=self.approver)
+
+
+class _SignedPacketGate(_PacketGate):
+    signed_approval_enforced = True
+    last_decision_signature_valid = True
+    last_decision_signature_algorithm = "hmac-sha256"
 
 
 class ApprovalPacketTests(unittest.TestCase):
@@ -53,6 +65,29 @@ class ApprovalPacketTests(unittest.TestCase):
             self.assertEqual(len(gate.packets), 1)
             self.assertTrue(any(event.event_type == "approval.packet_created" for event in kernel.audit_log.events))
             self.assertTrue(any(event.event_type == "approval.used" for event in kernel.audit_log.events))
+            used = next(event for event in kernel.audit_log.events if event.event_type == "approval.used")
+            self.assertEqual(used.payload["approval_decision"], "approve")
+            self.assertFalse(used.payload["signed_approval_required"])
+            self.assertFalse(used.payload["signed_approval_enforced"])
+            self.assertFalse(used.payload["approval_signature_verified"])
+
+    def test_approval_used_records_signed_approval_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            gate = _SignedPacketGate(approver="alice")
+            kernel = _kernel(Path(tmp), gate)
+            plan = kernel.build_plan(
+                Goal("write", ["file written"], stop_conditions=["done"]),
+                [ActionStep("safe_file_write", {"path": "x.txt", "content": "x"}, "write")],
+            )
+
+            result = kernel.run(plan)
+
+            self.assertEqual(result.steps[0].status.value, "verified")
+            used = next(event for event in kernel.audit_log.events if event.event_type == "approval.used")
+            self.assertEqual(used.payload["approval_approver"], "alice")
+            self.assertTrue(used.payload["signed_approval_enforced"])
+            self.assertTrue(used.payload["approval_signature_verified"])
+            self.assertEqual(used.payload["approval_signature_algorithm"], "hmac-sha256")
 
     def test_dry_run_only_decision_does_not_execute_write(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
