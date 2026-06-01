@@ -50,6 +50,10 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: python scripts/check_release_proof.py
 
+      - name: Check production readiness
+        if: github.ref == 'refs/heads/main'
+        run: python scripts/check_production_readiness.py --profile production_github_only
+
       - name: Generate local proof documents
         run: python scripts/generate_proofs.py --output docs/proofs --allow-dirty
 

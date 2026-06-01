@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 
 from leos_agent import (
@@ -14,6 +15,7 @@ from leos_agent import (
     GitHubCommentTool,
     GitHubCreateBranchTool,
     GitHubGetFileTool,
+    GitHubHTTPResponse,
     GitHubOpenPRTool,
     GitHubReadIssueTool,
     GitHubRESTClient,
@@ -56,6 +58,22 @@ class _Tool:
             "runtime_egress_mode": "in_memory",
             "runtime_egress_host": self.spec.egress_host or "api.github.com",
         }
+
+
+class _FakeGitHubTransport:
+    def __init__(self, responses: list[GitHubHTTPResponse] | None = None) -> None:
+        self.responses = responses or []
+        self.requests = []
+
+    def request(self, method, url, *, headers, body, timeout_seconds):
+        self.requests.append((method, url, body, timeout_seconds))
+        if not self.responses:
+            raise AssertionError("unexpected GitHub transport request")
+        return self.responses.pop(0)
+
+
+def _github_response(payload, status: int = 200) -> GitHubHTTPResponse:
+    return GitHubHTTPResponse(status, json.dumps(payload).encode("utf-8"), {})
 
 
 class _SignedApprovalGate(ApprovalGate):
@@ -684,28 +702,69 @@ class ProductionProfileTests(unittest.TestCase):
         self.assertFalse(tool.executed)
 
     def test_production_github_only_requires_signed_approval_gate(self) -> None:
-        client = InMemoryGitHubClient()
+        policy = PolicyEngine.from_profile("production_github_only")
+        client = GitHubRESTClient(
+            transport=_FakeGitHubTransport(),
+            egress_policy=policy.egress_policy,
+            enforce_egress=True,
+        )
         tool = GitHubCreateBranchTool(client)
 
         kernel, plan = _run_tool(
             tool,
-            profile="production_github_only",
+            policy=policy,
             approve=True,
             arguments={"repo": "o/r", "branch": "feature", "base": "main"},
         )
 
         self.assertEqual(plan.steps[0].status.value, "blocked")
-        self.assertFalse(tool.executed if hasattr(tool, "executed") else ("o/r", "feature") in client.branches)
         self.assertTrue(any(event.event_type == "approval.signature_required" for event in kernel.audit_log.events))
 
-    def test_production_github_only_accepts_signed_approval_gate_for_github_tool(self) -> None:
+    def test_production_github_only_rejects_in_memory_runtime_attestation_by_default(self) -> None:
         client = InMemoryGitHubClient()
-        tool = GitHubCreateBranchTool(client)
+        tool = GitHubGetFileTool(client)
         registry = ToolRegistry()
         registry.register(tool)
         kernel = AgentKernel(
             registry,
             PolicyEngine.from_profile("production_github_only"),
+            approval_gate=_SignedApprovalGate(),
+        )
+        goal = Goal(
+            "read file",
+            ["file read"],
+            criteria=({"key": "github_file", "op": "exists"},),
+            stop_conditions=["done"],
+        )
+        plan = kernel.build_plan(
+            goal,
+            [ActionStep("github_get_file", {"repo": "o/r", "path": "README.md", "ref": "main"}, "run")],
+        )
+
+        result = kernel.run(plan)
+
+        self.assertEqual(result.steps[0].status.value, "blocked")
+        self.assertTrue(any("in-memory" in str(event.payload.get("reason", "")) for event in kernel.audit_log.events))
+
+    def test_production_github_only_accepts_signed_approval_gate_for_github_tool(self) -> None:
+        policy = PolicyEngine.from_profile("production_github_only")
+        transport = _FakeGitHubTransport(
+            [
+                _github_response({"object": {"sha": "base-sha"}}),
+                _github_response({"object": {"sha": "base-sha"}}),
+            ]
+        )
+        client = GitHubRESTClient(
+            transport=transport,
+            egress_policy=policy.egress_policy,
+            enforce_egress=True,
+        )
+        tool = GitHubCreateBranchTool(client)
+        registry = ToolRegistry()
+        registry.register(tool)
+        kernel = AgentKernel(
+            registry,
+            policy,
             approval_gate=_SignedApprovalGate(),
         )
         goal = Goal(
@@ -722,7 +781,7 @@ class ProductionProfileTests(unittest.TestCase):
         result = kernel.run(plan)
 
         self.assertEqual(result.steps[0].status.value, "verified")
-        self.assertIn(("o/r", "feature"), client.branches)
+        self.assertEqual([request[0] for request in transport.requests], ["GET", "POST"])
 
     def test_runtime_attestation_blocks_wrong_base_url_host(self) -> None:
         policy = PolicyEngine.from_profile("production_github_only")

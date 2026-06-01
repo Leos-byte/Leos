@@ -86,11 +86,15 @@ class FileApprovalGate(ApprovalGate):
         self.signature_secret = signature_secret
         self.require_signature = require_signature
         self.signed_approval_enforced = bool(require_signature and signature_secret)
+        self.last_decision_signature_valid = False
+        self.last_decision_signature_algorithm: str | None = None
         self.packet_dir.mkdir(parents=True, exist_ok=True)
         self.decision_dir.mkdir(parents=True, exist_ok=True)
 
     def request_packet(self, packet: ApprovalPacket, step: ActionStep) -> ApprovalDecision:
         del step
+        self.last_decision_signature_valid = False
+        self.last_decision_signature_algorithm = None
         packet_path = self.packet_dir / f"{_safe_approval_id(packet.approval_id)}.json"
         write_approval_packet(packet, packet_path)
         decision_path = self.decision_dir / f"{_safe_approval_id(packet.approval_id)}.json"
@@ -123,6 +127,9 @@ class FileApprovalGate(ApprovalGate):
                     approver=decision.approver,
                     reason=signature_issue,
                 )
+            if self.require_signature:
+                self.last_decision_signature_valid = True
+                self.last_decision_signature_algorithm = "hmac-sha256"
             return decision
         return ApprovalDecision(packet.approval_id, packet.step_hash, ApprovalDecisionValue.DENY)
 

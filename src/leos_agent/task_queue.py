@@ -5,6 +5,7 @@ from __future__ import annotations
 import sqlite3
 import time
 import uuid
+from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -87,6 +88,22 @@ class TaskQueue:
         if self._db_path is not None:
             self._init_db()
             self._load_tasks()
+
+    def close(self) -> None:
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
+
+    def __enter__(self) -> TaskQueue:
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+        del exc_type, exc, traceback
+        self.close()
+
+    def __del__(self) -> None:
+        with suppress(Exception):
+            self.close()
 
     def _init_db(self) -> None:
         self._conn = sqlite3.connect(str(self._db_path))

@@ -18,19 +18,19 @@ Known warnings:
 - Command: `bandit -r src`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `1.171`
+- Duration seconds: `1.203`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Run started:2026-05-27 11:21:19.867744+00:00
+Run started:2026-06-01 10:28:45.768326+00:00
 
 Test results:
 	No issues identified.
 
 Code scanned:
-	Total lines of code: 11793
+	Total lines of code: 11859
 	Total lines skipped (#nosec): 0
 	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 18
 

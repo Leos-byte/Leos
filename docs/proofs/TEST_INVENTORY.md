@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-05-27T11:21:11.212931+00:00`
+Generated: `2026-06-01T10:28:37.380381+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -13,7 +13,7 @@ Generated: `2026-05-27T11:21:11.212931+00:00`
 | `tests/test_agent_loop.py` | `6087b0d5b6f4623a746c34a3a1d65a972fbca83a6a2e771a5e09f1b0fee86e35` | 289 | 10989 | True |
 | `tests/test_agent_loop_runtime_store.py` | `68deb22fbc404b5b930b6b22358fdce01a6e303cae95dc90bb6df2f6770b819d` | 100 | 3580 | True |
 | `tests/test_approval_exchange.py` | `709df1f20e9fbe21bd5d9d6eee4a6dfe5b5eb43a303fda77f6859f61f28e5a0f` | 284 | 13067 | True |
-| `tests/test_approval_packet.py` | `306f3632979d2f14439da9b4c54d80106abdd87679099af5fc63c5838ac04065` | 231 | 9768 | True |
+| `tests/test_approval_packet.py` | `6961038538f8e28a60c6955e40d615ea33136e4d9ec7ba0f8551c04cee6cb778` | 266 | 11437 | True |
 | `tests/test_approval_request.py` | `5fd64240db4fadb130ffdb22048ea1fdc21fb2525be3fb8ad8f55498da6cf657` | 47 | 2073 | True |
 | `tests/test_audit_sanitization.py` | `ba95edcbaab5d8693706807369f4d80094d44b87449144b7bdef04e5fb8b6f87` | 58 | 1984 | True |
 | `tests/test_causal_contract.py` | `2f0448c47f99bf6fa58ae7eb918d68e9c3c11eb70b9378121458e31eae39e8fe` | 446 | 17398 | True |
@@ -29,7 +29,7 @@ Generated: `2026-05-27T11:21:11.212931+00:00`
 | `tests/test_examples.py` | `605bee79614b3f0c5396d202e7807137012f53bf5f03a52e8e95302982f72099` | 56 | 2066 | True |
 | `tests/test_extensibility_demo.py` | `e073cceedcb66772b2328dc8a48aa9664c738eab597237774229692172f0d3b0` | 28 | 917 | True |
 | `tests/test_github_agent_orchestration.py` | `dd82d5ae345fb27a8822a79ad66981225c94d6a44a5ff19fc897f1974d3e01b9` | 320 | 12502 | True |
-| `tests/test_github_real_write_gated.py` | `889cd6fc04ce6d88adecbbbd77821f45cefd74c3488b2a6a564a478a7d7ab654` | 243 | 9185 | True |
+| `tests/test_github_real_write_gated.py` | `727ece7d68c46af86119c570a36c6dab25638ed3e52384e36d1143cfa8679520` | 244 | 9175 | True |
 | `tests/test_github_rest_client.py` | `c001380a3a6370f8a34c446791135403652d723aaf1cc1127ea1f142d8d34fd4` | 469 | 19550 | True |
 | `tests/test_github_tools.py` | `2082ff46ee276545a35d62457af0b73fc07ca80e758e2b96782e8b52db4e8e6c` | 490 | 18518 | True |
 | `tests/test_github_tools_credentials.py` | `2227a920470d0398065b792c71fe8e5ec735c0301c8d6348751c1f56b9a22003` | 93 | 3736 | True |
@@ -39,8 +39,8 @@ Generated: `2026-05-27T11:21:11.212931+00:00`
 | `tests/test_model_adapters.py` | `59f4bedd8f56cdd6a78a102bf5e54485111876ff2134d25a825f6d448785157c` | 82 | 3391 | True |
 | `tests/test_network_tools.py` | `91362d989c57f9d98632c0a1283bbc3b99c88ff6a576a80a42214d7d2e97739d` | 215 | 8706 | True |
 | `tests/test_planner.py` | `f749bb4546f5623f281581ccf33c7dcba64e8641a1bf872c9f6db35e688e493f` | 70 | 3190 | True |
-| `tests/test_production_profile.py` | `987d8d6e906590c7933b1b533e3939c3fd44342782cf8a3d29cdd9232812ea39` | 790 | 31520 | True |
-| `tests/test_production_readiness.py` | `9f2409d033e717cb3297298cb0897aed1570a9dcbd9d08a4c716c19e00dbbb77` | 55 | 1956 | True |
+| `tests/test_production_profile.py` | `a39e46c2324bf667653881ce8916928f55b244b089c01e9df2bbcd750d7ce37b` | 849 | 33624 | True |
+| `tests/test_production_readiness.py` | `2a90c7bc54860dbc376ed2c162f5aec816df826f021efcda39d2470e056ab7ea` | 69 | 2582 | True |
 | `tests/test_proof_generation.py` | `6d3688c9d0a9905693ec2a3228b5d5026627a4272e006f631ed8287346d92a5e` | 146 | 6270 | True |
 | `tests/test_properties.py` | `c79e170732b4853a1404712a485b85cca756b49ec0e0fe201f9f7080daa0a558` | 173 | 6762 | True |
 | `tests/test_public_api.py` | `becc67b1e609ee4a8cf465d23d17d7a1a69ee5981ca857e00e35c223d267912c` | 234 | 9157 | True |

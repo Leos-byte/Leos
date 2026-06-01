@@ -375,6 +375,18 @@ class TransactionManager:
                     step_id=step.step_id,
                     tool=step.tool_name,
                     approval_id=packet.approval_id,
+                    approval_decision=approval_decision.decision.value,
+                    approval_approver=approval_decision.approver,
+                    signed_approval_required=self.policy.require_signed_approval,
+                    signed_approval_enforced=bool(getattr(self.approval_gate, "signed_approval_enforced", False)),
+                    approval_signature_verified=bool(
+                        getattr(self.approval_gate, "last_decision_signature_valid", False)
+                    ),
+                    approval_signature_algorithm=getattr(
+                        self.approval_gate,
+                        "last_decision_signature_algorithm",
+                        None,
+                    ),
                 )
                 decision = Decision.APPROVED
             if decision is not Decision.APPROVED:
@@ -875,6 +887,24 @@ class TransactionManager:
                 tool=step.tool_name,
                 profile=self.policy.profile_name,
                 network_access=tool.spec.network_access,
+                reason=reason,
+            )
+            return reason
+        if self.policy.profile_name == "production_github_only" and mode == "in_memory":
+            reason = "production_github_only requires enforced runtime egress, not in-memory attestation"
+            self.audit_log.record(
+                "runtime.attestation_failed",
+                "Runtime attestation failed for production network tool",
+                step_id=step.step_id,
+                tool=step.tool_name,
+                profile=self.policy.profile_name,
+                network_access=tool.spec.network_access,
+                runtime_egress_enforced=attestations.get("runtime_egress_enforced"),
+                runtime_egress_policy_configured=attestations.get("runtime_egress_policy_configured"),
+                runtime_egress_mode=mode,
+                runtime_egress_host=runtime_host,
+                expected_egress_host=expected_host,
+                host_match=host_match,
                 reason=reason,
             )
             return reason

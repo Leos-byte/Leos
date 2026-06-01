@@ -5,6 +5,7 @@ import subprocess
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from examples.github_rest_agent import run_production_github_smoke
 from examples.github_rest_agent.run_real_write_gated import (
@@ -69,7 +70,7 @@ class GitHubRealWriteGatedTests(unittest.TestCase):
             "APPROVAL_ENV": "approval-secret",
             "LEOS_GITHUB_SMOKE_FAKE": "1",
         }
-        with unittest.mock.patch.dict(os.environ, env, clear=True), unittest.mock.patch("sys.stdout"):
+        with mock.patch.dict(os.environ, env, clear=True), mock.patch("sys.stdout"):
             result = run_production_github_smoke.main()
 
         self.assertEqual(result, 1)
@@ -85,7 +86,7 @@ class GitHubRealWriteGatedTests(unittest.TestCase):
             "APPROVAL_ENV": "approval-secret",
             "LEOS_GITHUB_SMOKE_FAKE": "1",
         }
-        with unittest.mock.patch.dict(os.environ, env, clear=True), unittest.mock.patch("sys.stdout") as stdout:
+        with mock.patch.dict(os.environ, env, clear=True), mock.patch("sys.stdout") as stdout:
             result = run_production_github_smoke.main()
 
         self.assertEqual(result, 0)
