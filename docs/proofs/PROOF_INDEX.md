@@ -2,9 +2,9 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-05-27T11:21:11.212931+00:00`
-- Commit SHA: `03d11f2b45baf96d3bf2be091988ac8dd3b8d05f`
-- Branch: `fix/release-proof-merge-ci`
+- Generated at: `2026-06-01T10:28:37.380381+00:00`
+- Commit SHA: `fe587369d44b4157b3d297d1210532c02723e27c`
+- Branch: `fix/production-hardening-closeouts`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 

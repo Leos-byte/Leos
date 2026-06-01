@@ -20,7 +20,7 @@ All checks passed!
 - Command: `ruff format --check .`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.008`
+- Duration seconds: `0.009`
 - Truncated: `False`
 
 ### stdout
@@ -35,7 +35,7 @@ All checks passed!
 - Command: `mypy src`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.155`
+- Duration seconds: `0.144`
 - Truncated: `False`
 
 ### stdout
