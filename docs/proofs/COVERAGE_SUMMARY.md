@@ -5,7 +5,7 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `3.722`
+- Duration seconds: `3.668`
 - Truncated: `False`
 
 ### stdout
@@ -111,7 +111,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: 65de7844-18d7-4fc2-83e2-206728fcb095
+Enqueued: c665d1b1-ca65-4286-89d7-15d332a8fd30
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -123,7 +123,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=4e307fbb0b731aab28faa06211dccaf7e5a7fdb9512b48fd20fbfa4adae11d15 observed=6feba354022124c000468fcb064c878e4f3d3183a4f048cd03167f063c1e9975
+  [0] event_hash_mismatch: expected=3552169fcc41984fd228826f997501b3d173a8b3676d9c7375bbad79c09baa32 observed=db8679fccff98e9ddaf17e99061d9cf5242aa231c96dc95bcb69de532a9b80c1
 Integrity: OK
 Applied events: 1
 Facts:
@@ -137,7 +137,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpvhmdj_fa/signed.json
+Signed manifest written to /tmp/tmp5iaa64f6/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -146,14 +146,14 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmpx6h8z826/trace.html
+<redacted> written to /tmp/tmpowu28zyy/trace.html
 
 ```
 
 ### stderr
 
 ```text
-.....................................................................................................Error: file not found: /tmp/tmpk3hr_pfu/nonexistent.txt
+.....................................................................................................Error: file not found: /tmp/tmp3fpl_x6k/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -176,9 +176,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-.........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 771 tests in 3.151s
+Ran 786 tests in 3.107s
 
 OK
 
@@ -189,7 +189,7 @@ OK
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.753`
+- Duration seconds: `0.764`
 - Truncated: `False`
 
 ### stdout

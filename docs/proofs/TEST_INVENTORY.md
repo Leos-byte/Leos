@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-06-01T10:28:37.380381+00:00`
+Generated: `2026-06-04T10:00:13.757437+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -41,6 +41,7 @@ Generated: `2026-06-01T10:28:37.380381+00:00`
 | `tests/test_planner.py` | `f749bb4546f5623f281581ccf33c7dcba64e8641a1bf872c9f6db35e688e493f` | 70 | 3190 | True |
 | `tests/test_production_profile.py` | `a39e46c2324bf667653881ce8916928f55b244b089c01e9df2bbcd750d7ce37b` | 849 | 33624 | True |
 | `tests/test_production_readiness.py` | `2a90c7bc54860dbc376ed2c162f5aec816df826f021efcda39d2470e056ab7ea` | 69 | 2582 | True |
+| `tests/test_production_smoke_evidence.py` | `da310ed915e2387fe93961c4019301ac44eec1209f9d15c3a6dffddce38a7498` | 189 | 6775 | True |
 | `tests/test_proof_generation.py` | `6d3688c9d0a9905693ec2a3228b5d5026627a4272e006f631ed8287346d92a5e` | 146 | 6270 | True |
 | `tests/test_properties.py` | `c79e170732b4853a1404712a485b85cca756b49ec0e0fe201f9f7080daa0a558` | 173 | 6762 | True |
 | `tests/test_public_api.py` | `becc67b1e609ee4a8cf465d23d17d7a1a69ee5981ca857e00e35c223d267912c` | 234 | 9157 | True |

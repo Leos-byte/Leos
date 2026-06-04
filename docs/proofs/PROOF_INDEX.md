@@ -2,9 +2,9 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-06-01T10:28:37.380381+00:00`
-- Commit SHA: `fe587369d44b4157b3d297d1210532c02723e27c`
-- Branch: `fix/production-hardening-closeouts`
+- Generated at: `2026-06-04T10:00:13.757437+00:00`
+- Commit SHA: `c8d65afcd2d9a1b296b6c969fad49d9b8816e900`
+- Branch: `feat/private-github-smoke-evidence`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 

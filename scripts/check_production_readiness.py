@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -34,8 +36,19 @@ from leos_agent.policy import PRODUCTION_GITHUB_ONLY_TOOLS  # noqa: E402
 def main() -> int:
     parser = argparse.ArgumentParser(description="Check production_github_only readiness.")
     parser.add_argument("--profile", default="production_github_only")
+    parser.add_argument("--require-smoke-evidence", action="store_true")
+    parser.add_argument(
+        "--smoke-evidence-path",
+        default="docs/proofs/real_github_smoke_latest.json",
+    )
     args = parser.parse_args()
-    results = run_checks(ROOT, args.profile, include_release_proof=True)
+    results = run_checks(
+        ROOT,
+        args.profile,
+        include_release_proof=True,
+        require_smoke_evidence=args.require_smoke_evidence,
+        smoke_evidence_path=Path(args.smoke_evidence_path),
+    )
     failed = [item for item in results if not item["ok"]]
     for item in results:
         status = "passed" if item["ok"] else "failed"
@@ -47,7 +60,14 @@ def main() -> int:
     return 1 if failed else 0
 
 
-def run_checks(root: Path, profile_name: str, *, include_release_proof: bool = True) -> list[dict[str, Any]]:
+def run_checks(
+    root: Path,
+    profile_name: str,
+    *,
+    include_release_proof: bool = True,
+    require_smoke_evidence: bool = False,
+    smoke_evidence_path: Path = Path("docs/proofs/real_github_smoke_latest.json"),
+) -> list[dict[str, Any]]:
     checks: list[dict[str, Any]] = []
     if include_release_proof:
         checks.append(_release_proof_check(root))
@@ -61,6 +81,8 @@ def run_checks(root: Path, profile_name: str, *, include_release_proof: bool = T
             _docs_check(root),
         )
     )
+    if require_smoke_evidence:
+        checks.append(_smoke_evidence_check(root, smoke_evidence_path))
     return checks
 
 
@@ -196,6 +218,86 @@ def _docs_check(root: Path) -> dict[str, Any]:
     if not ((root / "docs" / "SECURITY.md").exists() or (root / "docs" / "THREAT_MODEL.md").exists()):
         return _fail("docs", "security or threat model docs are missing")
     return _ok("docs")
+
+
+_SMOKE_EVIDENCE_TYPES = {
+    "private_disposable_github_real_write_smoke",
+    "disposable_github_real_write_smoke",
+}
+_SMOKE_FORBIDDEN_PATTERNS = {
+    "github_classic_token": re.compile(r"ghp_[A-Za-z0-9_]+"),
+    "github_fine_grained_token": re.compile(r"github_pat_[A-Za-z0-9_]+"),
+    "authorization_marker": re.compile(r"Authorization"),
+    "bearer_marker": re.compile(r"Bearer "),
+    "github_token_secret_name": re.compile(r"LEOS_GITHUB_TOKEN"),
+    "approval_hmac_secret_name": re.compile(r"LEOS_APPROVAL_HMAC_SECRET"),
+    "raw_hmac_signature": re.compile(r"hmac-sha256:[0-9a-fA-F]{32,}"),
+}
+_SMOKE_REQUIRED_CHECKS = (
+    "private_repo_used",
+    "disposable_repo_guard_passed",
+    "runtime_attestation_verified",
+    "runtime_egress_enforced",
+    "runtime_egress_policy_configured",
+    "signed_approval_required",
+    "signed_approval_enforced",
+    "approval_signature_verified",
+    "branch_created",
+    "file_updated",
+    "pr_opened",
+    "read_back_verified",
+    "goal_evaluation_succeeded",
+    "token_redacted",
+    "secret_scan_safe",
+)
+
+
+def _smoke_evidence_check(root: Path, evidence_path: Path) -> dict[str, Any]:
+    path = evidence_path if evidence_path.is_absolute() else root / evidence_path
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return _fail("smoke evidence", f"could not read smoke evidence: {type(exc).__name__}")
+    findings = [name for name, pattern in _SMOKE_FORBIDDEN_PATTERNS.items() if pattern.search(raw)]
+    if findings:
+        return _fail("smoke evidence", f"smoke evidence contains forbidden marker(s): {', '.join(findings)}")
+    try:
+        evidence = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        return _fail("smoke evidence", f"invalid smoke evidence JSON: {exc.msg}")
+    if not isinstance(evidence, dict):
+        return _fail("smoke evidence", "smoke evidence must be a JSON object")
+    checks = evidence.get("checks")
+    if not isinstance(checks, dict):
+        return _fail("smoke evidence", "smoke evidence checks must be an object")
+
+    expected_fields: dict[str, object] = {
+        "schema_version": 1,
+        "profile": "production_github_only",
+        "status": "passed",
+        "repository_visibility": "private",
+        "repository_disposable": True,
+        "workflow_trigger": "workflow_dispatch",
+        "work_branch_prefix": "leos/",
+    }
+    for key, expected in expected_fields.items():
+        if evidence.get(key) != expected:
+            return _fail("smoke evidence", f"{key} must be {expected!r}")
+    if evidence.get("evidence_type") not in _SMOKE_EVIDENCE_TYPES:
+        return _fail("smoke evidence", "evidence_type is not an accepted GitHub smoke type")
+    repository = str(evidence.get("repository_under_test", ""))
+    if "leos-smoke" not in repository.lower():
+        return _fail("smoke evidence", "repository_under_test must be a disposable leos-smoke repository")
+    if repository == "Leos-byte/Leos":
+        return _fail("smoke evidence", "repository_under_test must not be the Leos source repository")
+    if checks.get("runtime_egress_host") != "api.github.com":
+        return _fail("smoke evidence", "checks.runtime_egress_host must be api.github.com")
+    if checks.get("approval_signature_algorithm") != "hmac-sha256":
+        return _fail("smoke evidence", "checks.approval_signature_algorithm must be hmac-sha256")
+    missing = [name for name in _SMOKE_REQUIRED_CHECKS if checks.get(name) is not True]
+    if missing:
+        return _fail("smoke evidence", f"smoke evidence checks are not true: {', '.join(missing)}")
+    return _ok("smoke evidence")
 
 
 if __name__ == "__main__":
