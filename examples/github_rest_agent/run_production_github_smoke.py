@@ -75,9 +75,9 @@ def main() -> int:
     try:
         repo = _required_env("LEOS_GITHUB_TEST_REPO")
         _disposable_repo_guard(repo)
-        token_ref = _required_env("LEOS_GITHUB_TOKEN_SECRET_REF")
+        token_ref = _required_env_any("SMOKE_AUTH_ENV", "LEOS_GITHUB_TOKEN_SECRET_REF")
         token = Secret(_required_env(token_ref))
-        approval_secret_ref = _required_env("LEOS_APPROVAL_HMAC_SECRET_REF")
+        approval_secret_ref = _required_env_any("SMOKE_APPROVAL_ENV", "LEOS_APPROVAL_HMAC_SECRET_REF")
         approval_secret = _required_env(approval_secret_ref)
         base_branch = os.environ.get("LEOS_GITHUB_BASE_BRANCH", "main")
         branch_prefix = os.environ.get("LEOS_GITHUB_WORK_BRANCH_PREFIX", "leos/")
@@ -377,6 +377,14 @@ def _required_env(name: str) -> str:
     if not value:
         raise SystemExit(f"missing required environment variable: {name}")
     return value
+
+
+def _required_env_any(*names: str) -> str:
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+    raise SystemExit(f"missing required environment variable: {names[0]}")
 
 
 def _without_none(value: dict[str, object]) -> dict[str, object]:

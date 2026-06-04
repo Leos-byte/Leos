@@ -95,6 +95,25 @@ class GitHubRealWriteGatedTests(unittest.TestCase):
         self.assertIn("succeeded", output)
         self.assertNotIn("ghp_test_secret", output)
 
+    def test_production_smoke_accepts_neutral_secret_env_names(self) -> None:
+        env = {
+            "LEOS_ENABLE_REAL_GITHUB_WRITES": "1",
+            "LEOS_GITHUB_TEST_REPO": "owner/leos-smoke-test",
+            "LEOS_GITHUB_TEST_REPO_MUST_BE_DISPOSABLE": "1",
+            "SMOKE_AUTH_ENV": "SMOKE_AUTH_VALUE",
+            "SMOKE_AUTH_VALUE": "ghp_test_secret",
+            "SMOKE_APPROVAL_ENV": "SMOKE_APPROVAL_VALUE",
+            "SMOKE_APPROVAL_VALUE": "approval-secret",
+            "LEOS_GITHUB_SMOKE_FAKE": "1",
+        }
+        with mock.patch.dict(os.environ, env, clear=True), mock.patch("sys.stdout") as stdout:
+            result = run_production_github_smoke.main()
+
+        self.assertEqual(result, 0)
+        output = "".join(str(call.args[0]) for call in stdout.write.call_args_list if call.args)
+        self.assertIn("production_github_only", output)
+        self.assertNotIn("ghp_test_secret", output)
+
     def test_protected_branch_cleanup_rejected(self) -> None:
         client = InMemoryGitHubClient()
         with self.assertRaises(LeosError):
