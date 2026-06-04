@@ -60,6 +60,12 @@ class GitHubRealWriteGatedTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("real write disabled", result.stdout)
 
+    def test_real_write_workflow_uses_public_checkout_without_credentials(self) -> None:
+        workflow = Path(".github/workflows/github-real-write.yml").read_text(encoding="utf-8")
+        self.assertNotIn("actions/checkout", workflow)
+        self.assertNotIn("persist-credentials", workflow)
+        self.assertIn("git fetch --depth 1 origin", workflow)
+
     def test_production_smoke_refuses_without_disposable_repo_flag(self) -> None:
         env = {
             "LEOS_ENABLE_REAL_GITHUB_WRITES": "1",
