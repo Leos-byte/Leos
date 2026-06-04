@@ -2,9 +2,9 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-06-04T15:21:16.374525+00:00`
-- Commit SHA: `03326edb6212c57218ac88ae474772a59153c274`
-- Branch: `fix/smoke-public-git-checkout`
+- Generated at: `2026-06-04T15:42:56.867528+00:00`
+- Commit SHA: `4e562e77233e295e285e5b64cb265210b615b2fe`
+- Branch: `chore/private-github-smoke-evidence`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 
