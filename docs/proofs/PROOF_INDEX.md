@@ -2,9 +2,9 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-06-04T15:42:56.867528+00:00`
-- Commit SHA: `4e562e77233e295e285e5b64cb265210b615b2fe`
-- Branch: `chore/private-github-smoke-evidence`
+- Generated at: `2026-06-05T15:07:16.651626+00:00`
+- Commit SHA: `6dd1a76024b913983a8d145b2c90f583f071c320`
+- Branch: `feat/main-production-evidence-gate`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 

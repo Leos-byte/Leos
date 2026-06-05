@@ -5,7 +5,7 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `3.708`
+- Duration seconds: `3.815`
 - Truncated: `False`
 
 ### stdout
@@ -111,7 +111,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: c12996a3-1aaa-4616-9504-68d93b0ae702
+Enqueued: f6a91f30-6369-479a-841a-bf1c34eaf800
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -123,7 +123,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=021061b302dbc46b4f8ec5a7c887eaf37ff583914202a176060f6b73698ea058 observed=aaafff73bfcaad4ef70d96fb7f8d86dc820358888a14055c66b9b626cf2410bb
+  [0] event_hash_mismatch: expected=88ccf997fb10ed82ecbbe3b413018fdf3233cba8f669d63017d62e3f12fd7d23 observed=4f231bfe1f5fa49dba720d37ce81d608e5d2a13d7e12a43ed31f40ad5a1f16bd
 Integrity: OK
 Applied events: 1
 Facts:
@@ -137,7 +137,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmp0gfkykcn/signed.json
+Signed manifest written to /tmp/tmp4kcrbgoe/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -146,14 +146,14 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmpwrwt106k/trace.html
+<redacted> written to /tmp/tmpfzhtgdqx/trace.html
 
 ```
 
 ### stderr
 
 ```text
-.....................................................................................................Error: file not found: /tmp/tmpstn4y1w0/nonexistent.txt
+.....................................................................................................Error: file not found: /tmp/tmpyi_2txam/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -176,9 +176,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-..........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+.............................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 788 tests in 3.145s
+Ran 807 tests in 3.246s
 
 OK
 
@@ -189,7 +189,7 @@ OK
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.776`
+- Duration seconds: `0.793`
 - Truncated: `False`
 
 ### stdout
@@ -203,7 +203,7 @@ src/leos_agent/approval.py                    87      2     16      2    96%
 src/leos_agent/approval_exchange.py          127      5     36      3    95%
 src/leos_agent/audit.py                      143      7     46     11    90%
 src/leos_agent/causal.py                      92      1     18      1    98%
-src/leos_agent/causal_contract.py            108     17     44      9    80%
+src/leos_agent/causal_contract.py            112     17     44      9    81%
 src/leos_agent/cli.py                        476    194    188     32    57%
 src/leos_agent/conflicts.py                   37      0     14      0   100%
 src/leos_agent/core.py                        49      0      0      0   100%
@@ -215,8 +215,8 @@ src/leos_agent/errors.py                      24      0      0      0   100%
 src/leos_agent/eval_runner.py                354     18     10      2    94%
 src/leos_agent/evaluator_registry.py         213     22     86     14    85%
 src/leos_agent/github_agent.py                74      6     18      4    89%
-src/leos_agent/github_client.py              266      8     76      7    96%
-src/leos_agent/github_tools.py               357     42    100     39    82%
+src/leos_agent/github_client.py              285      8     76      7    96%
+src/leos_agent/github_tools.py               477     58    138     56    81%
 src/leos_agent/goal_evaluator.py              29      1      4      2    91%
 src/leos_agent/goals.py                       92      8     18      3    88%
 src/leos_agent/kernel.py                      46      2      6      2    92%
@@ -228,7 +228,7 @@ src/leos_agent/network_guard.py               33      2     10      2    91%
 src/leos_agent/network_tools.py              168     26     48      7    84%
 src/leos_agent/planner.py                    150     12     58     14    88%
 src/leos_agent/plans.py                       89      2      8      3    95%
-src/leos_agent/policy.py                     396     71    158     22    80%
+src/leos_agent/policy.py                     396     70    158     21    80%
 src/leos_agent/policy_manifest.py             51      4     12      4    87%
 src/leos_agent/prompts.py                     30      1      2      1    94%
 src/leos_agent/proof.py                      216      9     42      8    93%
@@ -248,6 +248,6 @@ src/leos_agent/tools.py                      149      7     28     10    90%
 src/leos_agent/trace_viewer.py                68      0     20      0   100%
 src/leos_agent/transactions.py               485     40    186     17    91%
 ----------------------------------------------------------------------------
-TOTAL                                       6532    690   1772    340    86%
+TOTAL                                       6675    705   1810    356    86%
 
 ```

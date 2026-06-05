@@ -202,6 +202,38 @@ def github_comment_causal_contract() -> CausalContract:
     )
 
 
+def github_close_pr_causal_contract() -> CausalContract:
+    return CausalContract(
+        tool_name="github_close_pr",
+        sets=("github_pr_closed",),
+        side_effects=("github_pull_request_closed",),
+        required_observations=("github_pr_closed",),
+        required_fields=(
+            ObservationFieldRequirement("github_pr_closed", ("number",), operator="equals", argument_key="pr_number"),
+            ObservationFieldRequirement("github_pr_closed", ("state",), operator="equals", value="closed"),
+            ObservationFieldRequirement("github_pr_closed", ("head",), operator="equals", argument_key="expected_head"),
+            ObservationFieldRequirement("github_pr_closed", ("base",), operator="equals", argument_key="expected_base"),
+        ),
+        risk_notes=("Closes only the pull request bound to the expected smoke head and base.",),
+        confidence=0.9,
+    )
+
+
+def github_delete_branch_causal_contract() -> CausalContract:
+    return CausalContract(
+        tool_name="github_delete_branch",
+        sets=("github_branch_deleted",),
+        side_effects=("github_branch_deleted",),
+        required_observations=("github_branch_deleted",),
+        required_fields=(
+            ObservationFieldRequirement("github_branch_deleted", ("branch",), operator="equals", argument_key="branch"),
+            ObservationFieldRequirement("github_branch_deleted", ("deleted",), operator="equals", value=True),
+        ),
+        risk_notes=("Deletes only a leos/ smoke branch bound to an expected remote SHA.",),
+        confidence=0.9,
+    )
+
+
 def _nested_get(value: Any, path: Sequence[str]) -> tuple[bool, Any]:
     current = value
     for key in path:

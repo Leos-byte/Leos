@@ -32,12 +32,23 @@ jobs:
       - name: Run production GitHub real-write smoke
         env:
           LEOS_ENABLE_REAL_GITHUB_WRITES: "1"
+          LEOS_GITHUB_SMOKE_CLEANUP: "1"
           LEOS_GITHUB_TEST_REPO: ${{ inputs.test_repo }}
           LEOS_GITHUB_TEST_REPO_MUST_BE_DISPOSABLE: "1"
           LEOS_GITHUB_BASE_BRANCH: ${{ inputs.base_branch }}
           LEOS_GITHUB_WORK_BRANCH_PREFIX: "leos/"
+          LEOS_SMOKE_EVIDENCE_OUT: ${{ runner.temp }}/real_github_smoke_latest.json
           SMOKE_AUTH_ENV: "SMOKE_AUTH_VALUE"
           SMOKE_AUTH_VALUE: ${{ secrets.LEOS_GITHUB_TOKEN }}
           SMOKE_APPROVAL_ENV: "SMOKE_APPROVAL_VALUE"
           SMOKE_APPROVAL_VALUE: ${{ secrets.LEOS_APPROVAL_HMAC_SECRET }}
         run: python examples/github_rest_agent/run_production_github_smoke.py
+
+      - name: Upload exact-HEAD smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/real_github_smoke_latest.json
+          if-no-files-found: error
+          retention-days: 14

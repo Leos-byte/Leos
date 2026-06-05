@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -67,57 +69,63 @@ class GitHubRealWriteGatedTests(unittest.TestCase):
         self.assertIn("git fetch --depth 1 origin", workflow)
 
     def test_production_smoke_refuses_without_disposable_repo_flag(self) -> None:
-        env = {
-            "LEOS_ENABLE_REAL_GITHUB_WRITES": "1",
-            "LEOS_GITHUB_TEST_REPO": "owner/leos-smoke-test",
-            "LEOS_GITHUB_TOKEN_SECRET_REF": "TOKEN_ENV",
-            "TOKEN_ENV": "ghp_test_secret",
-            "LEOS_APPROVAL_HMAC_SECRET_REF": "APPROVAL_ENV",
-            "APPROVAL_ENV": "approval-secret",
-            "LEOS_GITHUB_SMOKE_FAKE": "1",
-        }
-        with mock.patch.dict(os.environ, env, clear=True), mock.patch("sys.stdout"):
-            result = run_production_github_smoke.main()
+        with tempfile.TemporaryDirectory() as tmp:
+            env = _smoke_env(Path(tmp) / "evidence.json")
+            env.pop("LEOS_GITHUB_TEST_REPO_MUST_BE_DISPOSABLE")
+            with mock.patch.dict(os.environ, env, clear=True), mock.patch("sys.stdout"):
+                result = run_production_github_smoke.main()
 
         self.assertEqual(result, 1)
 
     def test_production_smoke_fake_path_succeeds_without_token_leak(self) -> None:
-        env = {
-            "LEOS_ENABLE_REAL_GITHUB_WRITES": "1",
-            "LEOS_GITHUB_TEST_REPO": "owner/leos-smoke-test",
-            "LEOS_GITHUB_TEST_REPO_MUST_BE_DISPOSABLE": "1",
-            "LEOS_GITHUB_TOKEN_SECRET_REF": "TOKEN_ENV",
-            "TOKEN_ENV": "ghp_test_secret",
-            "LEOS_APPROVAL_HMAC_SECRET_REF": "APPROVAL_ENV",
-            "APPROVAL_ENV": "approval-secret",
-            "LEOS_GITHUB_SMOKE_FAKE": "1",
-        }
-        with mock.patch.dict(os.environ, env, clear=True), mock.patch("sys.stdout") as stdout:
-            result = run_production_github_smoke.main()
+        with tempfile.TemporaryDirectory() as tmp:
+            evidence_path = Path(tmp) / "evidence.json"
+            env = _smoke_env(evidence_path)
+            with mock.patch.dict(os.environ, env, clear=True), mock.patch("sys.stdout") as stdout:
+                result = run_production_github_smoke.main()
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
 
         self.assertEqual(result, 0)
         output = "".join(str(call.args[0]) for call in stdout.write.call_args_list if call.args)
         self.assertIn("production_github_only", output)
         self.assertIn("succeeded", output)
         self.assertNotIn("ghp_test_secret", output)
+        self.assertEqual(evidence["status"], "passed")
+        self.assertTrue(evidence["checks"]["pr_closed"])
+        self.assertTrue(evidence["checks"]["branch_deleted"])
+        self.assertTrue(evidence["checks"]["source_repo_unchanged"])
+        evidence_text = json.dumps(evidence)
+        self.assertNotIn("ghp_test_secret", evidence_text)
+        self.assertNotIn("approval-secret", evidence_text)
+        self.assertNotIn("Authorization", evidence_text)
 
     def test_production_smoke_accepts_neutral_secret_env_names(self) -> None:
-        env = {
-            "LEOS_ENABLE_REAL_GITHUB_WRITES": "1",
-            "LEOS_GITHUB_TEST_REPO": "owner/leos-smoke-test",
-            "LEOS_GITHUB_TEST_REPO_MUST_BE_DISPOSABLE": "1",
-            "SMOKE_AUTH_ENV": "SMOKE_AUTH_VALUE",
-            "SMOKE_AUTH_VALUE": "ghp_test_secret",
-            "SMOKE_APPROVAL_ENV": "SMOKE_APPROVAL_VALUE",
-            "SMOKE_APPROVAL_VALUE": "approval-secret",
-            "LEOS_GITHUB_SMOKE_FAKE": "1",
-        }
-        with mock.patch.dict(os.environ, env, clear=True), mock.patch("sys.stdout") as stdout:
-            result = run_production_github_smoke.main()
+        with tempfile.TemporaryDirectory() as tmp:
+            env = _smoke_env(Path(tmp) / "evidence.json")
+            with mock.patch.dict(os.environ, env, clear=True), mock.patch("sys.stdout") as stdout:
+                result = run_production_github_smoke.main()
 
         self.assertEqual(result, 0)
         output = "".join(str(call.args[0]) for call in stdout.write.call_args_list if call.args)
         self.assertIn("production_github_only", output)
+        self.assertNotIn("ghp_test_secret", output)
+
+    def test_production_smoke_cleanup_failure_returns_sanitized_failure_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            evidence_path = Path(tmp) / "evidence.json"
+            env = _smoke_env(evidence_path)
+            env["LEOS_GITHUB_SMOKE_FAKE_FAIL_CLEANUP"] = "1"
+            with mock.patch.dict(os.environ, env, clear=True), mock.patch("sys.stdout") as stdout:
+                result = run_production_github_smoke.main()
+            evidence_text = evidence_path.read_text(encoding="utf-8")
+            evidence = json.loads(evidence_text)
+
+        self.assertEqual(result, 1)
+        self.assertEqual(evidence["status"], "failed")
+        self.assertTrue(evidence["checks"]["cleanup_requested"])
+        self.assertFalse(evidence["checks"]["branch_deleted"])
+        self.assertNotIn("ghp_test_secret", evidence_text)
+        output = "".join(str(call.args[0]) for call in stdout.write.call_args_list if call.args)
         self.assertNotIn("ghp_test_secret", output)
 
     def test_protected_branch_cleanup_rejected(self) -> None:
@@ -263,6 +271,33 @@ def _verified_real_write_plan() -> TransactionPlan:
     for step in steps:
         step.status = StepStatus.VERIFIED
     return TransactionPlan(goal, steps)
+
+
+def _smoke_env(evidence_path: Path) -> dict[str, str]:
+    head = subprocess.run(  # noqa: S603
+        ["git", "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    return {
+        "LEOS_ENABLE_REAL_GITHUB_WRITES": "1",
+        "LEOS_GITHUB_SMOKE_CLEANUP": "1",
+        "LEOS_GITHUB_TEST_REPO": "owner/leos-smoke-test",
+        "LEOS_GITHUB_TEST_REPO_MUST_BE_DISPOSABLE": "1",
+        "LEOS_GITHUB_BASE_BRANCH": "main",
+        "LEOS_GITHUB_WORK_BRANCH_PREFIX": "leos/",
+        "LEOS_GITHUB_SMOKE_FAKE": "1",
+        "LEOS_SMOKE_EVIDENCE_OUT": str(evidence_path),
+        "SMOKE_AUTH_ENV": "SMOKE_AUTH_VALUE",
+        "SMOKE_AUTH_VALUE": "ghp_test_secret",
+        "SMOKE_APPROVAL_ENV": "SMOKE_APPROVAL_VALUE",
+        "SMOKE_APPROVAL_VALUE": "approval-secret",
+        "GITHUB_SHA": head,
+        "GITHUB_RUN_ID": "123",
+        "GITHUB_EVENT_NAME": "workflow_dispatch",
+        "GITHUB_REPOSITORY": "Leos-byte/Leos",
+    }
 
 
 if __name__ == "__main__":

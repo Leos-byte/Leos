@@ -21,9 +21,14 @@ from leos_agent.errors import LeosError
 from leos_agent.github_client import GitHubHTTPResponse, GitHubRESTClient
 from leos_agent.github_tools import (
     GitHubCheckCIStatusTool,
+    GitHubClosePRTool,
     GitHubCommentTool,
     GitHubCreateBranchTool,
+    GitHubDeleteBranchTool,
+    GitHubGetBranchTool,
     GitHubGetFileTool,
+    GitHubGetPRTool,
+    GitHubGetRepositoryTool,
     GitHubOpenPRTool,
     GitHubReadIssueTool,
     GitHubUpdateFileTool,
@@ -458,6 +463,95 @@ class GitHubToolsTests(unittest.TestCase):
         self.assertTrue(result.ok)
         self.assertIn("No previous", result.message)
 
+    def test_repository_branch_and_pr_observation_tools(self) -> None:
+        client = InMemoryGitHubClient()
+        client.seed_file("o/r", "main", "README.md", "content")
+        client.create_branch("o/r", "leos/smoke", "main")
+        pull_request = client.open_pr("o/r", "Smoke", "body", "leos/smoke", "main")
+
+        repository = GitHubGetRepositoryTool(client).execute(
+            {"repo": "o/r", "token": Secret("token-value")},
+            WorldState(),
+        )
+        branch = GitHubGetBranchTool(client).execute(
+            {"repo": "o/r", "branch": "leos/smoke", "token": Secret("token-value")},
+            WorldState(),
+        )
+        pr = GitHubGetPRTool(client).execute(
+            {"repo": "o/r", "pr_number": pull_request["number"], "token": Secret("token-value")},
+            WorldState(),
+        )
+
+        self.assertTrue(repository.observed_state_delta["github_repository"]["private"])
+        self.assertTrue(branch.observed_state_delta["github_branch_status"]["exists"])
+        self.assertEqual(pr.observed_state_delta["github_pr_status"]["state"], "open")
+
+    def test_close_pr_requires_expected_head_and_base(self) -> None:
+        client = InMemoryGitHubClient()
+        client.seed_file("o/r", "main", "README.md", "content")
+        client.create_branch("o/r", "leos/smoke", "main")
+        pull_request = client.open_pr("o/r", "Smoke", "body", "leos/smoke", "main")
+        tool = GitHubClosePRTool(client)
+
+        mismatch = tool.execute(
+            {
+                "repo": "o/r",
+                "pr_number": pull_request["number"],
+                "expected_head": "leos/other",
+                "expected_base": "main",
+                "token": Secret("token-value"),
+            },
+            WorldState(),
+        )
+        closed = tool.execute(
+            {
+                "repo": "o/r",
+                "pr_number": pull_request["number"],
+                "expected_head": "leos/smoke",
+                "expected_base": "main",
+                "token": Secret("token-value"),
+            },
+            WorldState(),
+        )
+
+        self.assertFalse(mismatch.ok)
+        self.assertTrue(closed.ok)
+        self.assertEqual(closed.observed_state_delta["github_pr_closed"]["state"], "closed")
+
+    def test_delete_branch_requires_leos_prefix_and_expected_sha(self) -> None:
+        client = InMemoryGitHubClient()
+        client.seed_file("o/r", "main", "README.md", "content")
+        created = client.create_branch("o/r", "leos/smoke", "main")
+        tool = GitHubDeleteBranchTool(client)
+
+        unsafe = tool.dry_run(
+            {"repo": "o/r", "branch": "feature", "expected_sha": "sha"},
+            WorldState(),
+        )
+        mismatch = tool.execute(
+            {
+                "repo": "o/r",
+                "branch": "leos/smoke",
+                "expected_sha": "wrong",
+                "token": Secret("token-value"),
+            },
+            WorldState(),
+        )
+        deleted = tool.execute(
+            {
+                "repo": "o/r",
+                "branch": "leos/smoke",
+                "expected_sha": created["sha"],
+                "token": Secret("token-value"),
+            },
+            WorldState(),
+        )
+
+        self.assertFalse(unsafe.ok)
+        self.assertFalse(mismatch.ok)
+        self.assertTrue(deleted.ok)
+        self.assertFalse(client.get_branch("o/r", "leos/smoke")["exists"])
+
     def test_protected_branch_delete_blocked(self) -> None:
         client = InMemoryGitHubClient()
         client.seed_file("o/r", "main", "app.py", "content")
@@ -473,10 +567,15 @@ class GitHubToolsTests(unittest.TestCase):
         client = InMemoryGitHubClient()
         tools = [
             GitHubReadIssueTool(client),
+            GitHubGetRepositoryTool(client),
+            GitHubGetBranchTool(client),
+            GitHubGetPRTool(client),
             GitHubCreateBranchTool(client),
             GitHubGetFileTool(client),
             GitHubUpdateFileTool(client),
             GitHubOpenPRTool(client),
+            GitHubClosePRTool(client),
+            GitHubDeleteBranchTool(client),
             GitHubCommentTool(client),
             GitHubCheckCIStatusTool(client),
         ]

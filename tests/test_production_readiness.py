@@ -64,6 +64,29 @@ class ProductionReadinessTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn("production readiness", str(result["reason"]))
 
+    def test_ci_check_does_not_borrow_main_condition_from_another_step(self) -> None:
+        ci = """
+- name: Check release proof
+  if: github.ref == 'refs/heads/main'
+  run: python scripts/check_release_proof.py
+- name: Check production readiness
+  run: |
+    python scripts/download_smoke_evidence.py
+    python scripts/check_production_readiness.py --profile production_github_only
+    --require-smoke-evidence --smoke-evidence-path docs/proofs/real_github_smoke_latest.json
+"""
+        real_write = "on:\n  workflow_dispatch:\n"
+
+        def fake_read_text(path: Path, *args, **kwargs) -> str:
+            del args, kwargs
+            return real_write if path.name == "github-real-write.yml" else ci
+
+        with mock.patch.object(Path, "read_text", fake_read_text):
+            result = _ci_check(Path.cwd())
+
+        self.assertFalse(result["ok"])
+        self.assertIn("production readiness", str(result["reason"]))
+
 
 if __name__ == "__main__":
     unittest.main()

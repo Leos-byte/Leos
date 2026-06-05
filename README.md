@@ -1,5 +1,7 @@
 # Leos Agent
 
+[![CI](https://github.com/Leos-byte/Leos/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Leos-byte/Leos/actions/workflows/ci.yml)
+
 Leos is not a general autonomous agent. It is a safety-first runtime kernel for
 bounded, auditable agent actions.
 

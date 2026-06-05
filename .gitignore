@@ -33,6 +33,7 @@ Thumbs.db
 # Leos runtime artifacts
 .leos-workspace/
 *.leos-audit.jsonl
+docs/proofs/real_github_smoke_latest.json
 
 # Claude Code
 .claude/

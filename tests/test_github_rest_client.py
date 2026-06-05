@@ -172,6 +172,55 @@ class GitHubRESTClientTests(unittest.TestCase):
         self.assertEqual(transport.calls[0]["headers"]["Authorization"], "Bearer ghp_secret")
         self.assertNotIn("ghp_secret", repr(issue))
 
+    def test_repository_info_returns_private_visibility(self) -> None:
+        transport = FakeGitHubTransport(
+            [_json_response(200, {"private": True, "visibility": "private", "default_branch": "main"})]
+        )
+
+        repository = GitHubRESTClient(transport=transport).repository_info("o/r")
+
+        self.assertTrue(repository["private"])
+        self.assertEqual(repository["visibility"], "private")
+        self.assertEqual(repository["default_branch"], "main")
+
+    def test_get_branch_returns_sha_and_handles_missing(self) -> None:
+        transport = FakeGitHubTransport(
+            [
+                _json_response(200, {"object": {"sha": "branch-sha"}}),
+                _json_response(404, {"message": "not found"}),
+            ]
+        )
+        client = GitHubRESTClient(transport=transport)
+
+        existing = client.get_branch("o/r", "leos/smoke")
+        missing = client.get_branch("o/r", "leos/missing")
+
+        self.assertEqual(existing["sha"], "branch-sha")
+        self.assertTrue(existing["exists"])
+        self.assertFalse(missing["exists"])
+
+    def test_get_pr_normalizes_head_and_base(self) -> None:
+        transport = FakeGitHubTransport(
+            [
+                _json_response(
+                    200,
+                    {
+                        "number": 4,
+                        "state": "closed",
+                        "head": {"ref": "leos/smoke"},
+                        "base": {"ref": "main"},
+                        "html_url": "https://github.com/o/r/pull/4",
+                    },
+                )
+            ]
+        )
+
+        pull_request = GitHubRESTClient(transport=transport).get_pr("o/r", 4)
+
+        self.assertEqual(pull_request["head"], "leos/smoke")
+        self.assertEqual(pull_request["base"], "main")
+        self.assertEqual(pull_request["state"], "closed")
+
     def test_get_file_decodes_base64_content(self) -> None:
         encoded = base64.b64encode(b"hello\n").decode("ascii")
         transport = FakeGitHubTransport([_json_response(200, {"content": encoded, "encoding": "base64", "sha": "s1"})])
