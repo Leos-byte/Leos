@@ -18,9 +18,14 @@ if str(SRC) not in sys.path:
 
 from leos_agent import (  # noqa: E402
     GitHubCheckCIStatusTool,
+    GitHubClosePRTool,
     GitHubCommentTool,
     GitHubCreateBranchTool,
+    GitHubDeleteBranchTool,
+    GitHubGetBranchTool,
     GitHubGetFileTool,
+    GitHubGetPRTool,
+    GitHubGetRepositoryTool,
     GitHubOpenPRTool,
     GitHubReadIssueTool,
     GitHubRESTClient,
@@ -140,10 +145,15 @@ def _tool_metadata_check() -> dict[str, Any]:
     client = InMemoryGitHubClient()
     tools = (
         GitHubReadIssueTool(client),
+        GitHubGetRepositoryTool(client),
+        GitHubGetBranchTool(client),
+        GitHubGetPRTool(client),
         GitHubGetFileTool(client),
         GitHubCreateBranchTool(client),
         GitHubUpdateFileTool(client),
         GitHubOpenPRTool(client),
+        GitHubClosePRTool(client),
+        GitHubDeleteBranchTool(client),
         GitHubCommentTool(client),
         GitHubCheckCIStatusTool(client),
     )
@@ -193,19 +203,35 @@ def _ci_check(root: Path) -> dict[str, Any]:
         real_write = real_write_path.read_text(encoding="utf-8")
     except OSError as exc:
         return _fail("ci", str(exc))
-    if "Check release proof" not in ci or "github.ref == 'refs/heads/main'" not in ci:
+    release_step = _workflow_step(ci, "Check release proof")
+    if release_step is None or "github.ref == 'refs/heads/main'" not in release_step:
         return _fail("ci", "main-only release proof check is missing")
+    readiness_step = _workflow_step(ci, "Check production readiness")
     if (
-        "Check production readiness" not in ci
-        or "check_production_readiness.py --profile production_github_only" not in ci
+        readiness_step is None
+        or "github.ref == 'refs/heads/main'" not in readiness_step
+        or "check_production_readiness.py" not in readiness_step
+        or "--profile production_github_only" not in readiness_step
+        or "--require-smoke-evidence" not in readiness_step
+        or "--smoke-evidence-path" not in readiness_step
+        or "docs/proofs/real_github_smoke_latest.json" not in readiness_step
+        or "download_smoke_evidence.py" not in readiness_step
     ):
-        return _fail("ci", "main-only production readiness check is missing")
+        return _fail("ci", "main-only exact-HEAD production readiness check is missing")
     if "workflow_dispatch" not in real_write:
         return _fail("ci", "real-write workflow is not workflow_dispatch-only")
     forbidden_triggers = ("pull_request:", "push:")
     if any(trigger in real_write for trigger in forbidden_triggers):
         return _fail("ci", "real-write workflow must not run on push or pull_request")
     return _ok("ci")
+
+
+def _workflow_step(workflow: str, name: str) -> str | None:
+    match = re.search(
+        rf"(?ms)^\s*-\s+name:\s*{re.escape(name)}\s*$.*?(?=^\s*-\s+(?:name:|uses:)|\Z)",
+        workflow,
+    )
+    return match.group(0) if match else None
 
 
 def _docs_check(root: Path) -> dict[str, Any]:
@@ -225,13 +251,13 @@ _SMOKE_EVIDENCE_TYPES = {
     "disposable_github_real_write_smoke",
 }
 _SMOKE_FORBIDDEN_PATTERNS = {
-    "github_classic_token": re.compile(r"ghp_[A-Za-z0-9_]+"),
-    "github_fine_grained_token": re.compile(r"github_pat_[A-Za-z0-9_]+"),
-    "authorization_marker": re.compile(r"Authorization"),
-    "bearer_marker": re.compile(r"Bearer "),
-    "github_token_secret_name": re.compile(r"LEOS_GITHUB_TOKEN"),
-    "approval_hmac_secret_name": re.compile(r"LEOS_APPROVAL_HMAC_SECRET"),
-    "raw_hmac_signature": re.compile(r"hmac-sha256:[0-9a-fA-F]{32,}"),
+    "github_classic_token": re.compile(r"ghp_[A-Za-z0-9_]+", re.IGNORECASE),
+    "github_fine_grained_token": re.compile(r"github_pat_[A-Za-z0-9_]+", re.IGNORECASE),
+    "authorization_marker": re.compile(r"authorization", re.IGNORECASE),
+    "bearer_marker": re.compile(r"bearer\s", re.IGNORECASE),
+    "github_token_secret_name": re.compile(r"LEOS_GITHUB_TOKEN", re.IGNORECASE),
+    "approval_hmac_secret_name": re.compile(r"LEOS_APPROVAL_HMAC_SECRET", re.IGNORECASE),
+    "raw_hmac_signature": re.compile(r"hmac-sha256:[0-9a-fA-F]{32,}", re.IGNORECASE),
 }
 _SMOKE_REQUIRED_CHECKS = (
     "private_repo_used",
@@ -247,12 +273,21 @@ _SMOKE_REQUIRED_CHECKS = (
     "pr_opened",
     "read_back_verified",
     "goal_evaluation_succeeded",
+    "cleanup_requested",
+    "pr_closed",
+    "branch_deleted",
+    "source_repo_unchanged",
     "token_redacted",
     "secret_scan_safe",
 )
 
 
-def _smoke_evidence_check(root: Path, evidence_path: Path) -> dict[str, Any]:
+def _smoke_evidence_check(
+    root: Path,
+    evidence_path: Path,
+    *,
+    expected_head: str | None = None,
+) -> dict[str, Any]:
     path = evidence_path if evidence_path.is_absolute() else root / evidence_path
     try:
         raw = path.read_text(encoding="utf-8")
@@ -270,6 +305,16 @@ def _smoke_evidence_check(root: Path, evidence_path: Path) -> dict[str, Any]:
     checks = evidence.get("checks")
     if not isinstance(checks, dict):
         return _fail("smoke evidence", "smoke evidence checks must be an object")
+    current_head = expected_head or _git_head(root)
+    if not current_head:
+        return _fail("smoke evidence", "current git HEAD could not be determined")
+    if evidence.get("leos_commit_sha") != current_head:
+        return _fail("smoke evidence", "leos_commit_sha must match current git HEAD")
+    if not str(evidence.get("workflow_run_id", "")).strip():
+        return _fail("smoke evidence", "workflow_run_id is required")
+    generated_at = str(evidence.get("generated_at", ""))
+    if not generated_at or not generated_at.endswith("Z"):
+        return _fail("smoke evidence", "generated_at must be a UTC timestamp")
 
     expected_fields: dict[str, object] = {
         "schema_version": 1,
@@ -298,6 +343,18 @@ def _smoke_evidence_check(root: Path, evidence_path: Path) -> dict[str, Any]:
     if missing:
         return _fail("smoke evidence", f"smoke evidence checks are not true: {', '.join(missing)}")
     return _ok("smoke evidence")
+
+
+def _git_head(root: Path) -> str:
+    result = subprocess.run(  # nosec B603
+        ["git", "rev-parse", "HEAD"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        shell=False,
+    )
+    return result.stdout.strip() if result.returncode == 0 else ""
 
 
 if __name__ == "__main__":

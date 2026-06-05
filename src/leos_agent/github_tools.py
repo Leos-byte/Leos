@@ -9,8 +9,10 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 from .causal_contract import (
+    github_close_pr_causal_contract,
     github_comment_causal_contract,
     github_create_branch_causal_contract,
+    github_delete_branch_causal_contract,
     github_open_pr_causal_contract,
     github_update_file_causal_contract,
 )
@@ -25,6 +27,12 @@ _GITHUB_EGRESS_HOST = "api.github.com"
 
 class GitHubClient(Protocol):
     def read_issue(self, repo: str, issue_number: int, token: str | None = None) -> dict[str, Any]: ...
+
+    def repository_info(self, repo: str, token: str | None = None) -> dict[str, Any]: ...
+
+    def get_branch(self, repo: str, branch: str, token: str | None = None) -> dict[str, Any]: ...
+
+    def get_pr(self, repo: str, pr_number: int, token: str | None = None) -> dict[str, Any]: ...
 
     def create_branch(self, repo: str, branch: str, base: str, token: str | None = None) -> dict[str, Any]: ...
 
@@ -79,6 +87,7 @@ class InMemoryGitHubClient:
     next_comment: int = 1
     accepted_token_count: int = 0
     accepted_token_fingerprints: list[str] = field(default_factory=list)
+    repository_private: dict[str, bool] = field(default_factory=dict)
 
     def _record_token(self, token: str | None) -> None:
         if token is not None:
@@ -106,6 +115,30 @@ class InMemoryGitHubClient:
 
     def seed_issue(self, repo: str, issue_number: int, *, title: str, body: str) -> None:
         self.issues[(repo, issue_number)] = {"repo": repo, "number": issue_number, "title": title, "body": body}
+
+    def repository_info(self, repo: str, token: str | None = None) -> dict[str, Any]:
+        self._record_token(token)
+        private = self.repository_private.get(repo, True)
+        return {
+            "repo": repo,
+            "private": private,
+            "visibility": "private" if private else "public",
+            "default_branch": "main",
+        }
+
+    def get_branch(self, repo: str, branch: str, token: str | None = None) -> dict[str, Any]:
+        self._record_token(token)
+        sha = self.branches.get((repo, branch))
+        return {
+            "repo": repo,
+            "branch": branch,
+            "exists": sha is not None,
+            "sha": sha or "",
+        }
+
+    def get_pr(self, repo: str, pr_number: int, token: str | None = None) -> dict[str, Any]:
+        self._record_token(token)
+        return dict(self.prs[(repo, pr_number)])
 
     def seed_file(self, repo: str, branch: str, path: str, content: str) -> str:
         sha = _sha(content)
@@ -360,6 +393,103 @@ class GitHubReadIssueTool(_GitHubToolBase):
         return ToolResult(True, "Read GitHub issue", observed_state_delta={"github_issue": issue})
 
 
+class GitHubGetRepositoryTool(_GitHubToolBase):
+    spec = ToolSpec(
+        name="github_get_repository",
+        description="Read bounded GitHub repository metadata.",
+        permissions=(),
+        default_risk=RiskLevel.LOW,
+        secrets_allowed=True,
+        network_access=True,
+        egress_host=_GITHUB_EGRESS_HOST,
+        egress_methods=("GET",),
+        input_schema={"type": "object", "required": ["repo"]},
+        output_schema={"type": "object", "required": ["github_repository"]},
+    )
+
+    def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        return _require(arguments, "repo") or ToolResult(True, "Would read GitHub repository metadata")
+
+    def execute(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        dry = self.dry_run(arguments, state)
+        if not dry.ok:
+            return dry
+        token, error = _token_or_error(arguments)
+        if error:
+            return error
+        try:
+            repository = self.client.repository_info(str(arguments["repo"]), token)
+        except LeosError as exc:
+            return _tool_error(exc)
+        return ToolResult(
+            True,
+            "Read GitHub repository metadata",
+            observed_state_delta={"github_repository": repository},
+        )
+
+
+class GitHubGetBranchTool(_GitHubToolBase):
+    spec = ToolSpec(
+        name="github_get_branch",
+        description="Read a GitHub branch ref, including an explicit absent result.",
+        permissions=(),
+        default_risk=RiskLevel.LOW,
+        secrets_allowed=True,
+        network_access=True,
+        egress_host=_GITHUB_EGRESS_HOST,
+        egress_methods=("GET",),
+        input_schema={"type": "object", "required": ["repo", "branch"]},
+        output_schema={"type": "object", "required": ["github_branch_status"]},
+    )
+
+    def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        return _require(arguments, "repo", "branch") or ToolResult(True, "Would read GitHub branch")
+
+    def execute(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        dry = self.dry_run(arguments, state)
+        if not dry.ok:
+            return dry
+        token, error = _token_or_error(arguments)
+        if error:
+            return error
+        try:
+            branch = self.client.get_branch(str(arguments["repo"]), str(arguments["branch"]), token)
+        except LeosError as exc:
+            return _tool_error(exc)
+        return ToolResult(True, "Read GitHub branch", observed_state_delta={"github_branch_status": branch})
+
+
+class GitHubGetPRTool(_GitHubToolBase):
+    spec = ToolSpec(
+        name="github_get_pr",
+        description="Read a GitHub pull request for bounded verification.",
+        permissions=(),
+        default_risk=RiskLevel.LOW,
+        secrets_allowed=True,
+        network_access=True,
+        egress_host=_GITHUB_EGRESS_HOST,
+        egress_methods=("GET",),
+        input_schema={"type": "object", "required": ["repo", "pr_number"]},
+        output_schema={"type": "object", "required": ["github_pr_status"]},
+    )
+
+    def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        return _require(arguments, "repo", "pr_number") or ToolResult(True, "Would read GitHub pull request")
+
+    def execute(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        dry = self.dry_run(arguments, state)
+        if not dry.ok:
+            return dry
+        token, error = _token_or_error(arguments)
+        if error:
+            return error
+        try:
+            pr = self.client.get_pr(str(arguments["repo"]), int(arguments["pr_number"]), token)
+        except LeosError as exc:
+            return _tool_error(exc)
+        return ToolResult(True, "Read GitHub pull request", observed_state_delta={"github_pr_status": pr})
+
+
 class GitHubCreateBranchTool(_GitHubToolBase):
     spec = ToolSpec(
         name="github_create_branch",
@@ -603,6 +733,123 @@ class GitHubOpenPRTool(_GitHubToolBase):
         except LeosError as exc:
             return _tool_error(exc)
         return ToolResult(True, "Closed GitHub PR")
+
+
+class GitHubClosePRTool(_GitHubToolBase):
+    spec = ToolSpec(
+        name="github_close_pr",
+        description="Close the bounded smoke pull request after verifying its expected head and base.",
+        permissions=(Permission.SEND_MESSAGE,),
+        default_risk=RiskLevel.MEDIUM,
+        reversibility=Reversibility.IRREVERSIBLE,
+        compensation_strategy=CompensationStrategy.NONE,
+        secrets_allowed=True,
+        network_access=True,
+        egress_host=_GITHUB_EGRESS_HOST,
+        egress_methods=("GET", "PATCH"),
+        input_schema={
+            "type": "object",
+            "required": ["repo", "pr_number", "expected_head", "expected_base"],
+        },
+        output_schema={"type": "object", "required": ["github_pr_closed"]},
+        causal_contract=github_close_pr_causal_contract(),
+    )
+
+    def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        return _require(
+            arguments,
+            "repo",
+            "pr_number",
+            "expected_head",
+            "expected_base",
+        ) or ToolResult(True, "Would close bounded GitHub pull request")
+
+    def execute(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        dry = self.dry_run(arguments, state)
+        if not dry.ok:
+            return dry
+        token, error = _token_or_error(arguments)
+        if error:
+            return error
+        repo = str(arguments["repo"])
+        pr_number = int(arguments["pr_number"])
+        expected_head = str(arguments["expected_head"])
+        expected_base = str(arguments["expected_base"])
+        try:
+            current = self.client.get_pr(repo, pr_number, token)
+            if current.get("head") != expected_head or current.get("base") != expected_base:
+                raise LeosError("GitHub PR head/base did not match bounded cleanup arguments")
+            self.client.close_pr(repo, pr_number, token)
+            closed = self.client.get_pr(repo, pr_number, token)
+            if closed.get("state") != "closed":
+                raise LeosError("GitHub PR close verification failed")
+        except LeosError as exc:
+            return _tool_error(exc)
+        return ToolResult(
+            True,
+            "Closed bounded GitHub pull request",
+            observed_state_delta={"github_pr_closed": closed},
+        )
+
+
+class GitHubDeleteBranchTool(_GitHubToolBase):
+    spec = ToolSpec(
+        name="github_delete_branch",
+        description="Delete a bounded leos/ smoke branch after verifying its expected SHA.",
+        permissions=(Permission.DELETE,),
+        default_risk=RiskLevel.HIGH,
+        reversibility=Reversibility.IRREVERSIBLE,
+        compensation_strategy=CompensationStrategy.NONE,
+        secrets_allowed=True,
+        network_access=True,
+        egress_host=_GITHUB_EGRESS_HOST,
+        egress_methods=("GET", "DELETE"),
+        input_schema={"type": "object", "required": ["repo", "branch", "expected_sha"]},
+        output_schema={"type": "object", "required": ["github_branch_deleted"]},
+        causal_contract=github_delete_branch_causal_contract(),
+    )
+
+    def dry_run(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        required = _require(arguments, "repo", "branch", "expected_sha")
+        if required:
+            return required
+        branch = str(arguments["branch"])
+        if not branch.startswith("leos/"):
+            return ToolResult(False, "Cleanup branch must use the leos/ prefix", error=DryRunFailed("unsafe branch"))
+        return ToolResult(True, "Would delete bounded GitHub smoke branch")
+
+    def execute(self, arguments: Mapping[str, Any], state: WorldState) -> ToolResult:
+        dry = self.dry_run(arguments, state)
+        if not dry.ok:
+            return dry
+        token, error = _token_or_error(arguments)
+        if error:
+            return error
+        repo = str(arguments["repo"])
+        branch = str(arguments["branch"])
+        expected_sha = str(arguments["expected_sha"])
+        try:
+            current = self.client.get_branch(repo, branch, token)
+            if not current.get("exists") or current.get("sha") != expected_sha:
+                raise LeosError("GitHub branch SHA did not match bounded cleanup arguments")
+            self.client.delete_branch(repo, branch, token)
+            deleted = self.client.get_branch(repo, branch, token)
+            if deleted.get("exists"):
+                raise LeosError("GitHub branch delete verification failed")
+        except LeosError as exc:
+            return _tool_error(exc)
+        return ToolResult(
+            True,
+            "Deleted bounded GitHub smoke branch",
+            observed_state_delta={
+                "github_branch_deleted": {
+                    "repo": repo,
+                    "branch": branch,
+                    "deleted": True,
+                    "expected_sha": expected_sha,
+                }
+            },
+        )
 
 
 class GitHubCommentTool(_GitHubToolBase):

@@ -197,10 +197,15 @@ PRODUCTION_PROFILE_NAMES = {"production_locked_down", "production_github_only"}
 
 PRODUCTION_GITHUB_ONLY_TOOLS = (
     "github_read_issue",
+    "github_get_repository",
+    "github_get_branch",
+    "github_get_pr",
     "github_get_file",
     "github_create_branch",
     "github_update_file",
     "github_open_pr",
+    "github_close_pr",
+    "github_delete_branch",
     "github_comment",
     "github_check_ci_status",
     "echo",

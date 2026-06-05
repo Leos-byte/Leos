@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -52,7 +56,17 @@ jobs:
 
       - name: Check production readiness
         if: github.ref == 'refs/heads/main'
-        run: python scripts/check_production_readiness.py --profile production_github_only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/download_smoke_evidence.py \
+            --repo "${GITHUB_REPOSITORY}" \
+            --sha "${GITHUB_SHA}" \
+            --output docs/proofs/real_github_smoke_latest.json
+          python scripts/check_production_readiness.py \
+            --profile production_github_only \
+            --require-smoke-evidence \
+            --smoke-evidence-path docs/proofs/real_github_smoke_latest.json
 
       - name: Generate local proof documents
         run: python scripts/generate_proofs.py --output docs/proofs --allow-dirty

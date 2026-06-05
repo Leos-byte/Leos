@@ -33,6 +33,14 @@ release proof is current, the profile is fail-closed to `api.github.com`, signed
 approval is required, allowed GitHub tools declare egress/rollback metadata, CI
 contains the main-only proof check, and real-write smoke remains manual.
 
+On `main`, production readiness is fail-closed until a successful manual smoke
+run exists for the exact current commit. The smoke workflow uploads
+`production-smoke-evidence-<commit-sha>` as a short-lived GitHub Actions
+artifact. Main CI downloads that artifact and verifies both its workflow run ID
+and `leos_commit_sha` before running the readiness checker. The evidence is not
+kept as a moving tracked file because a tracked evidence file cannot truthfully
+bind itself to the commit that adds it.
+
 ## Private Disposable GitHub Smoke Evidence
 
 The optional real-write evidence check is intentionally scoped to one bounded
@@ -59,15 +67,32 @@ gh workflow run "GitHub Real Write Smoke" \
   -f base_branch="main"
 ```
 
-Only sanitized summary evidence may be committed to
-`docs/proofs/real_github_smoke_latest.json`. Do not store raw logs, raw audit,
-tokens, Authorization headers, HMAC secrets, or raw approval signatures. Check
-the evidence with:
+The smoke must run with cleanup enabled. A successful run closes the smoke pull
+request, deletes its `leos/` branch, verifies the disposable repository base
+branch and checked-out Leos commit were unchanged, and never merges the pull
+request. Cleanup failure makes the workflow fail and produces only a sanitized
+failure summary.
+
+Only sanitized summary evidence may be written to
+`docs/proofs/real_github_smoke_latest.json` for local inspection. Do not commit
+that moving file, raw logs, raw audit, tokens, Authorization headers, HMAC
+secrets, or raw approval signatures. Main CI downloads the exact-commit artifact
+to that path transiently. Check a downloaded evidence file with:
 
 ```bash
 make production-smoke-evidence-check
 python scripts/scan_artifacts_for_secrets.py --root docs/proofs
 ```
+
+The expected main-branch sequence is:
+
+1. Merge the code change.
+2. Dispatch `GitHub Real Write Smoke` against the private disposable repository
+   for the current `main`.
+3. Confirm the workflow closed the PR and deleted the smoke branch.
+4. Rerun the main CI workflow for that same commit. CI downloads the exact-SHA
+   smoke artifact and applies the production readiness gate.
+5. Revoke the fine-grained PAT after evidence capture.
 
 This smoke evidence proves one private disposable GitHub-only real-write path
 through `production_github_only`. It does not prove general open-world

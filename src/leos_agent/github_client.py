@@ -161,6 +161,49 @@ class GitHubRESTClient:
             "html_url": data.get("html_url", ""),
         }
 
+    def repository_info(self, repo: str, token: str | None = None) -> dict[str, Any]:
+        owner, name = parse_repo(repo)
+        data = self._request_json("GET", f"/repos/{owner}/{name}", token=token)
+        private = bool(data.get("private", False))
+        return {
+            "repo": repo,
+            "private": private,
+            "visibility": str(data.get("visibility", "private" if private else "public")),
+            "default_branch": str(data.get("default_branch", "")),
+        }
+
+    def get_branch(self, repo: str, branch: str, token: str | None = None) -> dict[str, Any]:
+        owner, name = parse_repo(repo)
+        _validate_branch(branch)
+        try:
+            data = self._request_json(
+                "GET",
+                f"/repos/{owner}/{name}/git/ref/heads/{_quote_path(branch)}",
+                token=token,
+            )
+        except GitHubNotFoundError:
+            return {"repo": repo, "branch": branch, "exists": False, "sha": ""}
+        return {
+            "repo": repo,
+            "branch": branch,
+            "exists": True,
+            "sha": str(data.get("object", {}).get("sha", "")),
+        }
+
+    def get_pr(self, repo: str, pr_number: int, token: str | None = None) -> dict[str, Any]:
+        owner, name = parse_repo(repo)
+        data = self._request_json("GET", f"/repos/{owner}/{name}/pulls/{pr_number}", token=token)
+        head = data.get("head", {})
+        base = data.get("base", {})
+        return {
+            "repo": repo,
+            "number": int(data.get("number", pr_number)),
+            "state": str(data.get("state", "unknown")),
+            "head": str(head.get("ref", "")) if isinstance(head, Mapping) else str(head),
+            "base": str(base.get("ref", "")) if isinstance(base, Mapping) else str(base),
+            "html_url": str(data.get("html_url", "")),
+        }
+
     def create_branch(self, repo: str, branch: str, base: str, token: str | None = None) -> dict[str, Any]:
         owner, name = parse_repo(repo)
         _validate_branch(branch)

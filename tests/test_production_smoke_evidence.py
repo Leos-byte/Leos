@@ -14,7 +14,7 @@ class ProductionSmokeEvidenceTests(unittest.TestCase):
             root = Path(tmp)
             path = _write_evidence(root, _valid_evidence())
 
-            result = _smoke_evidence_check(root, path)
+            result = _smoke_evidence_check(root, path, expected_head="abc123")
 
         self.assertTrue(result["ok"], result)
 
@@ -59,6 +59,28 @@ class ProductionSmokeEvidenceTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn("workflow_trigger", str(result["reason"]))
 
+    def test_commit_sha_must_match_current_head(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = _write_evidence(root, _valid_evidence())
+
+            result = _smoke_evidence_check(root, path, expected_head="different")
+
+        self.assertFalse(result["ok"])
+        self.assertIn("current git HEAD", str(result["reason"]))
+
+    def test_workflow_run_id_is_required(self) -> None:
+        result = _check(_valid_evidence(workflow_run_id=""))
+
+        self.assertFalse(result["ok"])
+        self.assertIn("workflow_run_id", str(result["reason"]))
+
+    def test_generated_at_is_required(self) -> None:
+        result = _check(_valid_evidence(generated_at=""))
+
+        self.assertFalse(result["ok"])
+        self.assertIn("generated_at", str(result["reason"]))
+
     def test_wrong_runtime_egress_host_fails(self) -> None:
         evidence = _valid_evidence()
         evidence["checks"]["runtime_egress_host"] = "evil.example"  # type: ignore[index]
@@ -86,6 +108,17 @@ class ProductionSmokeEvidenceTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn("read_back_verified", str(result["reason"]))
 
+    def test_cleanup_checks_are_required(self) -> None:
+        for check in ("cleanup_requested", "pr_closed", "branch_deleted", "source_repo_unchanged"):
+            with self.subTest(check=check):
+                evidence = _valid_evidence()
+                evidence["checks"][check] = False
+
+                result = _check(evidence)
+
+                self.assertFalse(result["ok"])
+                self.assertIn(check, str(result["reason"]))
+
     def test_github_classic_token_marker_fails(self) -> None:
         evidence = _valid_evidence(notes=["ghp_should_not_be_here"])
 
@@ -110,6 +143,20 @@ class ProductionSmokeEvidenceTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn("authorization_marker", str(result["reason"]))
 
+    def test_bearer_marker_fails_case_insensitively(self) -> None:
+        result = _check(_valid_evidence(notes=["bEaReR redacted"]))
+
+        self.assertFalse(result["ok"])
+        self.assertIn("bearer_marker", str(result["reason"]))
+
+    def test_secret_environment_names_fail(self) -> None:
+        for marker in ("LEOS_GITHUB_TOKEN", "LEOS_APPROVAL_HMAC_SECRET"):
+            with self.subTest(marker=marker):
+                result = _check(_valid_evidence(notes=[marker]))
+
+                self.assertFalse(result["ok"])
+                self.assertIn("secret_name", str(result["reason"]))
+
     def test_raw_hmac_signature_marker_fails(self) -> None:
         evidence = _valid_evidence(notes=["hmac-sha256:" + "a" * 64])
 
@@ -129,7 +176,11 @@ def _check(evidence: dict) -> dict:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         path = _write_evidence(root, evidence)
-        return _smoke_evidence_check(root, path)
+        return _smoke_evidence_check(
+            root,
+            path,
+            expected_head=str(evidence.get("leos_commit_sha", "")),
+        )
 
 
 def _write_evidence(root: Path, evidence: dict) -> Path:
@@ -173,6 +224,10 @@ def _valid_evidence(**overrides) -> dict:
             "pr_opened": True,
             "read_back_verified": True,
             "goal_evaluation_succeeded": True,
+            "cleanup_requested": True,
+            "pr_closed": True,
+            "branch_deleted": True,
+            "source_repo_unchanged": True,
             "token_redacted": True,
             "secret_scan_safe": True,
         },

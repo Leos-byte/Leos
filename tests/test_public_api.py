@@ -112,9 +112,14 @@ class PublicAPITests(unittest.TestCase):
     def test_core_exports_github_tools(self) -> None:
         from leos_agent.core import (  # noqa: F401
             GitHubCheckCIStatusTool,
+            GitHubClosePRTool,
             GitHubCommentTool,
             GitHubCreateBranchTool,
+            GitHubDeleteBranchTool,
+            GitHubGetBranchTool,
             GitHubGetFileTool,
+            GitHubGetPRTool,
+            GitHubGetRepositoryTool,
             GitHubOpenPRTool,
             GitHubReadIssueTool,
             GitHubUpdateFileTool,
