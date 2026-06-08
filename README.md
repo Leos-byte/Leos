@@ -1,48 +1,68 @@
-# Leos Agent
+# Leos
 
 [![CI](https://github.com/Leos-byte/Leos/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Leos-byte/Leos/actions/workflows/ci.yml)
 
-Leos is not a general autonomous agent. It is a safety-first runtime kernel for
-bounded, auditable agent actions.
+**Leos is a safety-first runtime kernel for bounded, auditable AI agent actions.**
 
-Leos Agent is a safety-first autonomous-agent kernel designed around the requirements discussed in the Hamming / Simon / Pearl / Engelbart / Brooks roundtable:
+Leos is for AI systems that take real actions. It makes action boundaries
+explicit so tool use can be authorized, inspected, verified, and recovered.
+It is not a chatbot wrapper, a general open-world autonomous agent, or a
+production autonomous employee.
 
-- **Hamming:** every action should be checked, logged, verified, and recoverable where possible.
-- **Simon:** goals must include success criteria, constraints, and stop conditions so the agent can seek satisfactory solutions instead of looping forever.
-- **Pearl:** actions need causal predictions before execution and verification after execution.
-- **Engelbart:** the agent should augment humans through transparency, memory, and approval gates instead of hiding consequential decisions.
-- **Brooks:** the system should be small, testable, modular, auditable, and explicitly engineered rather than a magical monolith.
+## What Leos is
 
-This repository starts with a minimal Python runtime that can be extended with LLM planners, browser tools, code tools, messaging tools, or domain-specific workflows.
+- A runtime kernel for policy-gated tool execution.
+- A transaction manager for dry-run, execution, verification, and rollback.
+- A human-control layer with anti-replay human approval packets.
+- An audit layer with secret sanitization and append-only audit logs.
+- A bounded GitHub software-engineering runtime prototype.
 
-## Core architecture
+## What Leos is not
 
-```text
-User Goal
-  -> Goal Manager
-  -> Planner
-  -> Policy Engine
-  -> Causal Model
-  -> Approval Gate
-  -> Tool Runtime
-  -> Verifier
-  -> Goal Evaluator
-  -> Memory
-  -> Audit Log
-```
+- Not a chatbot wrapper or AutoGPT clone.
+- Not a general open-world autonomous agent.
+- Not a production autonomous employee.
+- Not a formal verification system.
+- Not a replacement for deployment-level isolation, identity, or network controls.
 
-The initial implementation includes:
+## Why this exists
 
-- Goal objects with success criteria, constraints, and stop conditions.
-- Explicit world state split into verified facts and assumptions.
-- A causal graph for action-effect predictions, counterfactual review, and post-action verification.
-- A capability-based policy engine.
-- Human approval gates for risky or under-authorized actions.
-- Transactional plan execution with rollback support.
-- Deterministic goal evaluation that checks explicit success criteria after action verification.
-- JSON/JSONL memory and audit primitives.
-- A sandboxed reversible file-write tool.
-- Unit tests covering execution, blocking, verification, and workspace escape rejection.
+Most agent frameworks focus on generating the next tool call. Leos focuses on
+the action boundary around that call:
+
+1. Check permissions and risk before execution.
+2. Bind consequential actions to human approval packets.
+3. Declare expected effects through causal contracts.
+4. Validate outputs and perform post-action verification.
+5. Apply runtime egress checks to bounded network clients.
+6. Record sanitized, replayable audit logs.
+7. Evaluate explicit goal criteria separately from action verification.
+
+## Current evidence
+
+- release-grade proof artifacts bind checks to source and test hashes.
+- 807 unit tests and 86% coverage are recorded in the current proof set.
+- The safety regression suite reports 15/15 passing cases.
+- `production_github_only` restricts execution to bounded GitHub workflows and
+  `api.github.com` egress.
+- private disposable GitHub real-write smoke evidence covers signed approval,
+  branch creation, guarded file update, PR creation, read-back verification,
+  PR closure, and branch cleanup.
+
+See [Release Checks](docs/RELEASE.md) for the exact-HEAD artifact flow. The
+downloaded sanitized evidence is inspected locally at
+`docs/proofs/real_github_smoke_latest.json`; it is intentionally not maintained
+as a moving tracked snapshot.
+
+## Core capabilities
+
+- Policy profiles, tool manifests, typed goals, and bounded resource budgets.
+- Transactional execution with optimistic guards, idempotency, and compensation.
+- Runtime egress enforcement and attestation for scoped GitHub API access.
+- Secret-safe approval, audit, trace, runtime-store, and proof boundaries.
+- In-memory, JSONL, and SQLite development persistence.
+- Opt-in Docker/Podman sandbox command execution.
+- Failure analysis, bounded replanning, and manual recovery packets.
 
 ## Quick start
 
@@ -50,225 +70,131 @@ The initial implementation includes:
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-python -m unittest discover -s tests
-leos eval --suite safety
-PYTHONPATH=src:. python -m benchmarks.runner
-python scripts/generate_proofs.py
-```
-
-For development and audit checks:
-
-```bash
-pip install -e ".[dev]"
-ruff check .
-ruff format --check .
-mypy src
-coverage run -m unittest discover -s tests
-coverage report --fail-under=83
-bandit -r src
-leos eval --suite safety
+make test
+make safety
 make bench
-python scripts/generate_proofs.py --output docs/proofs --allow-dirty
 ```
 
-Run the demo:
-
-```bash
-leos-agent --auto-approve
-```
-
-Without `--auto-approve`, the file-writing action is denied because it lacks a write-file grant and requires explicit approval.
-
-Run the local software-engineering loop demo:
+Run the local software-engineering demo:
 
 ```bash
 python examples/software_engineering_agent/run_demo.py
 ```
 
-The demo creates a temporary Python project, fixes a failing test through the
-agent loop, writes an audit log, replays it, and renders a trace without using
-network access or external APIs.
+It creates a temporary project and exercises the local observe-plan-act-verify
+loop without network access or external credentials.
 
-## Current capability matrix
+## Production GitHub-only profile
 
-| Capability | Status |
-|---|---|
-| Workspace-scoped read/list/patch/diff tools | implemented |
-| Local test runner | opt-in, local-dev only |
-| Network fetch/browser observations | opt-in, marked `UNTRUSTED_EXTERNAL` |
-| URL SSRF checks | implemented regression guard |
-| DNS-aware SSRF checks | opt-in resolver checks |
-| Docker sandbox runner | opt-in Docker/Podman command runner |
-| Agent loop | implemented minimal observe-plan-act-verify loop |
-| Goal evaluation | deterministic success-criteria evaluator |
-| Tool manifest registry | implemented |
-| Evaluator registry | implemented |
-| Runtime store | in-memory and JSONL development store |
-| SQLite runtime store | stronger local persistence, not distributed production storage |
-| Credential vault | in-memory SecretHandle abstraction |
-| Secret sanitization | implemented for audit/store/trace/runtime boundaries |
-| GitHub software-engineering tools | in-memory dry-run-first tool layer |
-| GitHub REST client | implemented with fake-transport tests; real writes gated |
-| GitHub issue-to-PR orchestration | AgentLoop dry-run path with fake REST transport |
-| Production locked-down policy | fail-closed profile for typed goals, strong sandbox, schemas, causal contracts, and egress methods |
-| Production GitHub-only profile | scoped fail-closed profile for bounded GitHub SE workflows only |
-| Approval packets | anti-replay packet binding for human-gated consequential actions |
-| File approval exchange | local non-interactive approval packet/decision files with optional HMAC signatures |
-| Runtime egress guard | opt-in GitHubRESTClient host/method enforcement |
-| Production readiness check | repository check for scoped `production_github_only` readiness gates |
-| Manual recovery packets | structured rollback failure/operator recovery records |
-| Failure-driven replanning | bounded repair loop for selected failure classes |
-| Local software engineering demo | implemented, no network/API token required |
-| Safety benchmark fixtures | implemented for regression loading |
-| Safety eval suite | implemented regression suite |
-| Proof documents | generated audit aids, not formal proof |
-| Causal contracts | partial runtime enforcement |
-| Production autonomy | not ready |
+`production_github_only` is the narrowest production-shaped boundary in Leos.
+It is intended for bounded GitHub software-engineering workflows, not general
+agent deployment.
 
-High-risk tools are not enabled by default. Network tools and code execution
-must be explicitly registered and policy-gated. The workspace subprocess sandbox
-is not a production isolation boundary.
-Docker/Podman sandboxing is opt-in and requires a local container runtime.
-DNS-aware SSRF checks reduce domain-to-private-IP risk when enabled, but
-production deployments still need egress firewall controls.
+The profile:
 
-Run the GitHub REST dry-run demo:
+- Allows only an explicit GitHub tool allowlist.
+- Defaults network access to deny and fixes egress to `api.github.com`.
+- Requires typed goal criteria and causal contracts for consequential actions.
+- Requires runtime egress attestation to match declared hosts and methods.
+- Requires signed approval for GitHub writes and messages.
+- Requires optimistic file guards and idempotent PR creation.
+- Blocks direct protected-branch cleanup.
 
-```bash
-python examples/github_rest_agent/run_dry_run.py
+Real GitHub writes remain disabled by default and are exposed only through a
+manual `workflow_dispatch` smoke path against a private disposable repository.
+See [Release Checks](docs/RELEASE.md) for token scope, cleanup, evidence, and
+revocation requirements.
+
+## Architecture
+
+```text
+Goal
+  -> Planner
+  -> Policy Engine
+  -> Causal Contract
+  -> Approval Gate
+  -> Transaction Manager
+  -> Tool Runtime
+  -> Post-action Verifier
+  -> Goal Evaluator
+  -> Audit / Runtime Store
 ```
 
-The demo uses `InMemoryGitHubClient` by default and performs no real GitHub
-write. `GitHubRESTClient` is available for real API integration, but write
-operations must still run through the tool layer, `PolicyEngine`,
-`ApprovalGate`, and `TransactionManager`. GitHub tokens must be passed as
-`Secret` values; plain string tokens are rejected by the tools. File updates
-require `expected_sha` or `expected_previous`, PR creation supports a hidden
-Leos idempotency marker, and protected branches such as `main` and `master` are
-not deleted by cleanup logic.
-GitHub tools declare forward and rollback egress methods. In
-`production_locked_down`, every declared method must be allowed by explicit
-egress policy; read-only `GET` access does not authorize write or rollback
-methods such as `PUT`, `POST`, `PATCH`, or `DELETE`.
-The real GitHub client can also be constructed with `enforce_egress=True`, which
-checks each runtime request against the same host/method policy before the
-transport is called. This is a runtime guard inside Leos, not a substitute for
-container, OS, or firewall-level egress controls.
-Audit, trace rendering, runtime events, and checkpoints share a sanitization
-boundary that rejects or redacts `Secret`, `SecretHandle`-unsafe payloads, and
-common token-like strings. `InMemoryGitHubClient` keeps only token fingerprints
-and counts for test evidence, never raw token strings.
+Action verification and goal success are separate. A verified tool call means
+the declared action effect was observed; it does not mean the user's goal
+criteria were satisfied.
 
-Real GitHub writes are disabled by default. The gated smoke path requires
-`LEOS_ENABLE_REAL_GITHUB_WRITES=1`, a test repository, and a token secret
-reference. It writes only through GitHub tools under `PolicyEngine`,
-`ApprovalGate`, and `TransactionManager`. The narrower `production_github_only`
-profile allows only bounded GitHub tools, fixes egress to `api.github.com`,
-requires typed goal criteria, requires runtime egress attestation, and requires
-signed approval for write/message actions. It is a scoped software-engineering
-runtime boundary, not a general production autonomous-agent profile. The smoke
-path uses optimistic guards and PR idempotency markers, and is exposed only
-through a `workflow_dispatch` GitHub Actions workflow.
+The detailed runtime model is documented in
+[Architecture](docs/ARCHITECTURE.md).
 
-Run the end-to-end GitHub issue orchestration demo:
+## Demos
 
 ```bash
+# Local bounded software-engineering loop
+python examples/software_engineering_agent/run_demo.py
+
+# GitHub REST dry-run with no real write
+python examples/github_rest_agent/run_dry_run.py
+
+# Issue-to-PR orchestration through a fake REST transport
 python examples/github_rest_agent/run_orchestration.py
 ```
 
-This demo uses `GitHubRESTClient` with an in-process fake transport and goes
-through `AgentLoop -> PlanProposal -> TransactionManager -> GitHub tools`.
-It first observes the issue and target file, then replans to create a branch,
-update the file with `expected_previous`, and open an idempotent PR. It performs
-no real GitHub write.
+The real-write example is manual, secret-gated, repository-scoped, and intended
+only for the private disposable smoke workflow described in the release guide.
 
-## Proof documents
-
-Proof documents under `docs/proofs/` bind command results to source and test file
-hashes. Dirty worktree proofs are marked `precommit_dirty` and are useful for
-local review only. After committing, generate release-grade evidence with:
+## Proof and readiness checks
 
 ```bash
-python scripts/generate_proofs.py --output docs/proofs --require-clean
+make check
+make production-readiness
 python scripts/check_release_proof.py
+python scripts/scan_artifacts_for_secrets.py --root .
 ```
 
-Proof documents and safety evals are audit aids and regression evidence, not
-formal verification or a complete external red-team assessment.
+For an exact-HEAD private smoke artifact:
 
-## Why this is not just another chatbot wrapper
-
-Most agent prototypes look like this:
-
-```text
-Prompt -> LLM -> Tool call -> Result -> Repeat
+```bash
+make production-smoke-evidence-check
 ```
 
-Leos Agent instead makes the action boundary explicit:
+Proof documents are audit evidence, not formal verification. Safety evals are
+regression tests, not a complete external red-team assessment.
 
-1. **What goal are we serving?**
-2. **What state do we believe is true?**
-3. **What causal effect do we predict?**
-4. **What permission does this action require?**
-5. **Can we dry-run it?**
-6. **Can we verify it?**
-7. **Did the verified action actually satisfy the goal criteria?**
-8. **Can we roll it back?**
-9. **What should be audited for humans?**
+## Security boundaries
 
-Transaction verification and goal evaluation are intentionally separate.
-Transaction verification checks whether an action produced its predicted effect.
-`GoalEvaluator` checks whether the user's explicit success criteria are actually
-satisfied, such as `tests_ok=True` for a "tests pass" goal.
-In `production_locked_down`, goals must include typed criteria so completion
-cannot depend on natural-language self-assessment alone.
+- The runtime egress guard is application-level enforcement, not an OS or
+  firewall boundary.
+- Docker/Podman sandboxing is opt-in and depends on a local container runtime.
+- SQLite provides stronger local persistence, not distributed production
+  storage.
+- Causal contracts provide partial runtime enforcement, not a complete formal
+  structural causal model.
+- Proof documents support audit and release review; they are not mathematical
+  or formal verification.
+- Network content is untrusted external observation and cannot grant policy,
+  credentials, permissions, or system-instruction authority.
+- Tokens and secrets must not enter audit, trace, memory, runtime stores,
+  evidence summaries, or stdout.
 
-Approval packets bind approval to the exact goal, plan, step, arguments,
-permissions, risk, causal contract hash, profile, and expiry. An approval for
-one action cannot be replayed onto a different tool call or changed arguments.
-For non-interactive runs, `FileApprovalGate` can write packets to a local
-directory and consume matching decision files. The decision still has to match
-the packet approval id and step hash; file exchange does not bypass
-`production_locked_down` hard blocks or anti-replay validation.
+See the [Threat Model](docs/THREAT_MODEL.md) for implemented mitigations and
+remaining risks.
 
-If rollback fails or rollback egress is blocked, Leos emits a
-`ManualRecoveryPacket` with the affected step, tool, risk, reason, and suggested
-operator actions. Recovery packets redact secret-like values and are audit
-records for manual follow-up, not automated repair by themselves.
+## Project status
 
-## Extension points
+Leos is production-shaped, not broadly production-complete. Its strongest
+current use case is a scoped, human-gated GitHub software-engineering runtime
+prototype with auditable real-write evidence.
 
-Add tools by implementing the `Tool` protocol:
+High-risk tools are not enabled by default. General browser automation,
+open-ended code execution, distributed state, enterprise identity, and
+open-world autonomy are outside the current production boundary.
 
-```python
-class MyTool:
-    spec = ToolSpec(
-        name="my_tool",
-        description="Do a bounded action",
-        permissions=(Permission.READ_FILES,),
-        default_risk=RiskLevel.LOW,
-        reversible=False,
-    )
+## Further reading
 
-    def dry_run(self, arguments, state): ...
-    def execute(self, arguments, state): ...
-    def rollback(self, token, state): ...
-```
-
-Then register it:
-
-```python
-registry = ToolRegistry()
-registry.register(MyTool())
-```
-
-## Roadmap
-
-- Deterministic planner with candidate generation, risk/cost/benefit scoring, and satisficing selection.
-- LLM planner adapter with deterministic plan schemas.
-- Typed permission manifest per tool.
-- Counterfactual review policy gates for high-impact actions.
-- Persistent task queue and watchdog.
-- Web/browser tool sandbox.
-- ReAct-style trace viewer for human review.
-- Policy profiles for personal, team, and production deployments.
+- [Project positioning](docs/PROJECT_POSITIONING.md)
+- [Design philosophy](docs/DESIGN_PHILOSOPHY.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Threat model](docs/THREAT_MODEL.md)
+- [Release checks and private smoke evidence](docs/RELEASE.md)
+- [Roadmap](docs/ROADMAP.md)
