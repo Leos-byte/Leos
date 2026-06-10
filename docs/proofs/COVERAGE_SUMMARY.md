@@ -5,15 +5,15 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `4.126`
+- Duration seconds: `4.086`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Approval packets written to /tmp/tmp6ux70ckz/approval.json
-Expected signed decision path: /tmp/tmp6ux70ckz/approval.decision.json
-Signed approval decisions written to /tmp/tmp6ux70ckz/approval.decision.json
+Approval packets written to /tmp/tmp8xta5jci/approval.json
+Expected signed decision path: /tmp/tmp8xta5jci/approval.decision.json
+Signed approval decisions written to /tmp/tmp8xta5jci/approval.decision.json
 No anomalies detected.
 OK: Would echo: hi
 echo                  risk=low       rev=irreversible  perm=none
@@ -37,7 +37,7 @@ rollback_failure_manual_recovery: passed severity=high
 container_without_runner_blocked: passed severity=critical
 container_command_hardening: passed severity=high
 {"status": "passed", "message": "observed", "writes_performed": false}
-Draft plan written to /tmp/tmpcajolkto/plan.json; complete the operator fields and set status to ready.
+Draft plan written to /tmp/tmpoa6pkrko/plan.json; complete the operator fields and set status to ready.
 Integrity: OK
 Applied events: 1
 Anomalies: none
@@ -116,7 +116,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: c5fdcc0a-ae83-4035-ac16-d4bc628fcdb6
+Enqueued: 196dd062-def5-4b9b-9b48-1b715116a68f
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -128,7 +128,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=0dc10ce248427f7aa2fdb9e7e8bebdf5a1386e906fe7408bb39fdfe5a8f8e54f observed=1640ec28b69f3bad65702e2bc64ecb9a1ae368e3347fd2b075f97ce9ad78707b
+  [0] event_hash_mismatch: expected=3243b6a5b9aa5c29a16135acdfc46bfc84313be3ad850c1dd5c4624dceac686f observed=fd32ecac956e16d74c55b988d18a0c5dd95afc385b14f6420c64dc0aed3d8920
 Integrity: OK
 Applied events: 1
 Facts:
@@ -142,7 +142,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmppnxq4hrq/signed.json
+Signed manifest written to /tmp/tmpjqefwn5e/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -151,7 +151,7 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmpq2dewjda/trace.html
+<redacted> written to /tmp/tmp3hmou3hu/trace.html
 
 ```
 
@@ -159,7 +159,7 @@ report.md: pattern=github-classic-token
 
 ```text
 ....................................................................................................Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
-...Error: file not found: /tmp/tmpkjdro7i5/nonexistent.txt
+...Error: file not found: /tmp/tmp19i3dic9/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -185,7 +185,7 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
 ...................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 819 tests in 3.534s
+Ran 819 tests in 3.496s
 
 OK
 
@@ -196,7 +196,7 @@ OK
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.844`
+- Duration seconds: `0.835`
 - Truncated: `False`
 
 ### stdout

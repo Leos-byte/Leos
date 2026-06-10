@@ -5,15 +5,15 @@
 - Command: `python -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `2.507`
+- Duration seconds: `2.475`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Approval packets written to /tmp/tmpy9vc48al/approval.json
-Expected signed decision path: /tmp/tmpy9vc48al/approval.decision.json
-Signed approval decisions written to /tmp/tmpy9vc48al/approval.decision.json
+Approval packets written to /tmp/tmp6d4ouhy2/approval.json
+Expected signed decision path: /tmp/tmp6d4ouhy2/approval.decision.json
+Signed approval decisions written to /tmp/tmp6d4ouhy2/approval.decision.json
 No anomalies detected.
 OK: Would echo: hi
 echo                  risk=low       rev=irreversible  perm=none
@@ -37,7 +37,7 @@ rollback_failure_manual_recovery: passed severity=high
 container_without_runner_blocked: passed severity=critical
 container_command_hardening: passed severity=high
 {"status": "passed", "message": "observed", "writes_performed": false}
-Draft plan written to /tmp/tmprbcg9c9c/plan.json; complete the operator fields and set status to ready.
+Draft plan written to /tmp/tmpd8k3c434/plan.json; complete the operator fields and set status to ready.
 Integrity: OK
 Applied events: 1
 Anomalies: none
@@ -116,7 +116,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: 733d82f0-734e-4db5-91b5-2fb6895ce5ec
+Enqueued: c9039f97-b9fa-4ba6-8516-9e6dcdf09fa7
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -128,7 +128,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=1afdb759e8b833f9b76f600bad468db512e9da7276b5220f4aba5291dc826fcc observed=6d1c07b4dc93398eb25b8948a6e10752a445f0f56323b17502ef88e8e5849e15
+  [0] event_hash_mismatch: expected=8bf0cd54b14b36da29f35ac6d38d3cd7a1e02a9fd6e048aab9080f0cac543163 observed=b372624fcb890f1f1662132b52cc8e9b6c23be4dc4b207d6037cc1eb6c0b960d
 Integrity: OK
 Applied events: 1
 Facts:
@@ -142,7 +142,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpbodhf2co/signed.json
+Signed manifest written to /tmp/tmpvnptowll/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -151,7 +151,7 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmp5yuvv422/trace.html
+<redacted> written to /tmp/tmp_jfm_elz/trace.html
 
 ```
 
@@ -159,7 +159,7 @@ report.md: pattern=github-classic-token
 
 ```text
 ....................................................................................................Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
-...Error: file not found: /tmp/tmp6f8ci3n5/nonexistent.txt
+...Error: file not found: /tmp/tmp3fdx0eo4/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -185,7 +185,7 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
 ...................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 819 tests in 2.209s
+Ran 819 tests in 2.190s
 
 OK
 
