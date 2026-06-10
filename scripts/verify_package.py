@@ -17,7 +17,7 @@ def main() -> int:
         root = Path(tmp)
         dist = root / "dist"
         environment = root / "venv"
-        _run([sys.executable, "-m", "build", "--wheel", "--no-isolation", "--outdir", str(dist)], cwd=ROOT)
+        _run([sys.executable, "-m", "build", "--wheel", "--outdir", str(dist)], cwd=ROOT)
         wheels = sorted(dist.glob("*.whl"))
         if len(wheels) != 1:
             raise RuntimeError("package build did not produce exactly one wheel")
