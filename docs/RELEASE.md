@@ -67,6 +67,12 @@ gh workflow run "GitHub Real Write Smoke" \
   -f base_branch="main"
 ```
 
+The workflow file is `.github/workflows/github-real-write-smoke.yml`. Configure
+the protected `smoke-private` environment with
+`LEOS_SMOKE_GITHUB_TOKEN` and `LEOS_SMOKE_APPROVAL_HMAC_SECRET`. The GitHub
+token must be a fine-grained PAT scoped only to the disposable private target
+repository.
+
 The smoke must run with cleanup enabled. A successful run closes the smoke pull
 request, deletes its `leos/` branch, verifies the disposable repository base
 branch and checked-out Leos commit were unchanged, and never merges the pull

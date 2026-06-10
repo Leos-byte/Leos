@@ -54,6 +54,20 @@ downloaded sanitized evidence is inspected locally at
 `docs/proofs/real_github_smoke_latest.json`; it is intentionally not maintained
 as a moving tracked snapshot.
 
+## Production-shaped beta
+
+`v0.1.0-beta.1` supports one narrow operator-controlled path: observe a GitHub
+issue, prepare a typed single-file plan, review and HMAC-sign step-bound
+approval packets, create a branch, perform an optimistic guarded update, open a
+pull request, read the result back, and inspect the audit chain.
+
+It does not generate arbitrary patches from issue text, merge pull requests,
+enable open-world tools, or permit arbitrary production shell execution. Real
+writes remain disabled until the operator explicitly enables the apply command.
+
+See [Production GitHub getting started](docs/GETTING_STARTED_PRODUCTION_GITHUB.md)
+and the [v0.1 release checklist](docs/RELEASE_CHECKLIST_V0_1.md).
+
 ## Core capabilities
 
 - Policy profiles, tool manifests, typed goals, and bounded resource budgets.
@@ -197,4 +211,6 @@ open-world autonomy are outside the current production boundary.
 - [Architecture](docs/ARCHITECTURE.md)
 - [Threat model](docs/THREAT_MODEL.md)
 - [Release checks and private smoke evidence](docs/RELEASE.md)
+- [Production GitHub getting started](docs/GETTING_STARTED_PRODUCTION_GITHUB.md)
+- [v0.1 beta release checklist](docs/RELEASE_CHECKLIST_V0_1.md)
 - [Roadmap](docs/ROADMAP.md)

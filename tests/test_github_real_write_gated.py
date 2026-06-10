@@ -63,10 +63,12 @@ class GitHubRealWriteGatedTests(unittest.TestCase):
         self.assertIn("real write disabled", result.stdout)
 
     def test_real_write_workflow_uses_public_checkout_without_credentials(self) -> None:
-        workflow = Path(".github/workflows/github-real-write.yml").read_text(encoding="utf-8")
+        workflow = Path(".github/workflows/github-real-write-smoke.yml").read_text(encoding="utf-8")
         self.assertNotIn("actions/checkout", workflow)
         self.assertNotIn("persist-credentials", workflow)
         self.assertIn("git fetch --depth 1 origin", workflow)
+        self.assertIn("environment: smoke-private", workflow)
+        self.assertIn("LEOS_SMOKE_GITHUB_TOKEN", workflow)
 
     def test_production_smoke_refuses_without_disposable_repo_flag(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -91,6 +93,10 @@ class GitHubRealWriteGatedTests(unittest.TestCase):
         self.assertIn("succeeded", output)
         self.assertNotIn("ghp_test_secret", output)
         self.assertEqual(evidence["status"], "passed")
+        self.assertEqual(evidence["run_id"], evidence["workflow_run_id"])
+        self.assertEqual(evidence["test_repo"], evidence["repository_under_test"])
+        self.assertEqual(evidence["verification_status"], "passed")
+        self.assertEqual(evidence["cleanup_status"], "passed")
         self.assertTrue(evidence["checks"]["pr_closed"])
         self.assertTrue(evidence["checks"]["branch_deleted"])
         self.assertTrue(evidence["checks"]["source_repo_unchanged"])

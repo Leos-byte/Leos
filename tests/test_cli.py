@@ -3,17 +3,26 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
+from unittest import mock
 
 from leos_agent.audit import AuditLog
 from leos_agent.cli import (
+    _approval_create,
+    _approval_decide,
     _approval_render,
     _audit_check,
     _check_file_exists,
     _dry_run,
     _eval,
+    _github_apply,
+    _github_dry_run,
+    _github_plan,
     _inspect_audit,
     _list_tools,
     _load_json_file,
@@ -24,7 +33,9 @@ from leos_agent.cli import (
     _sign_policy,
     _validate_policy,
     _validate_task,
+    main,
 )
+from leos_agent.github_operator import OperatorResult
 
 
 class ValidateTaskTests(unittest.TestCase):
@@ -116,6 +127,126 @@ class ApprovalCliTests(unittest.TestCase):
             )
             self.assertEqual(_approval_render(str(path), output_format="markdown", output=str(out)), 0)
             self.assertIn("Approval Packet", out.read_text(encoding="utf-8"))
+
+    def test_decide_requires_hmac_secret(self) -> None:
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(
+                _approval_decide(
+                    "packet.json",
+                    "decision.json",
+                    approver="operator",
+                    decision="approve",
+                    reason=None,
+                ),
+                2,
+            )
+
+    def test_create_and_decide_write_private_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plan = root / "plan.json"
+            packet = root / "approval.json"
+            decision = root / "approval.decision.json"
+            plan.write_text("{}")
+            with (
+                mock.patch("leos_agent.cli.build_approval_bundle", return_value={"schema": "approval"}),
+                mock.patch(
+                    "leos_agent.cli.build_signed_decision_bundle",
+                    return_value={"schema": "decision"},
+                ),
+                mock.patch.dict(os.environ, {"LEOS_APPROVAL_HMAC_SECRET": "approval-key"}, clear=True),
+            ):
+                self.assertEqual(_approval_create(str(plan), str(packet), expires_in=60), 0)
+                self.assertEqual(
+                    _approval_decide(
+                        str(packet),
+                        str(decision),
+                        approver="operator",
+                        decision="approve",
+                        reason="reviewed",
+                    ),
+                    0,
+                )
+            self.assertEqual(json.loads(packet.read_text()), {"schema": "approval"})
+            self.assertEqual(json.loads(decision.read_text()), {"schema": "decision"})
+            if os.name != "nt":
+                self.assertEqual(packet.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(decision.stat().st_mode & 0o777, 0o600)
+
+
+class GitHubOperatorCliTests(unittest.TestCase):
+    def test_doctor_command_is_wired(self) -> None:
+        stdout = StringIO()
+        with (
+            mock.patch("sys.argv", ["leos", "doctor", "--profile", "production_github_only"]),
+            redirect_stdout(stdout),
+        ):
+            code = main()
+        self.assertEqual(code, 0)
+        self.assertIn('"status": "passed"', stdout.getvalue())
+
+    def test_github_apply_requires_hmac_secret(self) -> None:
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(
+                _github_apply(
+                    "plan.json",
+                    "approval.json",
+                    decision_path=None,
+                    audit_path=None,
+                    receipt_dir=None,
+                ),
+                2,
+            )
+
+    def test_dry_run_and_plan_commands_are_wired(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "plan.json"
+            with (
+                mock.patch(
+                    "leos_agent.cli.github_issue_dry_run",
+                    return_value=OperatorResult(True, "observed", {"writes_performed": False}),
+                ),
+                mock.patch(
+                    "leos_agent.cli.create_draft_plan",
+                    return_value={"schema": "leos.github_issue_plan", "status": "draft"},
+                ),
+                mock.patch.dict(os.environ, {}, clear=True),
+            ):
+                self.assertEqual(_github_dry_run("owner/repo", 1, audit=None), 0)
+                self.assertEqual(_github_plan("owner/repo", 1, str(output)), 0)
+            self.assertEqual(json.loads(output.read_text())["status"], "draft")
+
+    def test_github_apply_prints_sanitized_result(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in ("plan.json", "approval.json", "approval.decision.json"):
+                (root / name).write_text("{}")
+            stdout = StringIO()
+            with (
+                mock.patch.dict(
+                    os.environ,
+                    {
+                        "LEOS_APPROVAL_HMAC_SECRET": "approval-key",
+                        "LEOS_GITHUB_TOKEN": "token-value",
+                    },
+                    clear=True,
+                ),
+                mock.patch(
+                    "leos_agent.cli.apply_operator_plan",
+                    return_value=OperatorResult(True, "applied", {"automatic_merge": False}),
+                ),
+                redirect_stdout(stdout),
+            ):
+                code = _github_apply(
+                    str(root / "plan.json"),
+                    str(root / "approval.json"),
+                    decision_path=str(root / "approval.decision.json"),
+                    audit_path=str(root / "audit.jsonl"),
+                    receipt_dir=str(root / "receipts"),
+                )
+        self.assertEqual(code, 0)
+        self.assertIn('"automatic_merge": false', stdout.getvalue())
+        self.assertNotIn("token-value", stdout.getvalue())
 
 
 class ProofCliTests(unittest.TestCase):

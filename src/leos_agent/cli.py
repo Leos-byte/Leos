@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,17 @@ from .core import (
     verify_policy_manifest,
 )
 from .eval_runner import format_eval_report, render_eval_report_markdown, run_safety_evals
+from .github_operator import (
+    apply_operator_plan,
+    build_approval_bundle,
+    build_signed_decision_bundle,
+    create_draft_plan,
+    decision_path_for,
+    github_issue_dry_run,
+    load_json_object,
+    production_github_doctor,
+    write_private_json,
+)
 from .manifest import validate_task_file
 from .policy import InteractiveApprovalGate
 from .proof import exit_code_for_manifest, generate_proofs
@@ -183,6 +195,45 @@ def main() -> int:
     approval_render.add_argument("file", help="Approval packet JSON file.")
     approval_render.add_argument("--format", choices=("markdown", "html"), default="markdown")
     approval_render.add_argument("--output", default=None)
+    approval_create = approval_sub.add_parser("create", help="Create approval packets for a ready GitHub plan.")
+    approval_create.add_argument("--plan", required=True)
+    approval_create.add_argument("--out", required=True)
+    approval_create.add_argument("--expires-in", type=float, default=900.0)
+    approval_decide = approval_sub.add_parser("decide", help="Create signed decisions for approval packets.")
+    approval_decide.add_argument("--packet", required=True)
+    approval_decide.add_argument("--out", required=True)
+    approval_decide.add_argument("--approver", required=True)
+    approval_decide.add_argument(
+        "--decision",
+        choices=("approve", "deny", "dry_run_only", "narrow_scope"),
+        required=True,
+    )
+    approval_decide.add_argument("--reason", default=None)
+
+    doctor_parser = sub.add_parser("doctor", help="Validate a bounded production runtime profile.")
+    doctor_parser.add_argument("--profile", default="production_github_only")
+
+    github_parser = sub.add_parser("github", help="Bounded GitHub operator commands.")
+    github_sub = github_parser.add_subparsers(dest="github_command")
+    github_dry_run = github_sub.add_parser("dry-run", help="Read an issue without performing writes.")
+    github_dry_run.add_argument("--repo", required=True)
+    github_dry_run.add_argument("--issue", required=True, type=int)
+    github_dry_run.add_argument("--audit", default=None)
+    github_plan = github_sub.add_parser("plan", help="Create an operator-editable GitHub plan draft.")
+    github_plan.add_argument("--repo", required=True)
+    github_plan.add_argument("--issue", required=True, type=int)
+    github_plan.add_argument("--out", required=True)
+    github_apply = github_sub.add_parser("apply", help="Apply a signed, approved GitHub plan.")
+    github_apply.add_argument("--plan", required=True)
+    github_apply.add_argument("--approval", required=True)
+    github_apply.add_argument("--decision", default=None)
+    github_apply.add_argument("--audit", default=None)
+    github_apply.add_argument("--receipts", default=None)
+
+    audit_parser = sub.add_parser("audit", help="Audit inspection commands.")
+    audit_sub = audit_parser.add_subparsers(dest="audit_command")
+    audit_inspect = audit_sub.add_parser("inspect", help="Inspect and verify an audit JSONL file.")
+    audit_inspect.add_argument("--path", required=True)
 
     _qdemo = sub.add_parser("queue-demo", help="Demonstrate task queue lifecycle.")
 
@@ -232,7 +283,39 @@ def main() -> int:
     if args.command == "approval":
         if args.approval_command == "render":
             return _approval_render(args.file, output_format=args.format, output=args.output)
+        if args.approval_command == "create":
+            return _approval_create(args.plan, args.out, expires_in=args.expires_in)
+        if args.approval_command == "decide":
+            return _approval_decide(
+                args.packet,
+                args.out,
+                approver=args.approver,
+                decision=args.decision,
+                reason=args.reason,
+            )
         print("Error: missing approval subcommand", file=sys.stderr)
+        return 2
+    if args.command == "doctor":
+        return _doctor(args.profile)
+    if args.command == "github":
+        if args.github_command == "dry-run":
+            return _github_dry_run(args.repo, args.issue, audit=args.audit)
+        if args.github_command == "plan":
+            return _github_plan(args.repo, args.issue, args.out)
+        if args.github_command == "apply":
+            return _github_apply(
+                args.plan,
+                args.approval,
+                decision_path=args.decision,
+                audit_path=args.audit,
+                receipt_dir=args.receipts,
+            )
+        print("Error: missing github subcommand", file=sys.stderr)
+        return 2
+    if args.command == "audit":
+        if args.audit_command == "inspect":
+            return _inspect_audit(args.path)
+        print("Error: missing audit subcommand", file=sys.stderr)
         return 2
     if args.command == "queue-demo":
         return _queue_demo()
@@ -661,6 +744,147 @@ def _approval_render(file_path: str, *, output_format: str, output: str | None) 
     else:
         sys.stdout.write(rendered)
     return 0
+
+
+def _doctor(profile: str) -> int:
+    result = production_github_doctor(profile)
+    print(json.dumps({"status": "passed" if result.ok else "failed", "message": result.message, **result.data}))
+    return 0 if result.ok else 1
+
+
+def _github_token(*, required: bool) -> Secret | None:
+    value = os.environ.get("LEOS_GITHUB_TOKEN")
+    if value:
+        return Secret(value)
+    if required:
+        raise ValueError("LEOS_GITHUB_TOKEN is required")
+    return None
+
+
+def _github_dry_run(repo: str, issue: int, *, audit: str | None) -> int:
+    try:
+        result = github_issue_dry_run(
+            repo,
+            issue,
+            token=_github_token(required=False),
+            audit_path=Path(audit) if audit else None,
+        )
+    except Exception as exc:
+        print(f"Error: GitHub dry-run failed ({type(exc).__name__})", file=sys.stderr)
+        return 1
+    print(json.dumps({"status": "passed" if result.ok else "failed", "message": result.message, **result.data}))
+    return 0 if result.ok else 1
+
+
+def _github_plan(repo: str, issue: int, output: str) -> int:
+    try:
+        plan = create_draft_plan(repo, issue, token=_github_token(required=False))
+        write_private_json(Path(output), plan)
+    except Exception as exc:
+        print(f"Error: GitHub plan creation failed ({type(exc).__name__})", file=sys.stderr)
+        return 1
+    print(f"Draft plan written to {output}; complete the operator fields and set status to ready.")
+    return 0
+
+
+def _approval_create(plan_path: str, output: str, *, expires_in: float) -> int:
+    try:
+        plan = load_json_object(Path(plan_path))
+        bundle = build_approval_bundle(plan, expires_in_seconds=expires_in)
+        write_private_json(Path(output), bundle)
+    except Exception as exc:
+        print(f"Error: approval packet creation failed ({type(exc).__name__})", file=sys.stderr)
+        return 1
+    print(f"Approval packets written to {output}")
+    print(f"Expected signed decision path: {decision_path_for(Path(output))}")
+    return 0
+
+
+def _approval_decide(
+    packet_path: str,
+    output: str,
+    *,
+    approver: str,
+    decision: str,
+    reason: str | None,
+) -> int:
+    secret = os.environ.get("LEOS_APPROVAL_HMAC_SECRET")
+    if not secret:
+        print("Error: LEOS_APPROVAL_HMAC_SECRET is required", file=sys.stderr)
+        return 2
+    try:
+        packet = load_json_object(Path(packet_path))
+        bundle = build_signed_decision_bundle(
+            packet,
+            decision_value=decision,
+            approver=approver,
+            signature_secret=secret,
+            reason=reason,
+        )
+        write_private_json(Path(output), bundle)
+    except Exception as exc:
+        print(f"Error: approval decision creation failed ({type(exc).__name__})", file=sys.stderr)
+        return 1
+    print(f"Signed approval decisions written to {output}")
+    return 0
+
+
+def _github_apply(
+    plan_path: str,
+    approval_path: str,
+    *,
+    decision_path: str | None,
+    audit_path: str | None,
+    receipt_dir: str | None,
+) -> int:
+    secret = os.environ.get("LEOS_APPROVAL_HMAC_SECRET")
+    if not secret:
+        print("Error: LEOS_APPROVAL_HMAC_SECRET is required", file=sys.stderr)
+        return 2
+    try:
+        token = _github_token(required=True)
+        if token is None:
+            print("Error: LEOS_GITHUB_TOKEN is required", file=sys.stderr)
+            return 2
+        plan_file = Path(plan_path)
+        approval_file = Path(approval_path)
+        decision_file = Path(decision_path) if decision_path else decision_path_for(approval_file)
+        audit_file = Path(audit_path) if audit_path else plan_file.with_suffix(".audit.jsonl")
+        receipts = Path(receipt_dir) if receipt_dir else approval_file.with_name(f"{approval_file.stem}.consumed")
+        result = apply_operator_plan(
+            load_json_object(plan_file),
+            load_json_object(approval_file),
+            load_json_object(decision_file),
+            token=token,
+            signature_secret=secret,
+            audit_path=audit_file,
+            receipt_dir=receipts,
+        )
+        if not result.ok:
+            recovery_path = _write_manual_recovery_from_audit(audit_file, plan_file)
+            if recovery_path is not None:
+                result.data["manual_recovery_path"] = str(recovery_path)
+    except Exception as exc:
+        print(f"Error: GitHub apply failed ({type(exc).__name__})", file=sys.stderr)
+        return 1
+    print(json.dumps({"status": "passed" if result.ok else "failed", "message": result.message, **result.data}))
+    return 0 if result.ok else 1
+
+
+def _write_manual_recovery_from_audit(audit_path: Path, plan_path: Path) -> Path | None:
+    if not audit_path.exists():
+        return None
+    for record in reversed(AuditLog(path=audit_path).records()):
+        if record.get("event_type") != "recovery.packet_created":
+            continue
+        payload = record.get("payload")
+        packet = payload.get("packet") if isinstance(payload, dict) else None
+        if not isinstance(packet, dict):
+            continue
+        output = plan_path.with_suffix(".recovery.json")
+        write_private_json(output, packet)
+        return output
+    return None
 
 
 def _proof_generate(output: str, require_clean: bool, allow_dirty: bool, no_run: bool) -> int:

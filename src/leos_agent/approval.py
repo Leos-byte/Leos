@@ -42,6 +42,14 @@ class ApprovalPacket:
     expires_at: float | None = None
     requester: str | None = None
     profile: str = "custom"
+    repo: str | None = None
+    branch: str | None = None
+    file_paths: list[str] = field(default_factory=list)
+    expected_sha: str | None = None
+    expected_previous: str | None = None
+    egress_host: str | None = None
+    egress_methods: list[str] = field(default_factory=list)
+    cleanup_description: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -63,6 +71,14 @@ class ApprovalPacket:
             "expires_at": self.expires_at,
             "requester": self.requester,
             "profile": self.profile,
+            "repo": self.repo,
+            "branch": self.branch,
+            "file_paths": list(self.file_paths),
+            "expected_sha": self.expected_sha,
+            "expected_previous": self.expected_previous,
+            "egress_host": self.egress_host,
+            "egress_methods": list(self.egress_methods),
+            "cleanup_description": self.cleanup_description,
         }
 
     @classmethod
@@ -86,6 +102,16 @@ class ApprovalPacket:
             expires_at=float(data["expires_at"]) if data.get("expires_at") is not None else None,
             requester=str(data["requester"]) if data.get("requester") is not None else None,
             profile=str(data.get("profile", "custom")),
+            repo=str(data["repo"]) if data.get("repo") is not None else None,
+            branch=str(data["branch"]) if data.get("branch") is not None else None,
+            file_paths=[str(value) for value in data.get("file_paths", ())],
+            expected_sha=str(data["expected_sha"]) if data.get("expected_sha") is not None else None,
+            expected_previous=(str(data["expected_previous"]) if data.get("expected_previous") is not None else None),
+            egress_host=str(data["egress_host"]) if data.get("egress_host") is not None else None,
+            egress_methods=[str(value) for value in data.get("egress_methods", ())],
+            cleanup_description=(
+                str(data["cleanup_description"]) if data.get("cleanup_description") is not None else None
+            ),
         )
 
 
@@ -166,6 +192,16 @@ def build_approval_packet(
         expires_at=time.time() + expires_in_seconds if expires_in_seconds > 0 else None,
         requester=requester,
         profile=profile,
+        repo=str(step.arguments["repo"]) if step.arguments.get("repo") is not None else None,
+        branch=_approval_branch(step),
+        file_paths=[str(step.arguments["path"])] if step.arguments.get("path") is not None else [],
+        expected_sha=(str(step.arguments["expected_sha"]) if step.arguments.get("expected_sha") is not None else None),
+        expected_previous=(
+            str(step.arguments["expected_previous"]) if step.arguments.get("expected_previous") is not None else None
+        ),
+        egress_host=tool.spec.egress_host,
+        egress_methods=list(tool.spec.egress_methods),
+        cleanup_description=rollback_summary,
     )
 
 
@@ -216,6 +252,14 @@ def render_approval_packet_markdown(packet: ApprovalPacket) -> str:
         "profile",
         "created_at",
         "expires_at",
+        "repo",
+        "branch",
+        "file_paths",
+        "expected_sha",
+        "expected_previous",
+        "egress_host",
+        "egress_methods",
+        "cleanup_description",
     ):
         lines.append(f"- **{key}**: {data[key]}")
     return "\n".join(lines) + "\n"
@@ -224,3 +268,11 @@ def render_approval_packet_markdown(packet: ApprovalPacket) -> str:
 def render_approval_packet_html(packet: ApprovalPacket) -> str:
     body = html.escape(render_approval_packet_markdown(packet))
     return f"<!doctype html><html><body><pre>{body}</pre></body></html>"
+
+
+def _approval_branch(step: ActionStep) -> str | None:
+    for key in ("branch", "head", "base"):
+        value = step.arguments.get(key)
+        if value is not None:
+            return str(value)
+    return None

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "leos-agent"
-version = "0.1.0"
-description = "Safety-first autonomous agent kernel with causal checks, policy gates, transactions, memory, and audit logs."
+version = "0.1.0b1"
+description = "Safety-first runtime kernel for bounded, auditable AI agent actions."
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
@@ -27,6 +27,7 @@ dev = [
   "coverage",
   "bandit",
   "hypothesis",
+  "build",
 ]
 
 [project.scripts]
