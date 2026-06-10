@@ -5,12 +5,15 @@
 - Command: `python -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `2.531`
+- Duration seconds: `2.507`
 - Truncated: `False`
 
 ### stdout
 
 ```text
+Approval packets written to /tmp/tmpy9vc48al/approval.json
+Expected signed decision path: /tmp/tmpy9vc48al/approval.decision.json
+Signed approval decisions written to /tmp/tmpy9vc48al/approval.decision.json
 No anomalies detected.
 OK: Would echo: hi
 echo                  risk=low       rev=irreversible  perm=none
@@ -33,6 +36,8 @@ network_ssrf_dns_private_ip: passed severity=critical
 rollback_failure_manual_recovery: passed severity=high
 container_without_runner_blocked: passed severity=critical
 container_command_hardening: passed severity=high
+{"status": "passed", "message": "observed", "writes_performed": false}
+Draft plan written to /tmp/tmprbcg9c9c/plan.json; complete the operator fields and set status to ready.
 Integrity: OK
 Applied events: 1
 Anomalies: none
@@ -111,7 +116,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: 8a54f7e6-cdc3-404e-8631-612e05c16c3f
+Enqueued: 733d82f0-734e-4db5-91b5-2fb6895ce5ec
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -123,7 +128,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=956d0d263b769708d2fcca558fb3fc8f3c220ecb51fa7abc0159c8653d2ce20f observed=0664bf886a31972a8c36c2c734bf66300d0e9be225b54b0b2b2a43d4bdced967
+  [0] event_hash_mismatch: expected=1afdb759e8b833f9b76f600bad468db512e9da7276b5220f4aba5291dc826fcc observed=6d1c07b4dc93398eb25b8948a6e10752a445f0f56323b17502ef88e8e5849e15
 Integrity: OK
 Applied events: 1
 Facts:
@@ -137,7 +142,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpt77o19ky/signed.json
+Signed manifest written to /tmp/tmpbodhf2co/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -146,14 +151,15 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmp12eik8xh/trace.html
+<redacted> written to /tmp/tmp5yuvv422/trace.html
 
 ```
 
 ### stderr
 
 ```text
-.....................................................................................................Error: file not found: /tmp/tmp71bq2t1s/nonexistent.txt
+....................................................................................................Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
+...Error: file not found: /tmp/tmp6f8ci3n5/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -164,7 +170,8 @@ Error: /steps: minItems
 .Error: $: required
 Error: /steps: minItems
 ..Error: validate-policy requires a file or --profile
-.......Issue: $: 'steps' is a required property
+.....Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
+......Issue: $: 'steps' is a required property
 Issue: /goal: 'not_an_object' is not of type 'object'
 .Unknown tool: nonexistent
 ..............................................................................Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
@@ -176,9 +183,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-.............................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+...................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 807 tests in 2.254s
+Ran 819 tests in 2.209s
 
 OK
 
