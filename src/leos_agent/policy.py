@@ -185,7 +185,6 @@ class PolicyProfile:
                         data["egress_policy"].get("allowed_methods", ("GET", "POST", "PATCH", "PUT", "DELETE"))
                     ),
                     max_requests=data["egress_policy"].get("max_requests"),
-                    dns_rebind_protection=bool(data["egress_policy"].get("dns_rebind_protection", True)),
                 )
                 if isinstance(data.get("egress_policy"), Mapping)
                 else None

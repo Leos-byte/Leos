@@ -90,6 +90,7 @@ class FileApprovalGate(ApprovalGate):
         self.last_decision_signature_algorithm: str | None = None
         self.packet_dir.mkdir(parents=True, exist_ok=True)
         self.decision_dir.mkdir(parents=True, exist_ok=True)
+        self._consumed_approval_ids: set[str] = set()
 
     def request_packet(self, packet: ApprovalPacket, step: ActionStep) -> ApprovalDecision:
         del step
@@ -152,6 +153,18 @@ class FileApprovalGate(ApprovalGate):
             return "approval decision signature required"
         if not verify_approval_decision_signature(decision, self.signature_secret, signature):
             return "approval decision signature invalid"
+        return None
+
+    def consume_approval(
+        self,
+        packet: ApprovalPacket,
+        decision: ApprovalDecision,
+        step: ActionStep,
+    ) -> str | None:
+        """Track consumed approval IDs to prevent replay of the same decision."""
+        if packet.approval_id in self._consumed_approval_ids:
+            return f"Approval {packet.approval_id} was already consumed"
+        self._consumed_approval_ids.add(packet.approval_id)
         return None
 
     def _decision_file_permission_issue(self, path: Path) -> str | None:

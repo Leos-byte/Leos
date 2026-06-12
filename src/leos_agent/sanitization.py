@@ -22,6 +22,8 @@ TOKEN_REGEXES = (
     ("openai-token", re.compile(r"(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{8,}")),
     ("slack-bot-token", re.compile(r"(?<![A-Za-z0-9])xoxb-[A-Za-z0-9_-]{8,}")),
     ("slack-user-token", re.compile(r"(?<![A-Za-z0-9])xoxp-[A-Za-z0-9_-]{8,}")),
+    ("aws-access-key", re.compile(r"(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}")),
+    ("bearer-token", re.compile(r"(?<![A-Za-z0-9])Bearer [A-Za-z0-9\-._~+/]{20,}")),
 )
 
 

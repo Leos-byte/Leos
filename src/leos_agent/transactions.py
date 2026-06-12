@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any
+from typing import Any, cast
 
 from .approval import build_approval_packet, build_step_hash, validate_approval_decision
 from .audit import AuditLog
@@ -675,7 +675,7 @@ class TransactionManager:
                 k: v if k in preserve and isinstance(v, Secret) else v.unwrap() if isinstance(v, Secret) else v
                 for k, v in arguments.items()
             }
-        return _redact_secrets(arguments)
+        return cast(dict[str, Any], _redact_secrets(arguments))
 
     def track_progress(self, plan: TransactionPlan) -> GoalProgress:
         progress = GoalProgress(total_steps=len(plan.steps))
