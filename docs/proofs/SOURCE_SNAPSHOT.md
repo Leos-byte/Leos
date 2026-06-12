@@ -1,6 +1,6 @@
 # Source Snapshot
 
-Generated: `2026-06-10T09:04:50.911213+00:00`
+Generated: `2026-06-12T09:41:29.230053+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -10,7 +10,7 @@ Generated: `2026-06-10T09:04:50.911213+00:00`
 | `src/leos_agent/github_agent.py` | `0d5019e2922f52998577d456c23539649db0a5092fa42f71d8440c5bd3c55746` | 185 | 7032 | True |
 | `src/leos_agent/github_client.py` | `467bf22df623197aebc0c773e6fdce190d92b11e2debb09f3d0826de6dffcb43` | 555 | 20182 | True |
 | `src/leos_agent/planner.py` | `5aa0a515b9f3dcaf45421831be6244ff0d867a2d8ecb8c2a1e3c5eb0a820c83b` | 335 | 13283 | True |
-| `src/leos_agent/proof.py` | `a527b929bf2eece3666b566c6fa34d64d66946cec87a826fcd9e130147ea65df` | 620 | 22105 | True |
+| `src/leos_agent/proof.py` | `c53df812e82325dfeceea438336c0430cda76fba7712265b62d9f6c63d274f8c` | 662 | 23916 | True |
 | `src/leos_agent/sandbox.py` | `999a9dc7b69ddd9d770c414f318da3b6227a1fc2b905edd1cfc9976f42de8073` | 376 | 13214 | True |
 | `src/leos_agent/sanitization.py` | `c24b9e73791cde023de8135243d16fb439747d852c5f295155b8bb4560235ccc` | 108 | 3884 | True |
 | `src/leos_agent/sqlite_store.py` | `1773e206b94f0a130bad9de0ce83c5e16cdc595381f46dfc516833375f1488a7` | 218 | 8257 | True |

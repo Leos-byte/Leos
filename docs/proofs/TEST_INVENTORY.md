@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-06-10T09:04:50.911213+00:00`
+Generated: `2026-06-12T09:41:29.230053+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -44,11 +44,11 @@ Generated: `2026-06-10T09:04:50.911213+00:00`
 | `tests/test_production_profile.py` | `a39e46c2324bf667653881ce8916928f55b244b089c01e9df2bbcd750d7ce37b` | 849 | 33624 | True |
 | `tests/test_production_readiness.py` | `afafb1470ff9e49d6c7ab0f57d7a92200f8a2392a0124faf0c3b81cd3fa9808d` | 92 | 3521 | True |
 | `tests/test_production_smoke_evidence.py` | `be0d425609d2035ef7e402de63b1a94f2f76960166cd214ae6fb52f26c07f5b2` | 252 | 9359 | True |
-| `tests/test_proof_generation.py` | `6d3688c9d0a9905693ec2a3228b5d5026627a4272e006f631ed8287346d92a5e` | 146 | 6270 | True |
+| `tests/test_proof_generation.py` | `8a2284c47645ac450e0074e796e5fcddb066c85244990a3011beaf63230b0b20` | 202 | 8432 | True |
 | `tests/test_properties.py` | `c79e170732b4853a1404712a485b85cca756b49ec0e0fe201f9f7080daa0a558` | 173 | 6762 | True |
 | `tests/test_public_api.py` | `39dfce3674a9b69ba168c2d30742ef391cf64eaaa9733a309f23fb5b417cfe31` | 239 | 9323 | True |
 | `tests/test_recovery.py` | `cd2e83ca67da4a15d42b5e70aae882544e666548063c0f3feacfbab073a109d4` | 34 | 1108 | True |
-| `tests/test_release_proof_check.py` | `1d4b97c8818fccfe525726724b93975d82ddaf7c379982cf8ffcf9707ebf4b4b` | 114 | 5059 | True |
+| `tests/test_release_proof_check.py` | `c9c8d90b241fcede87b7af58019a31bddeb816c0a3d078e0634b183ac36f1dc5` | 152 | 6898 | True |
 | `tests/test_replanning.py` | `2a82c80388536e36a149d3e163433410b65b67f20a52ce7eff6a85ba538bd163` | 155 | 5787 | True |
 | `tests/test_replay.py` | `c283dec6fdcdb9857e966d4ea25b1e82ae1f268d12a455e5842afcf7288a94d3` | 117 | 5330 | True |
 | `tests/test_runtime_store.py` | `5fd95e8ab33018da777c85e460e7ebf712694552f803d1ecee8ad8dd9c12bc64` | 189 | 7363 | True |

@@ -5,15 +5,15 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `4.086`
+- Duration seconds: `4.092`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Approval packets written to /tmp/tmp8xta5jci/approval.json
-Expected signed decision path: /tmp/tmp8xta5jci/approval.decision.json
-Signed approval decisions written to /tmp/tmp8xta5jci/approval.decision.json
+Approval packets written to /tmp/tmp5hogplf3/approval.json
+Expected signed decision path: /tmp/tmp5hogplf3/approval.decision.json
+Signed approval decisions written to /tmp/tmp5hogplf3/approval.decision.json
 No anomalies detected.
 OK: Would echo: hi
 echo                  risk=low       rev=irreversible  perm=none
@@ -37,7 +37,7 @@ rollback_failure_manual_recovery: passed severity=high
 container_without_runner_blocked: passed severity=critical
 container_command_hardening: passed severity=high
 {"status": "passed", "message": "observed", "writes_performed": false}
-Draft plan written to /tmp/tmpoa6pkrko/plan.json; complete the operator fields and set status to ready.
+Draft plan written to /tmp/tmp2jc0xa7e/plan.json; complete the operator fields and set status to ready.
 Integrity: OK
 Applied events: 1
 Anomalies: none
@@ -116,7 +116,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: 196dd062-def5-4b9b-9b48-1b715116a68f
+Enqueued: ac62702b-f42d-405e-aa60-c8e3fd524265
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -128,7 +128,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=3243b6a5b9aa5c29a16135acdfc46bfc84313be3ad850c1dd5c4624dceac686f observed=fd32ecac956e16d74c55b988d18a0c5dd95afc385b14f6420c64dc0aed3d8920
+  [0] event_hash_mismatch: expected=7680375816af7e364c9d7503c169433608f8acc3d35fd68393767e20cfd52a04 observed=03cce754c8d38f257450429d41766a9f751e0e192eab530d380fdbc0f1a97f1a
 Integrity: OK
 Applied events: 1
 Facts:
@@ -142,7 +142,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpjqefwn5e/signed.json
+Signed manifest written to /tmp/tmp0cvl3uw3/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -151,7 +151,7 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmp3hmou3hu/trace.html
+<redacted> written to /tmp/tmp8_j8_2_9/trace.html
 
 ```
 
@@ -159,7 +159,7 @@ report.md: pattern=github-classic-token
 
 ```text
 ....................................................................................................Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
-...Error: file not found: /tmp/tmp19i3dic9/nonexistent.txt
+...Error: file not found: /tmp/tmp229c8jfm/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -183,9 +183,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-...................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+...........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 819 tests in 3.496s
+Ran 827 tests in 3.483s
 
 OK
 
@@ -196,7 +196,7 @@ OK
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.835`
+- Duration seconds: `0.841`
 - Truncated: `False`
 
 ### stdout
@@ -239,7 +239,7 @@ src/leos_agent/plans.py                       89      2      8      3    95%
 src/leos_agent/policy.py                     402     70    158     21    80%
 src/leos_agent/policy_manifest.py             51      4     12      4    87%
 src/leos_agent/prompts.py                     30      1      2      1    94%
-src/leos_agent/proof.py                      216      9     42      8    93%
+src/leos_agent/proof.py                      245     14     48      9    92%
 src/leos_agent/recovery.py                    38      0      2      0   100%
 src/leos_agent/replanning.py                  93      6     28      7    89%
 src/leos_agent/replay.py                     122     10     80     15    86%
@@ -256,6 +256,6 @@ src/leos_agent/tools.py                      149      7     28     10    90%
 src/leos_agent/trace_viewer.py                68      0     20      0   100%
 src/leos_agent/transactions.py               502     47    188     17    90%
 ----------------------------------------------------------------------------
-TOTAL                                       7149    723   1950    413    86%
+TOTAL                                       7178    728   1956    414    86%
 
 ```

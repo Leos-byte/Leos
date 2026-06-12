@@ -35,7 +35,7 @@ All checks passed!
 - Command: `mypy src`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.148`
+- Duration seconds: `0.147`
 - Truncated: `False`
 
 ### stdout

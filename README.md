@@ -41,7 +41,9 @@ the action boundary around that call:
 ## Current evidence
 
 - release-grade proof artifacts bind checks to source and test hashes.
-- 807 unit tests and 86% coverage are recorded in the current proof set.
+- The exact unit-test count and coverage result are recorded in the current
+  [release proof manifest](docs/proofs/MANIFEST.json), avoiding stale README
+  counters.
 - The safety regression suite reports 15/15 passing cases.
 - `production_github_only` restricts execution to bounded GitHub workflows and
   `api.github.com` egress.

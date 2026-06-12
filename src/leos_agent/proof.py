@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import json
 import os
 import platform
@@ -99,6 +100,8 @@ class ProofManifest:
     commands: list[CommandProof] = field(default_factory=list)
     source_snapshot: list[FileSnapshot] = field(default_factory=list)
     test_inventory: list[FileSnapshot] = field(default_factory=list)
+    package_version: str = ""
+    test_count: int | None = None
 
     @property
     def summary(self) -> dict[str, int]:
@@ -130,6 +133,7 @@ def generate_proofs(
     proof_status, release_grade, warnings = _proof_status(git, require_clean=require_clean)
     source_snapshot = _snapshot_files(root, KEY_SOURCE_FILES)
     test_inventory = _snapshot_files(root, _test_files(root))
+    package_version = _package_version(root)
 
     commands: list[CommandProof] = []
     if proof_status == "failed_dirty_worktree":
@@ -148,10 +152,12 @@ def generate_proofs(
         dirty_worktree=git.get("dirty_worktree"),
         warnings=warnings,
         git=git,
-        environment=_environment(root),
+        environment=_environment(root, package_version),
         commands=commands,
         source_snapshot=source_snapshot,
         test_inventory=test_inventory,
+        package_version=package_version,
+        test_count=_test_count(commands),
     )
     _write_all(output, manifest)
     return manifest
@@ -210,13 +216,47 @@ def _git_metadata(root: Path) -> dict[str, Any]:
     return {"available": True, "branch": branch, "commit_sha": commit, "dirty_worktree": bool(status)}
 
 
-def _environment(root: Path) -> dict[str, Any]:
+def _environment(root: Path, package_version: str | None = None) -> dict[str, Any]:
     return {
         "python_version": sys.version.split()[0],
         "platform": platform.platform(),
         "working_directory": str(root),
-        "package_version": "0.1.0",
+        "package_version": package_version or _package_version(root),
     }
+
+
+def _package_version(root: Path) -> str:
+    project_version = _pyproject_version(root)
+    try:
+        installed_version = importlib.metadata.version("leos-agent")
+    except importlib.metadata.PackageNotFoundError:
+        return project_version
+    if installed_version != project_version:
+        raise RuntimeError(
+            "installed leos-agent version does not match pyproject.toml; "
+            "install the current project before generating release proof"
+        )
+    return installed_version
+
+
+def _pyproject_version(root: Path) -> str:
+    try:
+        text = (root / "pyproject.toml").read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError("pyproject.toml could not be read") from exc
+    project = re.search(r"(?ms)^\[project\]\s*(.*?)(?=^\[|\Z)", text)
+    version = re.search(r'(?m)^version\s*=\s*"([^"]+)"\s*$', project.group(1) if project else "")
+    if version is None:
+        raise RuntimeError("project.version is missing from pyproject.toml")
+    return version.group(1)
+
+
+def _test_count(commands: Sequence[CommandProof]) -> int | None:
+    unit_tests = next((command for command in commands if command.name == "unit_tests"), None)
+    if unit_tests is None or unit_tests.status != "passed":
+        return None
+    match = re.search(r"Ran\s+(\d+)\s+tests?\s+in", f"{unit_tests.stdout}\n{unit_tests.stderr}")
+    return int(match.group(1)) if match else None
 
 
 def _run_command(name: str, command: Sequence[str], root: Path) -> CommandProof:
@@ -377,6 +417,8 @@ def _render_index(manifest: ProofManifest) -> str:
 - Proof status: `{manifest.proof_status}`
 - Release grade: `{manifest.release_grade}`
 - Generated at: `{manifest.generated_at}`
+- Package version: `{manifest.package_version}`
+- Unit tests: `{manifest.test_count}`
 - Commit SHA: `{manifest.git.get("commit_sha")}`
 - Branch: `{manifest.git.get("branch")}`
 - Dirty worktree: `{manifest.dirty_worktree}`
