@@ -87,6 +87,21 @@ class ProductionReadinessTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn("production readiness", str(result["reason"]))
 
+    def test_ci_check_rejects_shallow_real_write_checkout(self) -> None:
+        ci = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+        real_write = Path(".github/workflows/github-real-write-smoke.yml").read_text(encoding="utf-8")
+        shallow = real_write.replace("git fetch --no-tags", "git fetch --depth 1")
+
+        def fake_read_text(path: Path, *args, **kwargs) -> str:
+            del args, kwargs
+            return shallow if path.name == "github-real-write-smoke.yml" else ci
+
+        with mock.patch.object(Path, "read_text", fake_read_text):
+            result = _ci_check(Path.cwd())
+
+        self.assertFalse(result["ok"])
+        self.assertIn("full Git history", str(result["reason"]))
+
 
 if __name__ == "__main__":
     unittest.main()

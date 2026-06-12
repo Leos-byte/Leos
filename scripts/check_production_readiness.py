@@ -226,6 +226,8 @@ def _ci_check(root: Path) -> dict[str, Any]:
         return _fail("ci", "real-write workflow must use the disposable-repo smoke token")
     if "production-smoke-evidence-${{ github.sha }}" not in real_write:
         return _fail("ci", "real-write workflow must upload exact-SHA sanitized evidence")
+    if "--depth" in real_write:
+        return _fail("ci", "real-write workflow must fetch full Git history for release proof validation")
     forbidden_triggers = ("pull_request:", "push:")
     if any(trigger in real_write for trigger in forbidden_triggers):
         return _fail("ci", "real-write workflow must not run on push or pull_request")

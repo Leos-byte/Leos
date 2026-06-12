@@ -66,7 +66,8 @@ class GitHubRealWriteGatedTests(unittest.TestCase):
         workflow = Path(".github/workflows/github-real-write-smoke.yml").read_text(encoding="utf-8")
         self.assertNotIn("actions/checkout", workflow)
         self.assertNotIn("persist-credentials", workflow)
-        self.assertIn("git fetch --depth 1 origin", workflow)
+        self.assertIn('git fetch --no-tags origin "$GITHUB_REF"', workflow)
+        self.assertNotIn("--depth", workflow)
         self.assertIn("environment: smoke-private", workflow)
         self.assertIn("LEOS_SMOKE_GITHUB_TOKEN", workflow)
 
