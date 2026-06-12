@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-06-12T09:41:29.230053+00:00`
+Generated: `2026-06-12T09:58:18.229551+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -31,7 +31,7 @@ Generated: `2026-06-12T09:41:29.230053+00:00`
 | `tests/test_extensibility_demo.py` | `e073cceedcb66772b2328dc8a48aa9664c738eab597237774229692172f0d3b0` | 28 | 917 | True |
 | `tests/test_github_agent_orchestration.py` | `dd82d5ae345fb27a8822a79ad66981225c94d6a44a5ff19fc897f1974d3e01b9` | 320 | 12502 | True |
 | `tests/test_github_operator.py` | `eda28bd9b0f070f37945e66b0b2868a44d15fa3f0a68b4df8c9125b763fc03f5` | 268 | 10652 | True |
-| `tests/test_github_real_write_gated.py` | `caa220210e59b1ea152f1c0f3436045e191d2e285625facaf53df3ab94b49616` | 310 | 12610 | True |
+| `tests/test_github_real_write_gated.py` | `ea56965f7be50ec46518b1e34e772fc3880b71c3ae5ad8e1cbe30113e41146f5` | 311 | 12670 | True |
 | `tests/test_github_rest_client.py` | `9238c8da835f7549c03780da56165d0d2537c69a28fd573bc1b6f672a2d24084` | 518 | 21404 | True |
 | `tests/test_github_tools.py` | `8526900cc86ad8d1721ef353ddbd19e7aad5291b64d64cf6d0bceaba91fc7072` | 589 | 22254 | True |
 | `tests/test_github_tools_credentials.py` | `2227a920470d0398065b792c71fe8e5ec735c0301c8d6348751c1f56b9a22003` | 93 | 3736 | True |
@@ -42,7 +42,7 @@ Generated: `2026-06-12T09:41:29.230053+00:00`
 | `tests/test_network_tools.py` | `91362d989c57f9d98632c0a1283bbc3b99c88ff6a576a80a42214d7d2e97739d` | 215 | 8706 | True |
 | `tests/test_planner.py` | `f749bb4546f5623f281581ccf33c7dcba64e8641a1bf872c9f6db35e688e493f` | 70 | 3190 | True |
 | `tests/test_production_profile.py` | `a39e46c2324bf667653881ce8916928f55b244b089c01e9df2bbcd750d7ce37b` | 849 | 33624 | True |
-| `tests/test_production_readiness.py` | `afafb1470ff9e49d6c7ab0f57d7a92200f8a2392a0124faf0c3b81cd3fa9808d` | 92 | 3521 | True |
+| `tests/test_production_readiness.py` | `0cd7cad5133453b9a527d32f563aa69f6ca437bb0988d2d05b35776ffe571465` | 107 | 4246 | True |
 | `tests/test_production_smoke_evidence.py` | `be0d425609d2035ef7e402de63b1a94f2f76960166cd214ae6fb52f26c07f5b2` | 252 | 9359 | True |
 | `tests/test_proof_generation.py` | `8a2284c47645ac450e0074e796e5fcddb066c85244990a3011beaf63230b0b20` | 202 | 8432 | True |
 | `tests/test_properties.py` | `c79e170732b4853a1404712a485b85cca756b49ec0e0fe201f9f7080daa0a558` | 173 | 6762 | True |
