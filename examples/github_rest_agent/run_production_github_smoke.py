@@ -56,6 +56,8 @@ _FORBIDDEN_EVIDENCE_PATTERNS = (
     re.compile(r"bearer\s", re.IGNORECASE),
     re.compile(r"LEOS_GITHUB_TOKEN", re.IGNORECASE),
     re.compile(r"LEOS_APPROVAL_HMAC_SECRET", re.IGNORECASE),
+    re.compile(r"LEOS_SMOKE_GITHUB_TOKEN", re.IGNORECASE),
+    re.compile(r"LEOS_SMOKE_APPROVAL_HMAC_SECRET", re.IGNORECASE),
     re.compile(r"hmac-sha256:[0-9a-f]{32,}", re.IGNORECASE),
 )
 
@@ -110,10 +112,17 @@ def main() -> int:
         "repository_visibility": "unknown",
         "repository_disposable": False,
         "repository_under_test": os.environ.get("LEOS_GITHUB_TEST_REPO", ""),
+        "test_repo": os.environ.get("LEOS_GITHUB_TEST_REPO", ""),
         "workflow_trigger": workflow_trigger,
         "work_branch_prefix": os.environ.get("LEOS_GITHUB_WORK_BRANCH_PREFIX", "leos/"),
         "leos_commit_sha": leos_commit_sha,
         "workflow_run_id": workflow_run_id,
+        "run_id": workflow_run_id,
+        "base_branch": os.environ.get("LEOS_GITHUB_BASE_BRANCH", "main"),
+        "created_branch": None,
+        "pr_number": None,
+        "verification_status": "failed",
+        "cleanup_status": "not_started",
         "generated_at": _utc_now(),
         "checks": checks,
     }
@@ -141,6 +150,7 @@ def main() -> int:
         evidence.update(
             {
                 "repository_under_test": repo,
+                "test_repo": repo,
                 "repository_disposable": True,
                 "work_branch_prefix": branch_prefix,
                 "base_branch": base_branch,
@@ -397,8 +407,16 @@ def main() -> int:
         if evaluation.status is not GoalEvaluationStatus.SUCCEEDED:
             raise GitHubConflictError("goal evaluation failed")
         evidence["status"] = "passed"
+        evidence["verification_status"] = "passed"
+        evidence["cleanup_status"] = "passed"
     except Exception as exc:  # noqa: BLE001 - smoke path must return a structured failure
         evidence["status"] = "failed"
+        evidence["verification_status"] = "failed"
+        evidence["cleanup_status"] = (
+            "passed"
+            if checks.get("pr_closed") and checks.get("branch_deleted") and checks.get("source_repo_unchanged")
+            else "failed"
+        )
         evidence["failure_type"] = type(exc).__name__
         evidence["failure_summary"] = "production smoke failed; inspect the sanitized workflow step result"
         _write_evidence(evidence_out, evidence)

@@ -307,6 +307,33 @@ class TransactionManager:
                     profile=self.policy.profile_name,
                     requester=self.policy.principal,
                 )
+                try:
+                    packet = self.approval_gate.prepare_packet(packet, step)
+                except Exception as exc:
+                    step.status = StepStatus.BLOCKED
+                    reason = f"Approval packet preparation failed: {type(exc).__name__}"
+                    self.audit_log.record(
+                        "step.blocked",
+                        "Step blocked by approval packet validation",
+                        step_id=step.step_id,
+                        tool=step.tool_name,
+                        decision="denied",
+                        reason=reason,
+                        rule_name=decision_result.rule_name,
+                        reversibility=step.reversibility.value,
+                        compensation_strategy=step.compensation_strategy.value,
+                        error_type=type(exc).__name__,
+                    )
+                    self.audit_log.record(
+                        "approval.rejected",
+                        "Approval packet rejected before execution",
+                        step_id=step.step_id,
+                        tool=step.tool_name,
+                        reason=reason,
+                        error_type=type(exc).__name__,
+                    )
+                    self._rollback(rollback_stack, state, plan=plan)
+                    break
                 self.audit_log.record(
                     "approval.packet_created",
                     "Approval packet created",
@@ -365,6 +392,33 @@ class TransactionManager:
                         tool=step.tool_name,
                         approval_id=packet.approval_id,
                         reason=approval_issue,
+                        error_type=type(error).__name__,
+                    )
+                    self._rollback(rollback_stack, state, plan=plan)
+                    break
+                consumption_issue = self.approval_gate.consume_approval(packet, approval_decision, step)
+                if consumption_issue:
+                    step.status = StepStatus.BLOCKED
+                    error = PolicyDenied(f"Step approval rejected: {consumption_issue}")
+                    self.audit_log.record(
+                        "step.blocked",
+                        "Step blocked by approval replay protection",
+                        step_id=step.step_id,
+                        tool=step.tool_name,
+                        decision="denied",
+                        reason=consumption_issue,
+                        rule_name=decision_result.rule_name,
+                        reversibility=step.reversibility.value,
+                        compensation_strategy=step.compensation_strategy.value,
+                        error_type=type(error).__name__,
+                    )
+                    self.audit_log.record(
+                        "approval.rejected",
+                        "Approval rejected before execution",
+                        step_id=step.step_id,
+                        tool=step.tool_name,
+                        approval_id=packet.approval_id,
+                        reason=consumption_issue,
                         error_type=type(error).__name__,
                     )
                     self._rollback(rollback_stack, state, plan=plan)

@@ -56,7 +56,7 @@ class ProductionReadinessTests(unittest.TestCase):
 
         def fake_read_text(path: Path, *args, **kwargs) -> str:
             del args, kwargs
-            return real_write if path.name == "github-real-write.yml" else ci
+            return real_write if path.name == "github-real-write-smoke.yml" else ci
 
         with mock.patch.object(Path, "read_text", fake_read_text):
             result = _ci_check(Path.cwd())
@@ -79,7 +79,7 @@ class ProductionReadinessTests(unittest.TestCase):
 
         def fake_read_text(path: Path, *args, **kwargs) -> str:
             del args, kwargs
-            return real_write if path.name == "github-real-write.yml" else ci
+            return real_write if path.name == "github-real-write-smoke.yml" else ci
 
         with mock.patch.object(Path, "read_text", fake_read_text):
             result = _ci_check(Path.cwd())

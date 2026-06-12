@@ -1,4 +1,4 @@
-.PHONY: test safety bench lint format-check type coverage security mutation-smoke fuzz-smoke proof-light proof-check production-readiness production-smoke-evidence-check check
+.PHONY: test safety bench lint format-check type coverage security mutation-smoke fuzz-smoke proof-light proof-check production-readiness production-smoke-evidence-check package-check check
 
 test:
 	PYTHONPATH=src python -m unittest discover -s tests
@@ -42,6 +42,9 @@ production-readiness:
 
 production-smoke-evidence-check:
 	python scripts/check_production_readiness.py --profile production_github_only --require-smoke-evidence --smoke-evidence-path docs/proofs/real_github_smoke_latest.json
+
+package-check:
+	python scripts/verify_package.py
 
 check:
 	ruff check .

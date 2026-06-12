@@ -196,17 +196,21 @@ def _valid_evidence(**overrides) -> dict:
         "profile": "production_github_only",
         "status": "passed",
         "repository_under_test": "Leos-byte/leos-smoke-private-test",
+        "test_repo": "Leos-byte/leos-smoke-private-test",
         "repository_visibility": "private",
         "repository_disposable": True,
         "leos_repository": "Leos-byte/Leos",
         "leos_commit_sha": "abc123",
         "workflow_name": "GitHub Real Write Smoke",
         "workflow_run_id": "123",
-        "workflow_trigger": "workflow_dispatch",
+        "run_id": "123",
         "base_branch": "main",
+        "created_branch": "leos/smoke-123",
+        "pr_number": 123,
+        "verification_status": "passed",
+        "cleanup_status": "passed",
+        "workflow_trigger": "workflow_dispatch",
         "work_branch_prefix": "leos/",
-        "created_branch": "leos/smoke",
-        "pr_number": 1,
         "pr_url": "https://github.com/Leos-byte/leos-smoke-private-test/pull/1",
         "checks": {
             "private_repo_used": True,
@@ -237,6 +241,10 @@ def _valid_evidence(**overrides) -> dict:
         "notes": ["No secrets stored."],
     }
     evidence.update(overrides)
+    if "repository_under_test" in overrides and "test_repo" not in overrides:
+        evidence["test_repo"] = evidence["repository_under_test"]
+    if "workflow_run_id" in overrides and "run_id" not in overrides:
+        evidence["run_id"] = evidence["workflow_run_id"]
     return evidence
 
 

@@ -562,6 +562,23 @@ class ApprovalGate:
             decision=ApprovalDecisionValue.APPROVE if decision is Decision.APPROVED else ApprovalDecisionValue.DENY,
         )
 
+    def prepare_packet(self, packet: ApprovalPacket, step: ActionStep) -> ApprovalPacket:
+        """Resolve a generated packet to a pre-created operator packet."""
+
+        del step
+        return packet
+
+    def consume_approval(
+        self,
+        packet: ApprovalPacket,
+        decision: ApprovalDecision,
+        step: ActionStep,
+    ) -> str | None:
+        """Atomically reserve a valid approval before consequential execution."""
+
+        del packet, decision, step
+        return None
+
 
 @dataclass(frozen=True)
 class ApprovalRequest:

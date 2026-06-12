@@ -4,16 +4,20 @@ on:
   workflow_dispatch:
     inputs:
       test_repo:
-        description: "Repository to test, owner/name"
+        description: "Private disposable repository, owner/name"
         required: true
       base_branch:
         description: "Base branch"
         default: "main"
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   gated-real-write:
     runs-on: ubuntu-latest
+    environment: smoke-private
     steps:
       - name: Checkout public Leos repository without credentials
         run: |
@@ -39,12 +43,21 @@ jobs:
           LEOS_GITHUB_WORK_BRANCH_PREFIX: "leos/"
           LEOS_SMOKE_EVIDENCE_OUT: ${{ runner.temp }}/real_github_smoke_latest.json
           SMOKE_AUTH_ENV: "SMOKE_AUTH_VALUE"
-          SMOKE_AUTH_VALUE: ${{ secrets.LEOS_GITHUB_TOKEN }}
+          SMOKE_AUTH_VALUE: ${{ secrets.LEOS_SMOKE_GITHUB_TOKEN }}
           SMOKE_APPROVAL_ENV: "SMOKE_APPROVAL_VALUE"
-          SMOKE_APPROVAL_VALUE: ${{ secrets.LEOS_APPROVAL_HMAC_SECRET }}
+          SMOKE_APPROVAL_VALUE: ${{ secrets.LEOS_SMOKE_APPROVAL_HMAC_SECRET }}
         run: python examples/github_rest_agent/run_production_github_smoke.py
 
-      - name: Upload exact-HEAD smoke evidence
+      - name: Validate sanitized smoke evidence
+        if: always()
+        run: |
+          python scripts/check_production_readiness.py \
+            --profile production_github_only \
+            --require-smoke-evidence \
+            --smoke-evidence-path "${RUNNER_TEMP}/real_github_smoke_latest.json"
+          python scripts/scan_artifacts_for_secrets.py --root "${RUNNER_TEMP}"
+
+      - name: Upload sanitized exact-HEAD smoke evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:

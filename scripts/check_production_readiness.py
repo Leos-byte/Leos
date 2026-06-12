@@ -197,7 +197,7 @@ def _runtime_surface_check() -> dict[str, Any]:
 
 def _ci_check(root: Path) -> dict[str, Any]:
     ci_path = root / ".github" / "workflows" / "ci.yml"
-    real_write_path = root / ".github" / "workflows" / "github-real-write.yml"
+    real_write_path = root / ".github" / "workflows" / "github-real-write-smoke.yml"
     try:
         ci = ci_path.read_text(encoding="utf-8")
         real_write = real_write_path.read_text(encoding="utf-8")
@@ -220,6 +220,12 @@ def _ci_check(root: Path) -> dict[str, Any]:
         return _fail("ci", "main-only exact-HEAD production readiness check is missing")
     if "workflow_dispatch" not in real_write:
         return _fail("ci", "real-write workflow is not workflow_dispatch-only")
+    if "environment: smoke-private" not in real_write:
+        return _fail("ci", "real-write workflow must use the smoke-private environment")
+    if "LEOS_SMOKE_GITHUB_TOKEN" not in real_write:
+        return _fail("ci", "real-write workflow must use the disposable-repo smoke token")
+    if "production-smoke-evidence-${{ github.sha }}" not in real_write:
+        return _fail("ci", "real-write workflow must upload exact-SHA sanitized evidence")
     forbidden_triggers = ("pull_request:", "push:")
     if any(trigger in real_write for trigger in forbidden_triggers):
         return _fail("ci", "real-write workflow must not run on push or pull_request")
@@ -257,6 +263,8 @@ _SMOKE_FORBIDDEN_PATTERNS = {
     "bearer_marker": re.compile(r"bearer\s", re.IGNORECASE),
     "github_token_secret_name": re.compile(r"LEOS_GITHUB_TOKEN", re.IGNORECASE),
     "approval_hmac_secret_name": re.compile(r"LEOS_APPROVAL_HMAC_SECRET", re.IGNORECASE),
+    "smoke_token_secret_name": re.compile(r"LEOS_SMOKE_GITHUB_TOKEN", re.IGNORECASE),
+    "smoke_hmac_secret_name": re.compile(r"LEOS_SMOKE_APPROVAL_HMAC_SECRET", re.IGNORECASE),
     "raw_hmac_signature": re.compile(r"hmac-sha256:[0-9a-fA-F]{32,}", re.IGNORECASE),
 }
 _SMOKE_REQUIRED_CHECKS = (
@@ -312,6 +320,8 @@ def _smoke_evidence_check(
         return _fail("smoke evidence", "leos_commit_sha must match current git HEAD")
     if not str(evidence.get("workflow_run_id", "")).strip():
         return _fail("smoke evidence", "workflow_run_id is required")
+    if evidence.get("run_id") != evidence.get("workflow_run_id"):
+        return _fail("smoke evidence", "run_id must match workflow_run_id")
     generated_at = str(evidence.get("generated_at", ""))
     if not generated_at or not generated_at.endswith("Z"):
         return _fail("smoke evidence", "generated_at must be a UTC timestamp")
@@ -324,6 +334,8 @@ def _smoke_evidence_check(
         "repository_disposable": True,
         "workflow_trigger": "workflow_dispatch",
         "work_branch_prefix": "leos/",
+        "verification_status": "passed",
+        "cleanup_status": "passed",
     }
     for key, expected in expected_fields.items():
         if evidence.get(key) != expected:
@@ -331,6 +343,14 @@ def _smoke_evidence_check(
     if evidence.get("evidence_type") not in _SMOKE_EVIDENCE_TYPES:
         return _fail("smoke evidence", "evidence_type is not an accepted GitHub smoke type")
     repository = str(evidence.get("repository_under_test", ""))
+    if evidence.get("test_repo") != repository:
+        return _fail("smoke evidence", "test_repo must match repository_under_test")
+    if not str(evidence.get("base_branch", "")).strip():
+        return _fail("smoke evidence", "base_branch is required")
+    if not str(evidence.get("created_branch", "")).startswith("leos/"):
+        return _fail("smoke evidence", "created_branch must use the leos/ prefix")
+    if not isinstance(evidence.get("pr_number"), int) or int(evidence["pr_number"]) < 1:
+        return _fail("smoke evidence", "pr_number must be a positive integer")
     if "leos-smoke" not in repository.lower():
         return _fail("smoke evidence", "repository_under_test must be a disposable leos-smoke repository")
     if repository == "Leos-byte/Leos":

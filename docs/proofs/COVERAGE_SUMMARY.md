@@ -5,12 +5,15 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `3.91`
+- Duration seconds: `4.086`
 - Truncated: `False`
 
 ### stdout
 
 ```text
+Approval packets written to /tmp/tmp8xta5jci/approval.json
+Expected signed decision path: /tmp/tmp8xta5jci/approval.decision.json
+Signed approval decisions written to /tmp/tmp8xta5jci/approval.decision.json
 No anomalies detected.
 OK: Would echo: hi
 echo                  risk=low       rev=irreversible  perm=none
@@ -33,6 +36,8 @@ network_ssrf_dns_private_ip: passed severity=critical
 rollback_failure_manual_recovery: passed severity=high
 container_without_runner_blocked: passed severity=critical
 container_command_hardening: passed severity=high
+{"status": "passed", "message": "observed", "writes_performed": false}
+Draft plan written to /tmp/tmpoa6pkrko/plan.json; complete the operator fields and set status to ready.
 Integrity: OK
 Applied events: 1
 Anomalies: none
@@ -111,7 +116,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: 7f72f306-51c0-4705-af6d-5bb28254156c
+Enqueued: 196dd062-def5-4b9b-9b48-1b715116a68f
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -123,7 +128,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=9f94ec0a01a1066018f82b04c118f0de28cd2d8ae3de86e2f3c91021d57ee3ba observed=b19b75fc2c25e86d2c0c4d021644816773d793a877ff9eafa006a4281cf2b7e2
+  [0] event_hash_mismatch: expected=3243b6a5b9aa5c29a16135acdfc46bfc84313be3ad850c1dd5c4624dceac686f observed=fd32ecac956e16d74c55b988d18a0c5dd95afc385b14f6420c64dc0aed3d8920
 Integrity: OK
 Applied events: 1
 Facts:
@@ -137,7 +142,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpsqw766el/signed.json
+Signed manifest written to /tmp/tmpjqefwn5e/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -146,14 +151,15 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmpsyie8gos/trace.html
+<redacted> written to /tmp/tmp3hmou3hu/trace.html
 
 ```
 
 ### stderr
 
 ```text
-.....................................................................................................Error: file not found: /tmp/tmpybl1r5tn/nonexistent.txt
+....................................................................................................Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
+...Error: file not found: /tmp/tmp19i3dic9/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -164,7 +170,8 @@ Error: /steps: minItems
 .Error: $: required
 Error: /steps: minItems
 ..Error: validate-policy requires a file or --profile
-.......Issue: $: 'steps' is a required property
+.....Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
+......Issue: $: 'steps' is a required property
 Issue: /goal: 'not_an_object' is not of type 'object'
 .Unknown tool: nonexistent
 ..............................................................................Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
@@ -176,9 +183,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-.............................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+...................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 807 tests in 3.335s
+Ran 819 tests in 3.496s
 
 OK
 
@@ -189,7 +196,7 @@ OK
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.799`
+- Duration seconds: `0.835`
 - Truncated: `False`
 
 ### stdout
@@ -199,12 +206,12 @@ Name                                       Stmts   Miss Branch BrPart  Cover
 ----------------------------------------------------------------------------
 src/leos_agent/__init__.py                     2      0      0      0   100%
 src/leos_agent/agent_loop.py                 206     19     56     11    86%
-src/leos_agent/approval.py                    87      2     16      2    96%
+src/leos_agent/approval.py                   101      2     20      2    97%
 src/leos_agent/approval_exchange.py          127      5     36      3    95%
 src/leos_agent/audit.py                      143      7     46     11    90%
 src/leos_agent/causal.py                      92      1     18      1    98%
 src/leos_agent/causal_contract.py            112     17     44      9    81%
-src/leos_agent/cli.py                        476    194    188     32    57%
+src/leos_agent/cli.py                        622    166    228     51    68%
 src/leos_agent/conflicts.py                   37      0     14      0   100%
 src/leos_agent/core.py                        49      0      0      0   100%
 src/leos_agent/credentials.py                 61      1     16      8    88%
@@ -216,6 +223,7 @@ src/leos_agent/eval_runner.py                354     18     10      2    94%
 src/leos_agent/evaluator_registry.py         213     22     86     14    85%
 src/leos_agent/github_agent.py                74      6     18      4    89%
 src/leos_agent/github_client.py              285      8     76      7    96%
+src/leos_agent/github_operator.py            291     39     94     38    80%
 src/leos_agent/github_tools.py               477     58    138     56    81%
 src/leos_agent/goal_evaluator.py              29      1      4      2    91%
 src/leos_agent/goals.py                       92      8     18      3    88%
@@ -228,7 +236,7 @@ src/leos_agent/network_guard.py               33      2     10      2    91%
 src/leos_agent/network_tools.py              168     26     48      7    84%
 src/leos_agent/planner.py                    150     12     58     14    88%
 src/leos_agent/plans.py                       89      2      8      3    95%
-src/leos_agent/policy.py                     396     70    158     21    80%
+src/leos_agent/policy.py                     402     70    158     21    80%
 src/leos_agent/policy_manifest.py             51      4     12      4    87%
 src/leos_agent/prompts.py                     30      1      2      1    94%
 src/leos_agent/proof.py                      216      9     42      8    93%
@@ -246,8 +254,8 @@ src/leos_agent/task_queue.py                 255     27     52     10    87%
 src/leos_agent/tool_manifest_registry.py      81     11     34      9    83%
 src/leos_agent/tools.py                      149      7     28     10    90%
 src/leos_agent/trace_viewer.py                68      0     20      0   100%
-src/leos_agent/transactions.py               485     40    186     17    91%
+src/leos_agent/transactions.py               502     47    188     17    90%
 ----------------------------------------------------------------------------
-TOTAL                                       6675    705   1810    356    86%
+TOTAL                                       7149    723   1950    413    86%
 
 ```

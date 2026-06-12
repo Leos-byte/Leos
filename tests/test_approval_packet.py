@@ -196,6 +196,13 @@ class ApprovalPacketTests(unittest.TestCase):
             "diff_summary": "diff",
             "alternatives": ["deny", "narrow"],
             "requester": "tester",
+            "repo": "owner/repo",
+            "branch": "leos/change",
+            "file_paths": ["src/app.py"],
+            "expected_sha": "abc",
+            "egress_host": "api.github.com",
+            "egress_methods": ["GET", "PUT"],
+            "cleanup_description": "restore previous content",
         }
         from leos_agent import ApprovalPacket
 
@@ -206,6 +213,8 @@ class ApprovalPacketTests(unittest.TestCase):
         self.assertIn("action_summary", markdown)
         self.assertIn("alternatives", markdown)
         self.assertIn("diff_summary", markdown)
+        self.assertIn("api.github.com", markdown)
+        self.assertIn("src/app.py", markdown)
         html = render_approval_packet_html(packet)
         self.assertIn("&lt;script&gt;", html)
         self.assertNotIn("<script>", html)

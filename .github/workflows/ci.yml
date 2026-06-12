@@ -50,6 +50,10 @@ jobs:
       - name: Benchmarks
         run: make bench
 
+      - name: Verify wheel install and CLI
+        if: matrix.python-version == '3.12'
+        run: make package-check
+
       - name: Check release proof
         if: github.ref == 'refs/heads/main'
         run: python scripts/check_release_proof.py
