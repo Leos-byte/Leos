@@ -8,12 +8,16 @@ from ipaddress import ip_address
 
 @dataclass(frozen=True)
 class EgressPolicy:
-    """A small fail-closed egress allowlist used by policy profiles."""
+    """A small fail-closed egress allowlist used by policy profiles.
+
+    Note: this is a hostname-level allowlist. It does not perform DNS
+    resolution, so DNS rebinding is not detected at this layer.
+    Deployments must enforce DNS rebind protection at the network level.
+    """
 
     allowed_hosts: tuple[str, ...]
     allowed_methods: tuple[str, ...] = ("GET", "POST", "PATCH", "PUT", "DELETE")
     max_requests: int | None = None
-    dns_rebind_protection: bool = True
 
     def allows(self, host: str, method: str = "GET") -> bool:
         normalized_host = host.strip().lower()

@@ -44,12 +44,26 @@ class Secret:
         return self._value
 
 
-def _redact_secrets(arguments: Mapping[str, Any]) -> dict[str, Any]:
-    return {k: "<secret>" if isinstance(v, Secret) else v for k, v in arguments.items()}
+def _redact_secrets(arguments: Any) -> Any:
+    """Recursively redact Secret values."""
+    if isinstance(arguments, Secret):
+        return "<secret>"
+    if isinstance(arguments, Mapping):
+        return {k: _redact_secrets(v) for k, v in arguments.items()}
+    if isinstance(arguments, (list, tuple)):
+        return [_redact_secrets(item) for item in arguments]
+    return arguments
 
 
-def _contains_secrets(arguments: Mapping[str, Any]) -> bool:
-    return any(isinstance(v, Secret) for v in arguments.values())
+def _contains_secrets(arguments: Any) -> bool:
+    """Recursively check for Secret values."""
+    if isinstance(arguments, Secret):
+        return True
+    if isinstance(arguments, Mapping):
+        return any(_contains_secrets(v) for v in arguments.values())
+    if isinstance(arguments, (list, tuple)):
+        return any(_contains_secrets(item) for item in arguments)
+    return False
 
 
 @dataclass

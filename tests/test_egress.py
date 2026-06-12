@@ -39,9 +39,9 @@ class EgressPolicyTests(unittest.TestCase):
         policy = EgressPolicy(allowed_hosts=("allowed.com",))
         self.assertFalse(policy.allows("other.com"))
 
-    def test_dns_rebind_protection_flag(self) -> None:
-        policy = EgressPolicy(allowed_hosts=("allowed.com",), dns_rebind_protection=False)
-        self.assertFalse(policy.dns_rebind_protection)
+    def test_dns_rebind_protection_limitation(self) -> None:
+        """DNS rebind protection is not implemented at this layer; hostname-level checks apply."""
+        policy = EgressPolicy(allowed_hosts=("allowed.com",))
         self.assertTrue(policy.allows("allowed.com"))
         self.assertFalse(policy.allows("127.0.0.1"))
 
