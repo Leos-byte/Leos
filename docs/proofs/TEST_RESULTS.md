@@ -5,15 +5,15 @@
 - Command: `python -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `2.475`
+- Duration seconds: `2.47`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Approval packets written to /tmp/tmp6d4ouhy2/approval.json
-Expected signed decision path: /tmp/tmp6d4ouhy2/approval.decision.json
-Signed approval decisions written to /tmp/tmp6d4ouhy2/approval.decision.json
+Approval packets written to /tmp/tmpwwjk9qw3/approval.json
+Expected signed decision path: /tmp/tmpwwjk9qw3/approval.decision.json
+Signed approval decisions written to /tmp/tmpwwjk9qw3/approval.decision.json
 No anomalies detected.
 OK: Would echo: hi
 echo                  risk=low       rev=irreversible  perm=none
@@ -37,7 +37,7 @@ rollback_failure_manual_recovery: passed severity=high
 container_without_runner_blocked: passed severity=critical
 container_command_hardening: passed severity=high
 {"status": "passed", "message": "observed", "writes_performed": false}
-Draft plan written to /tmp/tmpd8k3c434/plan.json; complete the operator fields and set status to ready.
+Draft plan written to /tmp/tmp0tqb5ail/plan.json; complete the operator fields and set status to ready.
 Integrity: OK
 Applied events: 1
 Anomalies: none
@@ -116,7 +116,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: c9039f97-b9fa-4ba6-8516-9e6dcdf09fa7
+Enqueued: f37132ac-97e2-48a8-8c72-9a3ab513e6bf
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -128,7 +128,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=8bf0cd54b14b36da29f35ac6d38d3cd7a1e02a9fd6e048aab9080f0cac543163 observed=b372624fcb890f1f1662132b52cc8e9b6c23be4dc4b207d6037cc1eb6c0b960d
+  [0] event_hash_mismatch: expected=3163c777c5153dfb672921efd317777ec32edd8c5188abea6411c1221212189a observed=472c19a59b09c8ccd1e365ea981277ae8439680f49c6bc359c46452f45cee54c
 Integrity: OK
 Applied events: 1
 Facts:
@@ -142,7 +142,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpvnptowll/signed.json
+Signed manifest written to /tmp/tmpuq_r48z_/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -151,7 +151,7 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmp_jfm_elz/trace.html
+<redacted> written to /tmp/tmpky9hvdg0/trace.html
 
 ```
 
@@ -159,7 +159,7 @@ report.md: pattern=github-classic-token
 
 ```text
 ....................................................................................................Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
-...Error: file not found: /tmp/tmp3fdx0eo4/nonexistent.txt
+...Error: file not found: /tmp/tmpt94sz2z6/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -183,9 +183,9 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-...................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+...........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 819 tests in 2.190s
+Ran 827 tests in 2.187s
 
 OK
 

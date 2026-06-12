@@ -2,9 +2,11 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-06-10T09:04:50.911213+00:00`
-- Commit SHA: `38b8cbf8dbbb2fc6f84c927c3fd6b69239995a77`
-- Branch: `feat/v0.1-beta-production-github`
+- Generated at: `2026-06-12T09:41:29.230053+00:00`
+- Package version: `0.1.0b1`
+- Unit tests: `827`
+- Commit SHA: `171f821034e6c2b1a1280702b37380ad38816acb`
+- Branch: `fix/v0.1-beta-release-hardening`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 
