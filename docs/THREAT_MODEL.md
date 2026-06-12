@@ -117,8 +117,9 @@ Leos is a bounded, auditable agent runtime. It is not production-ready autonomou
 - Stronger secret scanning across every stdout/stderr/result path.
 - Broader adversarial benchmark coverage for long-running software engineering tasks.
 - Real GitHub token scope verification and deployment policy for production use.
-- Live GitHub issue-to-PR runs still need deployment policy, least-privilege
-  token issuance, and operator approval UX beyond the fake-transport demo.
+- Basic file-based operator approval UX exists for the beta, but production
+  dashboard, GitHub App/OAuth token issuance, deployment policy, and stronger
+  operator workflow remain future work.
 - `JsonlRuntimeStore` is a development persistence layer and does not provide
   production concurrency, migration, or retention guarantees.
 - `SQLiteRuntimeStore` improves local restart recovery but is not a

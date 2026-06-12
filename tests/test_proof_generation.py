@@ -72,6 +72,7 @@ class ProofGenerationTests(unittest.TestCase):
 
         self.assertEqual(manifest.proof_status, "release_grade")
         self.assertTrue(manifest.release_grade)
+        self.assertEqual(manifest.package_version, "0.1.0b1")
 
     def test_git_unavailable_does_not_crash(self) -> None:
         with (
@@ -140,6 +141,61 @@ class ProofGenerationTests(unittest.TestCase):
 
         self.assertNotRegex(redacted, re.compile("abc|def"))
         self.assertIn("<redacted>", redacted)
+
+    def test_test_count_is_parsed_from_successful_unittest_output(self) -> None:
+        result = proof.CommandProof(
+            name="unit_tests",
+            command=["python", "-m", "unittest"],
+            exit_code=0,
+            status="passed",
+            started_at="now",
+            finished_at="now",
+            duration_seconds=1.0,
+            stderr="Ran 819 tests in 2.1s\n\nOK\n",
+        )
+
+        self.assertEqual(proof._test_count([result]), 819)
+
+    def test_test_count_is_missing_for_failed_or_unparseable_tests(self) -> None:
+        failed = proof.CommandProof(
+            name="unit_tests",
+            command=["python", "-m", "unittest"],
+            exit_code=1,
+            status="failed",
+            started_at="now",
+            finished_at="now",
+            duration_seconds=1.0,
+            stderr="Ran 819 tests in 2.1s\n\nFAILED\n",
+        )
+        passed_without_count = proof.CommandProof(
+            name="unit_tests",
+            command=["python", "-m", "unittest"],
+            exit_code=0,
+            status="passed",
+            started_at="now",
+            finished_at="now",
+            duration_seconds=1.0,
+        )
+
+        self.assertIsNone(proof._test_count([failed]))
+        self.assertIsNone(proof._test_count([passed_without_count]))
+
+    def test_package_version_rejects_stale_installed_metadata(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            mock.patch("leos_agent.proof.importlib.metadata.version", return_value="0.1.0"),
+        ):
+            root = Path(tmp)
+            (root / "pyproject.toml").write_text('[project]\nversion = "0.1.0b1"\n', encoding="utf-8")
+
+            with self.assertRaisesRegex(RuntimeError, "does not match pyproject"):
+                proof._package_version(root)
+
+    def test_readme_does_not_hardcode_a_stale_unit_test_count(self) -> None:
+        readme = Path("README.md").read_text(encoding="utf-8")
+
+        self.assertNotRegex(readme, re.compile(r"\b\d+\s+unit tests\b", re.IGNORECASE))
+        self.assertIn("docs/proofs/MANIFEST.json", readme)
 
 
 if __name__ == "__main__":

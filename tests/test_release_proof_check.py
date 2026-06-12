@@ -98,12 +98,50 @@ class ReleaseProofCheckTests(unittest.TestCase):
         failures = check_release_proof._proof_failures(manifest, Path.cwd())
         self.assertIn("git metadata missing", failures)
 
+    def test_package_version_mismatch_fails(self) -> None:
+        manifest = _manifest(package_version="0.1.0")
+
+        with mock.patch.object(check_release_proof, "_git", return_value="abc"):
+            failures = check_release_proof._proof_failures(manifest, Path.cwd())
+
+        self.assertTrue(any("package_version" in failure for failure in failures))
+
+    def test_environment_package_version_mismatch_fails(self) -> None:
+        manifest = _manifest()
+        manifest["environment"]["package_version"] = "0.1.0"
+
+        with mock.patch.object(check_release_proof, "_git", return_value="abc"):
+            failures = check_release_proof._proof_failures(manifest, Path.cwd())
+
+        self.assertTrue(any("environment.package_version" in failure for failure in failures))
+
+    def test_missing_or_invalid_test_count_fails(self) -> None:
+        for count in (None, 0, -1, True, "819"):
+            with self.subTest(count=count):
+                manifest = _manifest(test_count=count)
+                with mock.patch.object(check_release_proof, "_git", return_value="abc"):
+                    failures = check_release_proof._proof_failures(manifest, Path.cwd())
+                self.assertTrue(any("test_count" in failure for failure in failures))
+
+    def test_malformed_pyproject_fails_cleanly(self) -> None:
+        manifest = _manifest()
+        with (
+            mock.patch.object(check_release_proof, "_pyproject_version", return_value=None),
+            mock.patch.object(check_release_proof, "_git", return_value="abc"),
+        ):
+            failures = check_release_proof._proof_failures(manifest, Path.cwd())
+
+        self.assertTrue(any("project.version" in failure for failure in failures))
+
 
 def _manifest(**overrides):
     data = {
         "proof_status": "release_grade",
         "release_grade": True,
         "dirty_worktree": False,
+        "package_version": "0.1.0b1",
+        "test_count": 819,
+        "environment": {"package_version": "0.1.0b1"},
         "git": {"branch": "main", "commit_sha": "abc", "dirty_worktree": False},
     }
     data.update(overrides)

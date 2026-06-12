@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -39,6 +40,17 @@ def _proof_failures(manifest: dict[str, Any], root: Path) -> list[str]:
         failures.append("release_grade is not true")
     if manifest.get("dirty_worktree") is not False:
         failures.append("dirty_worktree is not false")
+    expected_version = _pyproject_version(root)
+    if expected_version is None:
+        failures.append("project.version could not be read from pyproject.toml")
+    elif manifest.get("package_version") != expected_version:
+        failures.append("package_version does not match pyproject.toml")
+    environment = manifest.get("environment")
+    if not isinstance(environment, dict) or environment.get("package_version") != expected_version:
+        failures.append("environment.package_version does not match pyproject.toml")
+    test_count = manifest.get("test_count")
+    if not isinstance(test_count, int) or isinstance(test_count, bool) or test_count < 1:
+        failures.append("test_count must be a positive integer")
     git = manifest.get("git")
     if not isinstance(git, dict):
         failures.append("git metadata missing")
@@ -112,6 +124,16 @@ def _git_returncode(root: Path, *args: str) -> int | None:
     except Exception:
         return None
     return proc.returncode
+
+
+def _pyproject_version(root: Path) -> str | None:
+    try:
+        text = (root / "pyproject.toml").read_text(encoding="utf-8")
+    except OSError:
+        return None
+    project = re.search(r"(?ms)^\[project\]\s*(.*?)(?=^\[|\Z)", text)
+    version = re.search(r'(?m)^version\s*=\s*"([^"]+)"\s*$', project.group(1) if project else "")
+    return version.group(1) if version else None
 
 
 if __name__ == "__main__":
