@@ -208,6 +208,12 @@ from .sandbox import (  # noqa: F401
     SandboxUnavailable,
     WorkspaceSubprocessSandboxRunner,
 )
+from .sandbox_backends import (  # noqa: F401
+    FirecrackerSandboxRunner,
+    GvisorSandboxRunner,
+    RootlessPodmanSandboxRunner,
+    resolve_sandbox_runner,
+)
 from .sanitization import (
     SanitizationError,
     SanitizationMode,
@@ -292,6 +298,10 @@ __all__ = [
     "Decision",
     "DryRunFailed",
     "DockerSandboxRunner",
+    "FirecrackerSandboxRunner",
+    "GvisorSandboxRunner",
+    "RootlessPodmanSandboxRunner",
+    "resolve_sandbox_runner",
     "DomainEvaluator",
     "DeterministicProposalProvider",
     "DNSResolver",
