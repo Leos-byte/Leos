@@ -5,15 +5,15 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `5.116`
+- Duration seconds: `5.127`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Approval packets written to /tmp/tmp5iusfdxo/approval.json
-Expected signed decision path: /tmp/tmp5iusfdxo/approval.decision.json
-Signed approval decisions written to /tmp/tmp5iusfdxo/approval.decision.json
+Approval packets written to /tmp/tmp68a01mri/approval.json
+Expected signed decision path: /tmp/tmp68a01mri/approval.decision.json
+Signed approval decisions written to /tmp/tmp68a01mri/approval.decision.json
 No anomalies detected.
 OK: Would echo: hi
 echo                  risk=low       rev=irreversible  perm=none
@@ -37,7 +37,7 @@ rollback_failure_manual_recovery: passed severity=high
 container_without_runner_blocked: passed severity=critical
 container_command_hardening: passed severity=high
 {"status": "passed", "message": "observed", "writes_performed": false}
-Draft plan written to /tmp/tmpzzl4qmzi/plan.json; complete the operator fields and set status to ready.
+Draft plan written to /tmp/tmpijpn2d2s/plan.json; complete the operator fields and set status to ready.
 Integrity: OK
 Applied events: 1
 Anomalies: none
@@ -116,7 +116,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: 596c52e2-c2fd-40ab-b8fc-b5325bea4295
+Enqueued: 49f003f8-09eb-4a86-a05c-b58bfab2a034
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -128,7 +128,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=963570569557463c8828b0f64aa7acf093081fbd31e370be44e5890549dc5ea2 observed=55a5a2e71dfe24b6013d80bad90a1200f4b5805ef2a0df65267bcf02a75f6f0d
+  [0] event_hash_mismatch: expected=65c3ce79c0fe1df7c747de8b9c8385a2708db4cdde8c583b7ec70bec1fdb65bf observed=79694db87007fc444ba6d9aabad9005f1171bfbc250e43321dcfbc2f95420011
 Integrity: OK
 Applied events: 1
 Facts:
@@ -142,7 +142,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmp1jj0qa80/signed.json
+Signed manifest written to /tmp/tmpohxh0p9l/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -151,7 +151,7 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmp592j8yp1/trace.html
+<redacted> written to /tmp/tmpq1q4rvfe/trace.html
 
 ```
 
@@ -161,7 +161,7 @@ report.md: pattern=github-classic-token
 /home/leo/.local/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
   from starlette.testclient import TestClient as TestClient  # noqa
 ....................................................................................................Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
-...Error: file not found: /tmp/tmp1v35gnst/nonexistent.txt
+...Error: file not found: /tmp/tmpc5mzvet3/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -185,12 +185,12 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-.....................................................................................................................................................................................................................................................................................ssssssss......................................................................./usr/lib64/python3.14/unittest/mock.py:2259: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fa145fcf010>
-  def __init__(self, name, parent):
+....................................................................................................................................................................................................................................................................................................ssssssss......................................................................./usr/lib64/python3.14/importlib/metadata/__init__.py:818: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f639498b970>
+  return itertools.chain(infos, eggs)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 .................................................................................................................................................................................................................................................................................................................s..................................................
 ----------------------------------------------------------------------
-Ran 968 tests in 4.186s
+Ran 983 tests in 4.196s
 
 OK (skipped=9)
 
@@ -201,7 +201,7 @@ OK (skipped=9)
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.89`
+- Duration seconds: `0.892`
 - Truncated: `False`
 
 ### stdout
@@ -213,12 +213,12 @@ src/leos_agent/__init__.py                     2      0      0      0   100%
 src/leos_agent/agent_loop.py                 206     19     56     11    86%
 src/leos_agent/approval.py                   101      2     20      2    97%
 src/leos_agent/approval_exchange.py          133      9     38      3    92%
-src/leos_agent/audit.py                      143      7     46     11    90%
+src/leos_agent/audit.py                      148      7     48     11    91%
 src/leos_agent/causal.py                      92      1     18      1    98%
 src/leos_agent/causal_contract.py            112     17     44      9    81%
 src/leos_agent/cli.py                        622    166    228     51    68%
 src/leos_agent/conflicts.py                   37      0     14      0   100%
-src/leos_agent/core.py                        53      0      0      0   100%
+src/leos_agent/core.py                        54      0      0      0   100%
 src/leos_agent/credential_backends.py        101      3     28     12    88%
 src/leos_agent/credentials.py                 61      1     16      8    88%
 src/leos_agent/dev_tools.py                  188     29     38     13    81%
@@ -240,6 +240,7 @@ src/leos_agent/model.py                       47      0      2      1    98%
 src/leos_agent/model_adapters.py             109     26     18      2    76%
 src/leos_agent/network_guard.py               33      2     10      2    91%
 src/leos_agent/network_tools.py              168     26     48      7    84%
+src/leos_agent/observability.py               74      0     24      7    93%
 src/leos_agent/planner.py                    150     12     58     14    88%
 src/leos_agent/plans.py                       89      2      8      3    95%
 src/leos_agent/policy.py                     402     70    158     21    80%
@@ -267,6 +268,6 @@ src/leos_agent/tools.py                      161      7     40     10    92%
 src/leos_agent/trace_viewer.py                68      0     20      0   100%
 src/leos_agent/transactions.py               502     47    188     17    90%
 ----------------------------------------------------------------------------
-TOTAL                                       7840    762   2116    438    87%
+TOTAL                                       7920    762   2142    445    87%
 
 ```

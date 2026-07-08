@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-07-08T06:11:33.128618+00:00`
+Generated: `2026-07-08T07:27:54.455922+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -41,6 +41,7 @@ Generated: `2026-07-08T06:11:33.128618+00:00`
 | `tests/test_memory.py` | `3832f6d016056aa86b71354bfe197de1b3365ae0e50a84a9740a6ba7c146e675` | 105 | 4313 | True |
 | `tests/test_model_adapters.py` | `59f4bedd8f56cdd6a78a102bf5e54485111876ff2134d25a825f6d448785157c` | 82 | 3391 | True |
 | `tests/test_network_tools.py` | `91362d989c57f9d98632c0a1283bbc3b99c88ff6a576a80a42214d7d2e97739d` | 215 | 8706 | True |
+| `tests/test_observability.py` | `699e93e8ac32b0af40d3d9b397717c1d242952814c5b08140d3e9d3a5e8cdaaa` | 240 | 9358 | True |
 | `tests/test_planner.py` | `f749bb4546f5623f281581ccf33c7dcba64e8641a1bf872c9f6db35e688e493f` | 70 | 3190 | True |
 | `tests/test_postgres_store.py` | `03c675658dae6c537b17ed1296680426264ed9dfef184613949c050deae693eb` | 150 | 5468 | True |
 | `tests/test_production_profile.py` | `a39e46c2324bf667653881ce8916928f55b244b089c01e9df2bbcd750d7ce37b` | 849 | 33624 | True |
