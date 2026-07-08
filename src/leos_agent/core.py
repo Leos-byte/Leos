@@ -158,6 +158,13 @@ from .network_tools import (
     URLSafetyPolicy,
     make_untrusted_observation,
 )
+from .observability import (  # noqa: F401
+    ObservabilitySinkUnavailable,
+    OTelAuditSink,
+    PrometheusMetrics,
+    StructlogAuditSink,
+    compose_sinks,
+)
 from .planner import (  # noqa: F401
     LLMPlannerAdapter,
     Planner,
@@ -385,6 +392,11 @@ __all__ = [
     "ModelRequest",
     "ModelResponse",
     "ModelUsage",
+    "ObservabilitySinkUnavailable",
+    "OTelAuditSink",
+    "PrometheusMetrics",
+    "StructlogAuditSink",
+    "compose_sinks",
     "NetworkFetcher",
     "NetworkFetchResponse",
     "NetworkFetchTool",

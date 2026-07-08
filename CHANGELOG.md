@@ -40,6 +40,14 @@ This project follows semantic versioning once public releases begin.
   approval decision on the existing gate path. Fails closed without an API
   key; secrets come from the server environment, never request bodies. No
   kernel gating semantics changed.
+- Added observability side-car sinks (`observability.py`): `PrometheusMetrics`
+  (dependency-free counters + exposition-format rendering),
+  `StructlogAuditSink` (optional `structlog`), `OTelAuditSink` (optional
+  `opentelemetry-api`), and `compose_sinks`. Enabled by one additive optional
+  hook on `AuditLog` — `on_event`, default `None`, invoked after append with
+  sink exceptions suppressed — so audit recording is unchanged and output is
+  byte-identical with or without a sink (tested). New optional extra
+  `observability`. No kernel gating semantics changed.
 
 ## 0.1.0
 

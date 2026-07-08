@@ -6,7 +6,8 @@ import hashlib
 import json
 import time
 import uuid
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from contextlib import suppress
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -33,9 +34,13 @@ class AuditLog:
 
     GENESIS_HASH = "0" * 64
 
-    def __init__(self, path: Path | None = None) -> None:
+    def __init__(self, path: Path | None = None, on_event: Callable[[AuditEvent], None] | None = None) -> None:
         self.path = path
         self.events: list[AuditEvent] = []
+        # Optional observability hook, invoked after an event is appended.
+        # Purely additive: default None changes nothing, and a sink exception
+        # can never affect recording (see _append_event).
+        self.on_event = on_event
         if self.path:
             self.path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -68,6 +73,9 @@ class AuditLog:
         if self.path:
             with self.path.open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps(asdict(event), ensure_ascii=False, default=str) + "\n")
+        if self.on_event is not None:
+            with suppress(Exception):  # a sink failure must never affect recording
+                self.on_event(event)
         return event
 
     def verify_integrity(self) -> ToolResult:
