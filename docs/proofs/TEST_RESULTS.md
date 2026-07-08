@@ -5,15 +5,15 @@
 - Command: `python -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `3.242`
+- Duration seconds: `3.572`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Approval packets written to /tmp/tmp3xxf1tgf/approval.json
-Expected signed decision path: /tmp/tmp3xxf1tgf/approval.decision.json
-Signed approval decisions written to /tmp/tmp3xxf1tgf/approval.decision.json
+Approval packets written to /tmp/tmph0yikm5b/approval.json
+Expected signed decision path: /tmp/tmph0yikm5b/approval.decision.json
+Signed approval decisions written to /tmp/tmph0yikm5b/approval.decision.json
 No anomalies detected.
 OK: Would echo: hi
 echo                  risk=low       rev=irreversible  perm=none
@@ -37,7 +37,7 @@ rollback_failure_manual_recovery: passed severity=high
 container_without_runner_blocked: passed severity=critical
 container_command_hardening: passed severity=high
 {"status": "passed", "message": "observed", "writes_performed": false}
-Draft plan written to /tmp/tmp31egfnoi/plan.json; complete the operator fields and set status to ready.
+Draft plan written to /tmp/tmp3u47camx/plan.json; complete the operator fields and set status to ready.
 Integrity: OK
 Applied events: 1
 Anomalies: none
@@ -116,7 +116,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: 0bc45653-be18-4abe-93f5-ac91f76ad96f
+Enqueued: ac3daf81-94f7-4672-a509-e96c3fff554e
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -128,7 +128,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=e2f42b82c897fe753c5294225e3ce6c1762b0e26728c864bdfefaf150c5b6b3c observed=8321661dc3032cc67721f5bd9d3dff58fc1b013c6b6e51ef682ae437a2e36fca
+  [0] event_hash_mismatch: expected=6f2fa7cf84d15652b2e137f63af489682e6e554d07bb47e02328bad14c6ba3ea observed=97bb7c9dd693c923399af6d929c3968479b032d06a0d9fcd0f4d994c0d484117
 Integrity: OK
 Applied events: 1
 Facts:
@@ -142,8 +142,16 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmp581lfwuw/signed.json
+Signed manifest written to /tmp/tmpp826747q/signed.json
 Policy configuration is valid. Signature verified.
+Wrote deny-by-default policy profile 'p' to /tmp/tmpeo9mz0ul/policy.json
+Review the file, then validate with: leos validate-policy /tmp/tmpeo9mz0ul/policy.json
+Policy configuration is valid.
+Wrote deny-by-default policy profile 'wizard_profile' to /tmp/tmp6smjwk8_/policy.json
+Review the file, then validate with: leos validate-policy /tmp/tmp6smjwk8_/policy.json
+Wrote deny-by-default policy profile 'team_profile' to /tmp/tmp70du59q3/policy.json
+Review the file, then validate with: leos validate-policy /tmp/tmp70du59q3/policy.json
+Error: refusing to overwrite existing file: /tmp/tmpajgqt_i7/policy.json
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
 <redacted> pattern=github-fine-grained-token
@@ -151,7 +159,7 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmpumhaa_q_/trace.html
+<redacted> written to /tmp/tmpg50i7egw/trace.html
 
 ```
 
@@ -161,7 +169,7 @@ report.md: pattern=github-classic-token
 /home/leo/.local/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
   from starlette.testclient import TestClient as TestClient  # noqa
 ....................................................................................................Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
-...Error: file not found: /tmp/tmpxa3jamid/nonexistent.txt
+...Error: file not found: /tmp/tmpht5m77zw/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -185,15 +193,12 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-....................................................................................................................................................................................................................................................................................................ssssssss................................................/usr/lib64/python3.14/unittest/mock.py:2259: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff83c23d6c0>
-  def __init__(self, name, parent):
+................................................................................................................................................................................................................................................................................................................ssssssss/usr/lib64/python3.14/dataclasses.py:1468: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f360c78f970>
+  return tuple(f for f in fields.values() if f._field_type is _FIELD)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-.............................................................................................................................................................................................................................................................................................................................../home/leo/claude_project/Leos/src/leos_agent/serialization.py:35: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7ff83c103970>
-  "success_criteria": list(goal.success_criteria),
-ResourceWarning: Enable tracemalloc to get the object allocation traceback
-.........s..................................................
+...........................................................................................................................................................................................................................................................................................................................................................................................................s..................................................
 ----------------------------------------------------------------------
-Ran 983 tests in 2.687s
+Ran 1014 tests in 2.994s
 
 OK (skipped=9)
 
