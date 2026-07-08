@@ -48,6 +48,14 @@ This project follows semantic versioning once public releases begin.
   sink exceptions suppressed — so audit recording is unchanged and output is
   byte-identical with or without a sink (tested). New optional extra
   `observability`. No kernel gating semantics changed.
+- Added usage ergonomics: `leos_agent.recipes` one-call templates for the
+  validated GitHub single-file-change path (prepare/approve/apply over the
+  existing gate pipeline, no new gating logic); `leos policy init` CLI wizard
+  (`policy_wizard.py`) generating deny-by-default profiles that pass
+  `validate_policy_config`; and a web approval inbox on the service layer
+  (`create_app(inbox_dir=...)`) that lists pending packets, renders them, and
+  emits HMAC-signed decisions by reusing `approval_exchange` signing. No
+  kernel gating semantics changed.
 
 ## 0.1.0
 

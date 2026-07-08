@@ -27,6 +27,13 @@ import time
 from pathlib import Path
 from typing import Any
 
+from ..approval import ApprovalPacket, render_approval_packet_html
+from ..approval_exchange import (
+    build_decision_for_packet,
+    read_approval_packet,
+    sign_approval_decision,
+    write_approval_decision,
+)
 from ..errors import LeosError
 from ..github_operator import (
     PROFILE,
@@ -57,13 +64,16 @@ def create_app(
     api_key: str | None = None,
     data_dir: Path,
     github_client: GitHubClient | None = None,
+    inbox_dir: Path | None = None,
 ) -> Any:
     """Build the FastAPI app.
 
     ``api_key`` (or ``LEOS_SERVER_API_KEY``) is mandatory — the service fails
     closed rather than starting unauthenticated. ``data_dir`` holds audit logs
     and approval receipts. ``github_client`` is injectable for tests and for
-    callers that manage their own transport.
+    callers that manage their own transport. ``inbox_dir`` (optional) enables
+    the web approval inbox over a ``FileApprovalGate``-compatible exchange
+    directory (``packets/`` and ``decisions/`` inside it).
     """
     try:
         from fastapi import Depends, FastAPI, Header, HTTPException
@@ -188,6 +198,70 @@ def create_app(
     def get_trace(plan_id: str) -> Any:
         records = _load_audit_records(audits_dir, _safe_plan_id(plan_id))
         return HTMLResponse(render_trace_html(records, title=f"Leos Trace {plan_id}"))
+
+    if inbox_dir is not None:
+        packet_dir = inbox_dir / "packets"
+        decision_dir = inbox_dir / "decisions"
+
+        def _read_packet(approval_id: str) -> ApprovalPacket:
+            if not _SAFE_ID.match(approval_id):
+                raise HTTPException(status_code=400, detail="invalid approval id")
+            path = packet_dir / f"{approval_id}.json"
+            if not path.exists():
+                raise HTTPException(status_code=404, detail="unknown approval packet")
+            return read_approval_packet(path)
+
+        @app.get("/inbox", dependencies=authed)
+        def get_inbox() -> dict[str, Any]:
+            pending = []
+            for path in sorted(packet_dir.glob("*.json")) if packet_dir.is_dir() else []:
+                if (decision_dir / path.name).exists():
+                    continue  # already decided
+                packet = read_approval_packet(path)
+                pending.append(
+                    {
+                        "approval_id": packet.approval_id,
+                        "plan_id": packet.plan_id,
+                        "tool_name": packet.tool_name,
+                        "risk_level": packet.risk_level,
+                        "action_summary": packet.action_summary,
+                        "expires_at": packet.expires_at,
+                        "profile": packet.profile,
+                    }
+                )
+            return {"pending": pending}
+
+        @app.get("/inbox/{approval_id}", dependencies=authed)
+        def get_inbox_packet(approval_id: str) -> Any:
+            packet = _read_packet(approval_id)
+            return HTMLResponse(render_approval_packet_html(packet))
+
+        @app.post("/inbox/{approval_id}/decide", dependencies=authed)
+        def post_inbox_decide(approval_id: str, body: dict[str, Any]) -> dict[str, Any]:
+            packet = _read_packet(approval_id)
+            secret = os.environ.get("LEOS_APPROVAL_HMAC_SECRET")
+            if not secret:
+                raise HTTPException(status_code=403, detail="LEOS_APPROVAL_HMAC_SECRET is required")
+            decision_path = decision_dir / f"{approval_id}.json"
+            if decision_path.exists():
+                raise HTTPException(status_code=409, detail="a decision was already recorded for this packet")
+            try:
+                decision = build_decision_for_packet(
+                    packet,
+                    str(body.get("decision", "")),
+                    str(body.get("approver", "")) or None,
+                    reason=str(body["reason"]) if body.get("reason") is not None else None,
+                )
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=f"invalid decision: {exc}") from exc
+            signature = sign_approval_decision(decision, secret)
+            decision_dir.mkdir(parents=True, exist_ok=True)
+            write_approval_decision(decision, decision_path, signature=signature)
+            return {
+                "approval_id": packet.approval_id,
+                "decision": decision.decision.value,
+                "signature_algorithm": "hmac-sha256",
+            }
 
     def _safe_plan_id(plan_id: str) -> str:
         if not _SAFE_ID.match(plan_id):

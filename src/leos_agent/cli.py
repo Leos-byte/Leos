@@ -237,6 +237,17 @@ def main() -> int:
 
     _qdemo = sub.add_parser("queue-demo", help="Demonstrate task queue lifecycle.")
 
+    policy_parser = sub.add_parser("policy", help="Policy profile commands.")
+    policy_sub = policy_parser.add_subparsers(dest="policy_command")
+    policy_init = policy_sub.add_parser("init", help="Generate a deny-by-default policy profile.")
+    policy_init.add_argument("--name", help="Profile name (prompted when interactive).")
+    policy_init.add_argument("--allow-tool", action="append", default=[], help="Tool to allowlist (repeatable).")
+    policy_init.add_argument("--grant", action="append", default=[], help="Permission to grant (repeatable).")
+    policy_init.add_argument("--egress-host", action="append", default=[], help="Egress host to allow (repeatable).")
+    policy_init.add_argument("--max-auto-risk", default="low", help="Highest risk executable without approval.")
+    policy_init.add_argument("--output", required=True, help="Where to write the policy JSON.")
+    policy_init.add_argument("--non-interactive", action="store_true", help="Fail instead of prompting.")
+
     parser.add_argument("--workspace", default=".leos-workspace", help="Sandbox workspace for reversible file actions.")
     parser.add_argument("--auto-approve", action="store_true", help="Approve demo actions that require human approval.")
     args = parser.parse_args()
@@ -294,6 +305,21 @@ def main() -> int:
                 reason=args.reason,
             )
         print("Error: missing approval subcommand", file=sys.stderr)
+        return 2
+    if args.command == "policy":
+        if args.policy_command == "init":
+            from .policy_wizard import run_policy_init
+
+            return run_policy_init(
+                name=args.name,
+                allow_tools=args.allow_tool,
+                grants=args.grant,
+                max_auto_risk=args.max_auto_risk,
+                egress_hosts=args.egress_host,
+                output=Path(args.output),
+                non_interactive=args.non_interactive,
+            )
+        print("Error: missing policy subcommand", file=sys.stderr)
         return 2
     if args.command == "doctor":
         return _doctor(args.profile)
