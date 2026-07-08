@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-07-08T02:23:02.010661+00:00`
+Generated: `2026-07-08T04:37:38.245721+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -64,6 +64,7 @@ Generated: `2026-07-08T02:23:02.010661+00:00`
 | `tests/test_simulation_conflicts.py` | `cb122f66293bc8096ed8f44598da24c521516dc97cfd4c15f14d3a70cfbf6734` | 110 | 4694 | True |
 | `tests/test_sqlite_store.py` | `cceba5cbf062a6a8066dc92417c45c37934872b26e789f04ad08794f4b5bf56f` | 90 | 4109 | True |
 | `tests/test_store_contract.py` | `e520d8905a5ddfca962f570fec029cd8d2bf493e038bbd4863ca9884a3adcbb1` | 44 | 1364 | True |
+| `tests/test_task_queue_concurrency.py` | `a41c79cd3aa3dd787c125fddb5f2b6ae54525695f1ca2513b6634e5d11083143` | 432 | 17602 | True |
 | `tests/test_task_queue_persistence.py` | `c436014da0c923ceb7588a47ebdaf94798d7078bdb108ca6286391b90413410e` | 162 | 6184 | True |
 | `tests/test_tool_manifest_registry.py` | `6bfa7bdd37966e0fad5f2d16b354b0e6a6b7501fd0c0b247a18593943ecfa1ed` | 159 | 5842 | True |
 | `tests/test_trace_viewer.py` | `abbefcdd03f8d602fc67636fb16511e010d22f3890d14b68b97940724c837b55` | 145 | 5315 | True |

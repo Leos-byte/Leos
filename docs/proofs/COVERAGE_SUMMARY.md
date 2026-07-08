@@ -5,15 +5,15 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `4.159`
+- Duration seconds: `4.209`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Approval packets written to /tmp/tmpka5w2skd/approval.json
-Expected signed decision path: /tmp/tmpka5w2skd/approval.decision.json
-Signed approval decisions written to /tmp/tmpka5w2skd/approval.decision.json
+Approval packets written to /tmp/tmpvg6r71mm/approval.json
+Expected signed decision path: /tmp/tmpvg6r71mm/approval.decision.json
+Signed approval decisions written to /tmp/tmpvg6r71mm/approval.decision.json
 No anomalies detected.
 OK: Would echo: hi
 echo                  risk=low       rev=irreversible  perm=none
@@ -37,7 +37,7 @@ rollback_failure_manual_recovery: passed severity=high
 container_without_runner_blocked: passed severity=critical
 container_command_hardening: passed severity=high
 {"status": "passed", "message": "observed", "writes_performed": false}
-Draft plan written to /tmp/tmpb2qau654/plan.json; complete the operator fields and set status to ready.
+Draft plan written to /tmp/tmp12zolyj3/plan.json; complete the operator fields and set status to ready.
 Integrity: OK
 Applied events: 1
 Anomalies: none
@@ -116,7 +116,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: afbd8af6-0957-40b2-9d20-d4c0f8fc6609
+Enqueued: a082edb8-88af-436e-8fe3-019449679d1a
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -128,7 +128,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=0198c7d73ba5196d3a007ba39563166fa7e0d89ba7aa2e49adf9b19de2d673be observed=f3eec95be1ac273d289e529d6730e348162bd4abe85626d09647836ee9ae938e
+  [0] event_hash_mismatch: expected=5cce4bea1fffd0cd74ca3d458674032bea61d94e0fe013676f5f6f7bd0ded241 observed=249ce9935411e95d1cad412be86873deda111b5e7ec1ba6b334ecea170266b60
 Integrity: OK
 Applied events: 1
 Facts:
@@ -142,7 +142,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpdqsz2jk8/signed.json
+Signed manifest written to /tmp/tmp8sk08nff/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -151,7 +151,7 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmpbc8sz1kz/trace.html
+<redacted> written to /tmp/tmpqy7chhlo/trace.html
 
 ```
 
@@ -159,7 +159,7 @@ report.md: pattern=github-classic-token
 
 ```text
 ....................................................................................................Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
-...Error: file not found: /tmp/tmp1n9yjoo9/nonexistent.txt
+...Error: file not found: /tmp/tmpinxyrzzo/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -183,14 +183,14 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-.....................................................................................................................................................................................................................................................................................ssssssss......................................................................./usr/lib64/python3.14/unittest/mock.py:2259: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f1531c92980>
-  def __init__(self, name, parent):
+.....................................................................................................................................................................................................................................................................................ssssssss......................................................................./usr/lib64/python3.14/pathlib/__init__.py:341: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fda94fb1e40>
+  @property
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-.............................................................................................................................................................................................................................................................................................................
+..........................................................................................................................................................................................................................................................................................s..................................................
 ----------------------------------------------------------------------
-Ran 913 tests in 3.575s
+Ran 945 tests in 3.617s
 
-OK (skipped=8)
+OK (skipped=9)
 
 ```
 
@@ -199,7 +199,7 @@ OK (skipped=8)
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.863`
+- Duration seconds: `0.893`
 - Truncated: `False`
 
 ### stdout
@@ -216,7 +216,7 @@ src/leos_agent/causal.py                      92      1     18      1    98%
 src/leos_agent/causal_contract.py            112     17     44      9    81%
 src/leos_agent/cli.py                        622    166    228     51    68%
 src/leos_agent/conflicts.py                   37      0     14      0   100%
-src/leos_agent/core.py                        52      0      0      0   100%
+src/leos_agent/core.py                        53      0      0      0   100%
 src/leos_agent/credential_backends.py        101      3     28     12    88%
 src/leos_agent/credentials.py                 61      1     16      8    88%
 src/leos_agent/dev_tools.py                  188     29     38     13    81%
@@ -256,12 +256,13 @@ src/leos_agent/serialization.py               67      1      6      1    97%
 src/leos_agent/simulation.py                  65      0      6      1    99%
 src/leos_agent/sqlite_store.py               116     18     12      1    85%
 src/leos_agent/state.py                       39      1     10      3    92%
-src/leos_agent/task_queue.py                 255     27     52     10    87%
+src/leos_agent/task_queue.py                 255     26     52      9    88%
+src/leos_agent/task_queue_backends.py        189     16     26      2    92%
 src/leos_agent/tool_manifest_registry.py      81     11     34      9    83%
 src/leos_agent/tools.py                      161      7     40     10    92%
 src/leos_agent/trace_viewer.py                68      0     20      0   100%
 src/leos_agent/transactions.py               502     47    188     17    90%
 ----------------------------------------------------------------------------
-TOTAL                                       7522    747   2058    440    86%
+TOTAL                                       7712    762   2084    441    87%
 
 ```
