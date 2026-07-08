@@ -5,15 +5,15 @@
 - Command: `python -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `2.363`
+- Duration seconds: `2.487`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Approval packets written to /tmp/tmpe43anwm6/approval.json
-Expected signed decision path: /tmp/tmpe43anwm6/approval.decision.json
-Signed approval decisions written to /tmp/tmpe43anwm6/approval.decision.json
+Approval packets written to /tmp/tmpuhga5zou/approval.json
+Expected signed decision path: /tmp/tmpuhga5zou/approval.decision.json
+Signed approval decisions written to /tmp/tmpuhga5zou/approval.decision.json
 No anomalies detected.
 OK: Would echo: hi
 echo                  risk=low       rev=irreversible  perm=none
@@ -37,7 +37,7 @@ rollback_failure_manual_recovery: passed severity=high
 container_without_runner_blocked: passed severity=critical
 container_command_hardening: passed severity=high
 {"status": "passed", "message": "observed", "writes_performed": false}
-Draft plan written to /tmp/tmps7kowxrm/plan.json; complete the operator fields and set status to ready.
+Draft plan written to /tmp/tmpx61w2dux/plan.json; complete the operator fields and set status to ready.
 Integrity: OK
 Applied events: 1
 Anomalies: none
@@ -116,7 +116,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: 8f0be755-b478-4da9-b5a0-fa81682b08fa
+Enqueued: 10f39f41-3118-4939-a3ac-e8f9832b862f
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -128,7 +128,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=b79c3ac779bd04f795b0c97fff18a62827e284e9ca9ba4988804dbf5b65c25d8 observed=7e1aff5c0280d0c980c859df2e354075f8f88e38a82ec7fffb89443031553400
+  [0] event_hash_mismatch: expected=d397dab42a871288affbcc9f42b8e110dac29957564b39cbd30b620db018bf8c observed=6ea35ea589aa05f780e6d9ba5b2bf47586d28999e64290240dfb1a49d03ab9ca
 Integrity: OK
 Applied events: 1
 Facts:
@@ -142,7 +142,7 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmpw2auddp0/signed.json
+Signed manifest written to /tmp/tmpomjwqw_m/signed.json
 Policy configuration is valid. Signature verified.
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
@@ -151,7 +151,7 @@ report.md: pattern=bearer-token
 <redacted> pattern=private-key
 report.md: pattern=github-classic-token
 <redacted> pattern=slack-bot-token
-<redacted> written to /tmp/tmpluobtfqd/trace.html
+<redacted> written to /tmp/tmpaen2r6hc/trace.html
 
 ```
 
@@ -159,7 +159,7 @@ report.md: pattern=github-classic-token
 
 ```text
 ....................................................................................................Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
-...Error: file not found: /tmp/tmpv9803211/nonexistent.txt
+...Error: file not found: /tmp/tmpal4nr1ep/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -183,10 +183,13 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-.............................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+.....................................................................................................................................................................................................................................................................................ssssssss................................................/home/leo/claude_project/Leos/src/leos_agent/github_tools.py:301: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f422064c130>
+  def __init__(self, client: GitHubClient, credential_vault: CredentialVault | None = None) -> None:
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+....................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
-Ran 845 tests in 2.100s
+Ran 913 tests in 2.215s
 
-OK
+OK (skipped=8)
 
 ```
