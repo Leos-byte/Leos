@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-07-08T07:27:54.455922+00:00`
+Generated: `2026-07-08T11:00:06.371552+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -43,6 +43,7 @@ Generated: `2026-07-08T07:27:54.455922+00:00`
 | `tests/test_network_tools.py` | `91362d989c57f9d98632c0a1283bbc3b99c88ff6a576a80a42214d7d2e97739d` | 215 | 8706 | True |
 | `tests/test_observability.py` | `699e93e8ac32b0af40d3d9b397717c1d242952814c5b08140d3e9d3a5e8cdaaa` | 240 | 9358 | True |
 | `tests/test_planner.py` | `f749bb4546f5623f281581ccf33c7dcba64e8641a1bf872c9f6db35e688e493f` | 70 | 3190 | True |
+| `tests/test_policy_wizard.py` | `377dca5febafc87c25ccca0f049160a53c29c67ef9050b0e817e722fb9949f3a` | 129 | 5925 | True |
 | `tests/test_postgres_store.py` | `03c675658dae6c537b17ed1296680426264ed9dfef184613949c050deae693eb` | 150 | 5468 | True |
 | `tests/test_production_profile.py` | `a39e46c2324bf667653881ce8916928f55b244b089c01e9df2bbcd750d7ce37b` | 849 | 33624 | True |
 | `tests/test_production_readiness.py` | `0cd7cad5133453b9a527d32f563aa69f6ca437bb0988d2d05b35776ffe571465` | 107 | 4246 | True |
@@ -50,6 +51,7 @@ Generated: `2026-07-08T07:27:54.455922+00:00`
 | `tests/test_proof_generation.py` | `8a2284c47645ac450e0074e796e5fcddb066c85244990a3011beaf63230b0b20` | 202 | 8432 | True |
 | `tests/test_properties.py` | `c79e170732b4853a1404712a485b85cca756b49ec0e0fe201f9f7080daa0a558` | 173 | 6762 | True |
 | `tests/test_public_api.py` | `39dfce3674a9b69ba168c2d30742ef391cf64eaaa9733a309f23fb5b417cfe31` | 239 | 9323 | True |
+| `tests/test_recipes.py` | `9822fc93c15a7fb59dd094dae63a94bfec20a324c1af724752ed116f0ff4f1d7` | 127 | 5020 | True |
 | `tests/test_recovery.py` | `cd2e83ca67da4a15d42b5e70aae882544e666548063c0f3feacfbab073a109d4` | 34 | 1108 | True |
 | `tests/test_release_proof_check.py` | `c9c8d90b241fcede87b7af58019a31bddeb816c0a3d078e0634b183ac36f1dc5` | 152 | 6898 | True |
 | `tests/test_replanning.py` | `2a82c80388536e36a149d3e163433410b65b67f20a52ce7eff6a85ba538bd163` | 155 | 5787 | True |
@@ -63,6 +65,7 @@ Generated: `2026-07-08T07:27:54.455922+00:00`
 | `tests/test_secret_scan_script.py` | `77a24a7b7bc4c987532fcd7c2a176ea01a30fd13f4ca5150450b76d207354ffc` | 100 | 4368 | True |
 | `tests/test_serialization.py` | `9651dac861120406fb8b313c0ae149500f68984f5204b21d4c8689863769aefe` | 120 | 5421 | True |
 | `tests/test_server.py` | `7afdf387764ac2abc81e4d4c73826c01b796afde1730d23c2dd4f1dbb1ecc519` | 300 | 13141 | True |
+| `tests/test_server_inbox.py` | `7f2cc0342ab6ea5596e78b9dd05c9f6f54fe4db84ab265b310c4df5b4d34f296` | 181 | 7902 | True |
 | `tests/test_simulation_conflicts.py` | `cb122f66293bc8096ed8f44598da24c521516dc97cfd4c15f14d3a70cfbf6734` | 110 | 4694 | True |
 | `tests/test_sqlite_store.py` | `cceba5cbf062a6a8066dc92417c45c37934872b26e789f04ad08794f4b5bf56f` | 90 | 4109 | True |
 | `tests/test_store_contract.py` | `e520d8905a5ddfca962f570fec029cd8d2bf493e038bbd4863ca9884a3adcbb1` | 44 | 1364 | True |

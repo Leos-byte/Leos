@@ -200,6 +200,7 @@ from .policy_manifest import (
     sign_policy,
     verify_policy_manifest,
 )
+from .policy_wizard import generate_policy_config  # noqa: F401
 from .postgres_store import PostgresRuntimeStore  # noqa: F401
 from .prompts import (  # noqa: F401
     DEFAULT_PROMPT_REGISTRY,
@@ -207,6 +208,13 @@ from .prompts import (  # noqa: F401
     PromptTemplate,
 )
 from .proof import ProofManifest, exit_code_for_manifest, generate_proofs
+from .recipes import (  # noqa: F401
+    GitHubFileChange,
+    PreparedChange,
+    apply_single_file_pr,
+    approve_single_file_pr,
+    prepare_single_file_pr,
+)
 from .recovery import ManualRecoveryPacket
 from .replanning import FailureAnalysis, FailureAnalyzer, FailureType, PlanRepairStrategy, ReplanContext
 from .replay import AuditReplayer, ReplayResult, replay_audit_log
@@ -376,6 +384,12 @@ __all__ = [
     "SQLiteRuntimeStore",
     "PostgresRuntimeStore",
     "PostgresTaskQueue",
+    "GitHubFileChange",
+    "PreparedChange",
+    "apply_single_file_pr",
+    "approve_single_file_pr",
+    "prepare_single_file_pr",
+    "generate_policy_config",
     "CredentialBackendUnavailable",
     "EnvFileCredentialVault",
     "KeyringCredentialVault",
