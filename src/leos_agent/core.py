@@ -37,6 +37,12 @@ from .causal import (
 )
 from .causal_contract import CausalContract, safe_file_write_causal_contract
 from .conflicts import Conflict, ConflictDetector, ConflictResolutionPolicy
+from .credential_backends import (  # noqa: F401
+    CredentialBackendUnavailable,
+    EnvFileCredentialVault,
+    KeyringCredentialVault,
+    VaultCredentialVault,
+)
 from .credentials import (
     CredentialError,
     CredentialExpiredError,
@@ -187,6 +193,7 @@ from .policy_manifest import (
     sign_policy,
     verify_policy_manifest,
 )
+from .postgres_store import PostgresRuntimeStore  # noqa: F401
 from .prompts import (  # noqa: F401
     DEFAULT_PROMPT_REGISTRY,
     PromptRegistry,
@@ -359,6 +366,11 @@ __all__ = [
     "InvalidGoalTransition",
     "JsonlRuntimeStore",
     "SQLiteRuntimeStore",
+    "PostgresRuntimeStore",
+    "CredentialBackendUnavailable",
+    "EnvFileCredentialVault",
+    "KeyringCredentialVault",
+    "VaultCredentialVault",
     "LeosError",
     "ListFilesTool",
     "LocalHTTPModelClient",

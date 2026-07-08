@@ -29,6 +29,15 @@ dev = [
   "hypothesis",
   "build",
 ]
+postgres = [
+  "psycopg>=3.1",
+]
+keyring = [
+  "keyring>=24",
+]
+vault = [
+  "hvac>=1.0",
+]
 
 [project.scripts]
 leos-agent = "leos_agent.cli:main"
