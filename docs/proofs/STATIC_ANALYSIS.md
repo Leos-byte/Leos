@@ -26,7 +26,7 @@ All checks passed!
 ### stdout
 
 ```text
-134 files already formatted
+140 files already formatted
 
 ```
 
@@ -35,12 +35,12 @@ All checks passed!
 - Command: `mypy src`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.148`
+- Duration seconds: `0.149`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Success: no issues found in 52 source files
+Success: no issues found in 54 source files
 
 ```

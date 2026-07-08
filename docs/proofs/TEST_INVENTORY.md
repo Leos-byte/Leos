@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-07-07T11:49:24.209701+00:00`
+Generated: `2026-07-08T02:23:02.010661+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -19,6 +19,7 @@ Generated: `2026-07-07T11:49:24.209701+00:00`
 | `tests/test_causal_contract.py` | `2f0448c47f99bf6fa58ae7eb918d68e9c3c11eb70b9378121458e31eae39e8fe` | 446 | 17398 | True |
 | `tests/test_cli.py` | `b9c3ca86da79373a9132e41abdb670e0cbd799f59a899a51c4cf8146b03a7148` | 384 | 14621 | True |
 | `tests/test_core.py` | `8c3dea37266c6b22eb95162d6bce4757d231899deed581847f16ccf5bdb9b392` | 2476 | 105068 | True |
+| `tests/test_credential_backends.py` | `118bee52dd53eab7f6c5e7a91224a3c6f2bf968ae2593db4c5d2ae6ad11b3b8c` | 167 | 5974 | True |
 | `tests/test_credentials.py` | `752f2cd4b2f187250e214255cf992f964b8010579f051462ed3e9e4c7e8648f7` | 75 | 2506 | True |
 | `tests/test_dev_tools.py` | `80d36b3d0375a97bc8219c6d55df4a3b83aa91d9268fd9a16f5202f8521c2624` | 115 | 4251 | True |
 | `tests/test_docker_sandbox.py` | `52ab41235c8ee09a2d8a1f51b096bb7ffa3387b8ff2257d6b9a7cb03c71ea960` | 62 | 2571 | True |
@@ -41,6 +42,7 @@ Generated: `2026-07-07T11:49:24.209701+00:00`
 | `tests/test_model_adapters.py` | `59f4bedd8f56cdd6a78a102bf5e54485111876ff2134d25a825f6d448785157c` | 82 | 3391 | True |
 | `tests/test_network_tools.py` | `91362d989c57f9d98632c0a1283bbc3b99c88ff6a576a80a42214d7d2e97739d` | 215 | 8706 | True |
 | `tests/test_planner.py` | `f749bb4546f5623f281581ccf33c7dcba64e8641a1bf872c9f6db35e688e493f` | 70 | 3190 | True |
+| `tests/test_postgres_store.py` | `03c675658dae6c537b17ed1296680426264ed9dfef184613949c050deae693eb` | 150 | 5468 | True |
 | `tests/test_production_profile.py` | `a39e46c2324bf667653881ce8916928f55b244b089c01e9df2bbcd750d7ce37b` | 849 | 33624 | True |
 | `tests/test_production_readiness.py` | `0cd7cad5133453b9a527d32f563aa69f6ca437bb0988d2d05b35776ffe571465` | 107 | 4246 | True |
 | `tests/test_production_smoke_evidence.py` | `be0d425609d2035ef7e402de63b1a94f2f76960166cd214ae6fb52f26c07f5b2` | 252 | 9359 | True |
@@ -61,6 +63,7 @@ Generated: `2026-07-07T11:49:24.209701+00:00`
 | `tests/test_serialization.py` | `9651dac861120406fb8b313c0ae149500f68984f5204b21d4c8689863769aefe` | 120 | 5421 | True |
 | `tests/test_simulation_conflicts.py` | `cb122f66293bc8096ed8f44598da24c521516dc97cfd4c15f14d3a70cfbf6734` | 110 | 4694 | True |
 | `tests/test_sqlite_store.py` | `cceba5cbf062a6a8066dc92417c45c37934872b26e789f04ad08794f4b5bf56f` | 90 | 4109 | True |
+| `tests/test_store_contract.py` | `e520d8905a5ddfca962f570fec029cd8d2bf493e038bbd4863ca9884a3adcbb1` | 44 | 1364 | True |
 | `tests/test_task_queue_persistence.py` | `c436014da0c923ceb7588a47ebdaf94798d7078bdb108ca6286391b90413410e` | 162 | 6184 | True |
 | `tests/test_tool_manifest_registry.py` | `6bfa7bdd37966e0fad5f2d16b354b0e6a6b7501fd0c0b247a18593943ecfa1ed` | 159 | 5842 | True |
 | `tests/test_trace_viewer.py` | `abbefcdd03f8d602fc67636fb16511e010d22f3890d14b68b97940724c837b55` | 145 | 5315 | True |

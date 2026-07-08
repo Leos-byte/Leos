@@ -2,11 +2,11 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-07-07T11:49:24.209701+00:00`
+- Generated at: `2026-07-08T02:23:02.010661+00:00`
 - Package version: `0.1.0b1`
-- Unit tests: `845`
-- Commit SHA: `93724ddc1101499660301724c48b8dae0d323e5e`
-- Branch: `feat/phase1-sandbox-isolation`
+- Unit tests: `913`
+- Commit SHA: `59b06bb3d5270063e8bcae747c46421834cfe820`
+- Branch: `feat/phase2-persistence-credentials`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 
