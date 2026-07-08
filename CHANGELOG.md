@@ -32,6 +32,14 @@ This project follows semantic versioning once public releases begin.
   after redelivery. Duck-type compatible with `TaskQueue`/`TaskRunner`. The
   SQLite `TaskQueue` remains the single-process default. No kernel gating
   semantics changed.
+- Added a thin HTTP service layer (`leos_agent.server`, optional `fastapi`
+  via the `server` extra): `create_app` exposes plan drafting/validation,
+  approval packet and signed-decision emission, `/apply` delegating verbatim
+  to `apply_operator_plan`, and audit/trace read endpoints. Boundary API-key
+  auth only — every write still requires a signed, unexpired, consume-once
+  approval decision on the existing gate path. Fails closed without an API
+  key; secrets come from the server environment, never request bodies. No
+  kernel gating semantics changed.
 
 ## 0.1.0
 
