@@ -24,19 +24,24 @@ PostgreSQL round trip runs when `LEOS_TEST_POSTGRES_DSN` is set.
 ## Task queue
 
 The runtime provides an in-memory `TaskQueue` with optional SQLite
-persistence for task records and idempotency keys.
+persistence for task records and idempotency keys, plus a Postgres-backed
+`PostgresTaskQueue` (`task_queue_backends.py`) for multi-worker deployments.
 
 Implemented:
 
 - task enqueue/reload
-- idempotency key dedupe across queue instances
+- idempotency key dedupe across queue instances (race-safe in Postgres mode
+  via a unique index and `ON CONFLICT DO NOTHING`)
 - claim, heartbeat, completion, retry, pause/resume, and watchdog timeout state
+- Postgres mode: DB-atomic claim (`FOR UPDATE SKIP LOCKED`), lease TTL with
+  heartbeat renewal, `reap_expired_leases`, and conditional completion that
+  refuses stale workers after redelivery (see `docs/TASK_QUEUE.md`)
 
 Not complete:
 
 - SQLite-backed `AuditLog`
 - SQLite-backed `MemoryStore`
-- real concurrent worker stress testing
 
-Use the in-memory backend for short-lived tests and the SQLite task queue for
-local development scenarios that need task state to survive process restart.
+Use the in-memory backend for short-lived tests, the SQLite task queue for
+single-process local development that needs task state to survive restart, and
+`PostgresTaskQueue` when multiple workers consume the same queue.

@@ -249,6 +249,7 @@ from .task_queue import (
     TimeoutPolicy,
     Watchdog,
 )
+from .task_queue_backends import PostgresTaskQueue  # noqa: F401
 from .tool_manifest_registry import ToolManifestRegistry, ToolManifestRegistryError
 from .tools import (
     EchoTool,
@@ -367,6 +368,7 @@ __all__ = [
     "JsonlRuntimeStore",
     "SQLiteRuntimeStore",
     "PostgresRuntimeStore",
+    "PostgresTaskQueue",
     "CredentialBackendUnavailable",
     "EnvFileCredentialVault",
     "KeyringCredentialVault",
