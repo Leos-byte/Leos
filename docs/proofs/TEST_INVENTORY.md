@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-06-12T09:58:18.229551+00:00`
+Generated: `2026-07-07T11:49:24.209701+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -23,7 +23,7 @@ Generated: `2026-06-12T09:58:18.229551+00:00`
 | `tests/test_dev_tools.py` | `80d36b3d0375a97bc8219c6d55df4a3b83aa91d9268fd9a16f5202f8521c2624` | 115 | 4251 | True |
 | `tests/test_docker_sandbox.py` | `52ab41235c8ee09a2d8a1f51b096bb7ffa3387b8ff2257d6b9a7cb03c71ea960` | 62 | 2571 | True |
 | `tests/test_download_smoke_evidence.py` | `a9c8ab6b167c365fcd8fe8af1de5f9ad2e6368382a503525bb0cc78a25b848d7` | 126 | 4369 | True |
-| `tests/test_egress.py` | `aadc3e10792e6a953deab2a5efd5bd3593631a0da3137a79b10ff094aa29f9cc` | 93 | 3728 | True |
+| `tests/test_egress.py` | `30c51d57a90d6b507184d06a3027e734126ae17f71780f7fec865fef3fcabd17` | 93 | 3749 | True |
 | `tests/test_eval_fixtures.py` | `2f12bb67b1c6c1e1b9d0004afc6a3fa846a64ee3c05c3d6eee4615166f5a5e3a` | 22 | 663 | True |
 | `tests/test_eval_runner.py` | `de32c622fd6152b2635cdbdbdc059127454d0d3be9823d795326cfe8d0e8b1ce` | 30 | 940 | True |
 | `tests/test_evaluator_registry.py` | `7e4b73c9bcab1999fa1ccad229c08d14c6ad8a3213f8542a717edc99419dba00` | 96 | 4007 | True |
@@ -53,6 +53,7 @@ Generated: `2026-06-12T09:58:18.229551+00:00`
 | `tests/test_replay.py` | `c283dec6fdcdb9857e966d4ea25b1e82ae1f268d12a455e5842afcf7288a94d3` | 117 | 5330 | True |
 | `tests/test_runtime_store.py` | `5fd95e8ab33018da777c85e460e7ebf712694552f803d1ecee8ad8dd9c12bc64` | 189 | 7363 | True |
 | `tests/test_sandbox.py` | `fedd5f7c90e96e9d7b338240addc30b18debb7cecbbfbbc64cffe6cdf9cfe776` | 223 | 8270 | True |
+| `tests/test_sandbox_backends.py` | `68fae0411bba7e770eec725e9dd637db9ecb662f1be3f2d7516ddf3acd69ffb0` | 192 | 8776 | True |
 | `tests/test_sandbox_docker.py` | `df07664945d4f4b5f9e7969bcb2a1336c9e813469fabb85c45fa97175b134492` | 36 | 1389 | True |
 | `tests/test_sanitization.py` | `8579ffbae5ff45dd061c81009db714dd9ab162f81f062a23993d09de5983be29` | 87 | 3085 | True |
 | `tests/test_schema_validation.py` | `0fe536c7ee23e63e3b1598d9d5d235fbb922fe7903c61971451cfb2063327dff` | 234 | 9134 | True |

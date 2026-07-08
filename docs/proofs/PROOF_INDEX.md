@@ -2,11 +2,11 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-06-12T09:58:18.229551+00:00`
+- Generated at: `2026-07-07T11:49:24.209701+00:00`
 - Package version: `0.1.0b1`
-- Unit tests: `828`
-- Commit SHA: `136c175745c79931c74bf0ab34d56ae2efe493c9`
-- Branch: `fix/smoke-proof-history`
+- Unit tests: `845`
+- Commit SHA: `93724ddc1101499660301724c48b8dae0d323e5e`
+- Branch: `feat/phase1-sandbox-isolation`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 

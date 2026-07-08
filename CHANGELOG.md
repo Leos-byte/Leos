@@ -10,6 +10,12 @@ This project follows semantic versioning once public releases begin.
   rollback, replay, memory, task queue, sandbox, and CLI inspection utilities.
 - Added red-team tests, benchmark cases, coverage threshold, security checks,
   mutation smoke checks, and fuzz smoke checks.
+- Added production sandbox isolation backends (`sandbox_backends.py`):
+  `GvisorSandboxRunner` (gVisor `runsc`), `RootlessPodmanSandboxRunner`
+  (user-namespace remap + optional seccomp), and `FirecrackerSandboxRunner`
+  (microVM target, fail-closed), plus `resolve_sandbox_runner` which never
+  downgrades a container/microVM policy to the workspace runner. No kernel
+  gating semantics changed.
 
 ## 0.1.0
 

@@ -214,6 +214,13 @@ class DockerSandboxRunner:
                 return found
         raise SandboxUnavailable("docker or podman runtime is not available")
 
+    def is_available(self) -> bool:
+        """Return True when a usable container runtime binary is resolvable."""
+        try:
+            return shutil.which(self._runtime_binary()) is not None
+        except SandboxUnavailable:
+            return False
+
     def build_argv(self, command: SandboxCommand) -> list[str]:
         if not command.argv:
             raise SandboxViolation("argv must not be empty")

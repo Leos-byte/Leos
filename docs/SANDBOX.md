@@ -32,13 +32,29 @@ but is NOT a production isolation boundary.
 
 ## ContainerSandboxRunner
 
-Placeholder. `run()` raises `SandboxUnavailable("container sandbox requires external runtime")`.
-Intended for future Docker/Podman integration.
+Bare placeholder retained for backward compatibility. `run()` raises
+`SandboxUnavailable("container sandbox requires external runtime")`. Prefer the
+concrete container backends in `sandbox_backends.py` (`GvisorSandboxRunner`,
+`RootlessPodmanSandboxRunner`) or `DockerSandboxRunner`.
 
 ## MicroVMSandboxRunner
 
-Placeholder. `run()` raises `SandboxUnavailable("microVM sandbox requires external runtime")`.
-Intended for future Firecracker/gVisor integration.
+Bare placeholder retained for backward compatibility. `run()` raises
+`SandboxUnavailable("microVM sandbox requires external runtime")`. See
+`FirecrackerSandboxRunner` in `sandbox_backends.py` for the microVM target with
+prerequisite detection and VM-config construction.
+
+## Production isolation backends (`sandbox_backends.py`)
+
+- `GvisorSandboxRunner`: container under the gVisor `runsc` OCI runtime
+  (`--runtime runsc`); `SandboxPolicy.CONTAINER`.
+- `RootlessPodmanSandboxRunner`: rootless Podman with `--userns=keep-id` and an
+  optional seccomp profile; `SandboxPolicy.CONTAINER`.
+- `FirecrackerSandboxRunner`: microVM target; fails closed until firecracker
+  binary + guest kernel + rootfs are present; `SandboxPolicy.MICROVM`.
+- `resolve_sandbox_runner(policy, workspace_root, ...)`: returns the strongest
+  available runner and never downgrades a container/microVM policy to the
+  workspace runner (raises `SandboxUnavailable` instead).
 
 ## SandboxCommandTool
 

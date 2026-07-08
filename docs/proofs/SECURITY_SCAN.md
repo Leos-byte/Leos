@@ -18,20 +18,20 @@ Known warnings:
 - Command: `bandit -r src`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `1.288`
+- Duration seconds: `1.274`
 - Truncated: `False`
 
 ### stdout
 
 ```text
 Working... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:01
-Run started:2026-06-12 09:58:27.272142+00:00
+Run started:2026-07-07 11:49:32.994945+00:00
 
 Test results:
 	No issues identified.
 
 Code scanned:
-	Total lines of code: 13098
+	Total lines of code: 13324
 	Total lines skipped (#nosec): 0
 	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 18
 
@@ -57,7 +57,7 @@ Files skipped (0):
 [main]	INFO	profile exclude tests: None
 [main]	INFO	cli include tests: None
 [main]	INFO	cli exclude tests: None
-[main]	INFO	running on Python 3.14.4
+[main]	INFO	running on Python 3.14.6
 [manager]	WARNING	Test in comment: container is not a test name or id, ignoring
 [manager]	WARNING	Test in comment: internal is not a test name or id, ignoring
 [manager]	WARNING	Test in comment: tmpfs is not a test name or id, ignoring
@@ -72,20 +72,20 @@ Files skipped (0):
 [manager]	WARNING	Test in comment: constructed is not a test name or id, ignoring
 [manager]	WARNING	Test in comment: without is not a test name or id, ignoring
 [manager]	WARNING	Test in comment: shell is not a test name or id, ignoring
-[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:230
-[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:231
-[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:232
-[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:233
-[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:234
-[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:236
 [tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:237
 [tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:238
 [tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:239
 [tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:240
-[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:242
+[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:241
+[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:243
 [tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:244
+[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:245
 [tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:246
-[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:248
+[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:247
+[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:249
+[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:251
+[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:253
+[tester]	WARNING	nosec encountered (B108), but no failed test on file src/leos_agent/sandbox.py:255
 
 ```
 
