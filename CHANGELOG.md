@@ -94,6 +94,17 @@ This project follows semantic versioning once public releases begin.
   to start keyless naming the missing variable, `/healthz` 200, keyless write
   401). `tomli` joins the `server` extra for Python 3.10. No kernel gating
   semantics changed.
+- Hardened the service surface: comma-separated multi-key API auth for
+  zero-downtime rotation (every key still compared in constant time; keys
+  under 32 characters refuse to start), an in-memory token-bucket rate limit
+  on the write endpoints (`/approvals`, `/approvals/decide`, `/apply`, inbox
+  decisions → 429, configurable, no new dependencies), and a request-body
+  size cap (413). CI's integration job now runs `pip-audit` across all
+  optional extras. Added `tests/redteam/test_inbox_redteam.py` (plan
+  tampering after approval, step swap, expired approvals, decision replay
+  at both layers, traversal identifiers, missing-HMAC no-side-effects) and
+  an HTTP-service threat model section in `SECURITY.md`. No kernel gating
+  semantics changed.
 
 ## 0.1.0
 

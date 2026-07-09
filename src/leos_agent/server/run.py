@@ -16,16 +16,24 @@ from .app import ServerUnavailable, create_app
 from .config import ServerConfig, load_server_config, summarize_config
 
 
+def _app_from_config(config: ServerConfig) -> Any:
+    return create_app(
+        data_dir=config.data_dir,
+        inbox_dir=config.inbox_dir,
+        rate_limit_per_minute=config.rate_limit_per_minute,
+        max_body_bytes=config.max_body_bytes,
+    )
+
+
 def build_app() -> Any:
     """Uvicorn factory target: rebuild the app from environment configuration."""
-    config = load_server_config()
-    return create_app(data_dir=config.data_dir, inbox_dir=config.inbox_dir)
+    return _app_from_config(load_server_config())
 
 
 def check_config(config: ServerConfig) -> int:
     """Validate configuration and the app's fail-closed startup, then exit."""
     print(summarize_config(config))
-    create_app(data_dir=config.data_dir, inbox_dir=config.inbox_dir)
+    _app_from_config(config)
     print("configuration ok")
     return 0
 
@@ -39,12 +47,14 @@ def run_server(config: ServerConfig) -> int:
         ) from exc
 
     # Fail closed before binding: surfaces a missing API key immediately.
-    create_app(data_dir=config.data_dir, inbox_dir=config.inbox_dir)
+    _app_from_config(config)
     print(summarize_config(config))
 
     # Worker processes rebuild the app via the factory, so propagate the
     # resolved settings through the environment they will read.
     os.environ["LEOS_SERVER_DATA_DIR"] = str(config.data_dir)
+    os.environ["LEOS_SERVER_RATE_LIMIT_PER_MINUTE"] = str(config.rate_limit_per_minute)
+    os.environ["LEOS_SERVER_MAX_BODY_BYTES"] = str(config.max_body_bytes)
     if config.inbox_dir is not None:
         os.environ["LEOS_SERVER_INBOX_DIR"] = str(config.inbox_dir)
 

@@ -38,7 +38,9 @@ _SECRET_TOML_KEYS = frozenset(
         "password",
     }
 )
-_ALLOWED_TOML_KEYS = frozenset({"host", "port", "workers", "data_dir", "inbox_dir"})
+_ALLOWED_TOML_KEYS = frozenset(
+    {"host", "port", "workers", "data_dir", "inbox_dir", "rate_limit_per_minute", "max_body_bytes"}
+)
 
 _SECRET_ENV_VARS = (
     ("api_key", "LEOS_SERVER_API_KEY", True),
@@ -56,6 +58,8 @@ class ServerConfig:
     workers: int = 1
     data_dir: Path = Path("leos-data")
     inbox_dir: Path | None = None
+    rate_limit_per_minute: int = 60
+    max_body_bytes: int = 1_000_000
 
 
 def load_server_config(
@@ -83,6 +87,8 @@ def load_server_config(
         ("workers", "LEOS_SERVER_WORKERS"),
         ("data_dir", "LEOS_SERVER_DATA_DIR"),
         ("inbox_dir", "LEOS_SERVER_INBOX_DIR"),
+        ("rate_limit_per_minute", "LEOS_SERVER_RATE_LIMIT_PER_MINUTE"),
+        ("max_body_bytes", "LEOS_SERVER_MAX_BODY_BYTES"),
     ):
         if env.get(env_name):
             values[key] = env[env_name]
@@ -139,7 +145,19 @@ def _validate(values: Mapping[str, Any]) -> ServerConfig:
     data_dir = Path(str(values.get("data_dir", "leos-data")))
     inbox_value = values.get("inbox_dir")
     inbox_dir = Path(str(inbox_value)) if inbox_value else None
-    return ServerConfig(host=host, port=port, workers=workers, data_dir=data_dir, inbox_dir=inbox_dir)
+    rate_limit = _int_value("rate_limit_per_minute", values.get("rate_limit_per_minute", 60))
+    max_body = _int_value("max_body_bytes", values.get("max_body_bytes", 1_000_000))
+    if rate_limit < 0 or max_body < 0:
+        raise ServerConfigurationError("rate_limit_per_minute and max_body_bytes must not be negative")
+    return ServerConfig(
+        host=host,
+        port=port,
+        workers=workers,
+        data_dir=data_dir,
+        inbox_dir=inbox_dir,
+        rate_limit_per_minute=rate_limit,
+        max_body_bytes=max_body,
+    )
 
 
 def _int_value(name: str, value: Any) -> int:
