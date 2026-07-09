@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import importlib.metadata
 import importlib.util
 import unittest
 from pathlib import Path
 from unittest import mock
 
 _SCRIPT = Path("scripts/check_release_proof.py").resolve()
+_VERSION = importlib.metadata.version("leos-agent")
 _SPEC = importlib.util.spec_from_file_location("check_release_proof", _SCRIPT)
 assert _SPEC is not None and _SPEC.loader is not None
 check_release_proof = importlib.util.module_from_spec(_SPEC)
@@ -139,9 +141,9 @@ def _manifest(**overrides):
         "proof_status": "release_grade",
         "release_grade": True,
         "dirty_worktree": False,
-        "package_version": "0.1.0b1",
+        "package_version": _VERSION,
         "test_count": 819,
-        "environment": {"package_version": "0.1.0b1"},
+        "environment": {"package_version": _VERSION},
         "git": {"branch": "main", "commit_sha": "abc", "dirty_worktree": False},
     }
     data.update(overrides)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.metadata
 import json
 import re
 import subprocess
@@ -72,7 +73,7 @@ class ProofGenerationTests(unittest.TestCase):
 
         self.assertEqual(manifest.proof_status, "release_grade")
         self.assertTrue(manifest.release_grade)
-        self.assertEqual(manifest.package_version, "0.1.0b1")
+        self.assertEqual(manifest.package_version, importlib.metadata.version("leos-agent"))
 
     def test_git_unavailable_does_not_crash(self) -> None:
         with (

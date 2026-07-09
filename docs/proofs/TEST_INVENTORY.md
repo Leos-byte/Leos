@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-07-09T13:42:49.185955+00:00`
+Generated: `2026-07-09T14:08:42.930909+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -50,13 +50,13 @@ Generated: `2026-07-09T13:42:49.185955+00:00`
 | `tests/test_production_profile.py` | `a39e46c2324bf667653881ce8916928f55b244b089c01e9df2bbcd750d7ce37b` | 849 | 33624 | True |
 | `tests/test_production_readiness.py` | `0cd7cad5133453b9a527d32f563aa69f6ca437bb0988d2d05b35776ffe571465` | 107 | 4246 | True |
 | `tests/test_production_smoke_evidence.py` | `be0d425609d2035ef7e402de63b1a94f2f76960166cd214ae6fb52f26c07f5b2` | 252 | 9359 | True |
-| `tests/test_proof_generation.py` | `8a2284c47645ac450e0074e796e5fcddb066c85244990a3011beaf63230b0b20` | 202 | 8432 | True |
+| `tests/test_proof_generation.py` | `6bedebeb58e9f2d6840dda844dfec274fddb4801916f9fa92768713f2222cdc5` | 203 | 8489 | True |
 | `tests/test_properties.py` | `c79e170732b4853a1404712a485b85cca756b49ec0e0fe201f9f7080daa0a558` | 173 | 6762 | True |
 | `tests/test_public_api.py` | `39dfce3674a9b69ba168c2d30742ef391cf64eaaa9733a309f23fb5b417cfe31` | 239 | 9323 | True |
 | `tests/test_queue_smoke_evidence.py` | `7e1083649310c7caab86842dcb5835f9a3b50e67a454afd3b5f84f18fdfad4fc` | 120 | 5024 | True |
 | `tests/test_recipes.py` | `9822fc93c15a7fb59dd094dae63a94bfec20a324c1af724752ed116f0ff4f1d7` | 127 | 5020 | True |
 | `tests/test_recovery.py` | `cd2e83ca67da4a15d42b5e70aae882544e666548063c0f3feacfbab073a109d4` | 34 | 1108 | True |
-| `tests/test_release_proof_check.py` | `c9c8d90b241fcede87b7af58019a31bddeb816c0a3d078e0634b183ac36f1dc5` | 152 | 6898 | True |
+| `tests/test_release_proof_check.py` | `7861edff377bbf32848a5b99e6e92b09745fa3861772eabcc2dee5833b7b432a` | 154 | 6974 | True |
 | `tests/test_replanning.py` | `2a82c80388536e36a149d3e163433410b65b67f20a52ce7eff6a85ba538bd163` | 155 | 5787 | True |
 | `tests/test_replay.py` | `c283dec6fdcdb9857e966d4ea25b1e82ae1f268d12a455e5842afcf7288a94d3` | 117 | 5330 | True |
 | `tests/test_runtime_store.py` | `5fd95e8ab33018da777c85e460e7ebf712694552f803d1ecee8ad8dd9c12bc64` | 189 | 7363 | True |
