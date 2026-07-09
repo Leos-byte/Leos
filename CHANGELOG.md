@@ -56,6 +56,19 @@ This project follows semantic versioning once public releases begin.
   (`create_app(inbox_dir=...)`) that lists pending packets, renders them, and
   emits HMAC-signed decisions by reusing `approval_exchange` signing. No
   kernel gating semantics changed.
+- Added a CI `integration` job that verifies the optional backends against
+  real runtimes on every push: the Postgres store contract and task-queue
+  tests run against a `postgres:16` service container
+  (`LEOS_TEST_POSTGRES_DSN`), and new gated real-runtime sandbox tests
+  (`tests/test_sandbox_backends_integration.py`) execute rootless-podman
+  containers to observe egress denial, non-root uid, timeout kill, output
+  truncation, and read-only rootfs. The job publishes a skip report so every
+  remaining skip names its missing runtime. Fixed the missing-optional-package
+  tests to simulate absence via `sys.modules` (they previously mocked
+  `builtins.__import__`, which `importlib.import_module` bypasses once the
+  package is installed), and made the real-server Postgres tests deterministic
+  against a persistent database by starting from empty tables. No kernel
+  gating semantics changed.
 
 ## 0.1.0
 

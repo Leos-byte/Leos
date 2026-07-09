@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-07-08T11:00:06.371552+00:00`
+Generated: `2026-07-09T03:01:38.435868+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -41,10 +41,10 @@ Generated: `2026-07-08T11:00:06.371552+00:00`
 | `tests/test_memory.py` | `3832f6d016056aa86b71354bfe197de1b3365ae0e50a84a9740a6ba7c146e675` | 105 | 4313 | True |
 | `tests/test_model_adapters.py` | `59f4bedd8f56cdd6a78a102bf5e54485111876ff2134d25a825f6d448785157c` | 82 | 3391 | True |
 | `tests/test_network_tools.py` | `91362d989c57f9d98632c0a1283bbc3b99c88ff6a576a80a42214d7d2e97739d` | 215 | 8706 | True |
-| `tests/test_observability.py` | `699e93e8ac32b0af40d3d9b397717c1d242952814c5b08140d3e9d3a5e8cdaaa` | 240 | 9358 | True |
+| `tests/test_observability.py` | `37f31609b1759978436e4de0fd936eb37b84c51bbb402733080c08d62ff702a7` | 233 | 9288 | True |
 | `tests/test_planner.py` | `f749bb4546f5623f281581ccf33c7dcba64e8641a1bf872c9f6db35e688e493f` | 70 | 3190 | True |
 | `tests/test_policy_wizard.py` | `377dca5febafc87c25ccca0f049160a53c29c67ef9050b0e817e722fb9949f3a` | 129 | 5925 | True |
-| `tests/test_postgres_store.py` | `03c675658dae6c537b17ed1296680426264ed9dfef184613949c050deae693eb` | 150 | 5468 | True |
+| `tests/test_postgres_store.py` | `a054aaa72b83590495569b7ff255e4fa686a9fbd5ad4f2fa85dc775f1b4b79f1` | 161 | 6115 | True |
 | `tests/test_production_profile.py` | `a39e46c2324bf667653881ce8916928f55b244b089c01e9df2bbcd750d7ce37b` | 849 | 33624 | True |
 | `tests/test_production_readiness.py` | `0cd7cad5133453b9a527d32f563aa69f6ca437bb0988d2d05b35776ffe571465` | 107 | 4246 | True |
 | `tests/test_production_smoke_evidence.py` | `be0d425609d2035ef7e402de63b1a94f2f76960166cd214ae6fb52f26c07f5b2` | 252 | 9359 | True |
@@ -59,6 +59,7 @@ Generated: `2026-07-08T11:00:06.371552+00:00`
 | `tests/test_runtime_store.py` | `5fd95e8ab33018da777c85e460e7ebf712694552f803d1ecee8ad8dd9c12bc64` | 189 | 7363 | True |
 | `tests/test_sandbox.py` | `fedd5f7c90e96e9d7b338240addc30b18debb7cecbbfbbc64cffe6cdf9cfe776` | 223 | 8270 | True |
 | `tests/test_sandbox_backends.py` | `68fae0411bba7e770eec725e9dd637db9ecb662f1be3f2d7516ddf3acd69ffb0` | 192 | 8776 | True |
+| `tests/test_sandbox_backends_integration.py` | `1023e1eb4896737b9c051238ffec1fe3e4ab7919c3d143658f02d36c6ba3dc41` | 154 | 5789 | True |
 | `tests/test_sandbox_docker.py` | `df07664945d4f4b5f9e7969bcb2a1336c9e813469fabb85c45fa97175b134492` | 36 | 1389 | True |
 | `tests/test_sanitization.py` | `8579ffbae5ff45dd061c81009db714dd9ab162f81f062a23993d09de5983be29` | 87 | 3085 | True |
 | `tests/test_schema_validation.py` | `0fe536c7ee23e63e3b1598d9d5d235fbb922fe7903c61971451cfb2063327dff` | 234 | 9134 | True |
@@ -69,7 +70,7 @@ Generated: `2026-07-08T11:00:06.371552+00:00`
 | `tests/test_simulation_conflicts.py` | `cb122f66293bc8096ed8f44598da24c521516dc97cfd4c15f14d3a70cfbf6734` | 110 | 4694 | True |
 | `tests/test_sqlite_store.py` | `cceba5cbf062a6a8066dc92417c45c37934872b26e789f04ad08794f4b5bf56f` | 90 | 4109 | True |
 | `tests/test_store_contract.py` | `e520d8905a5ddfca962f570fec029cd8d2bf493e038bbd4863ca9884a3adcbb1` | 44 | 1364 | True |
-| `tests/test_task_queue_concurrency.py` | `a41c79cd3aa3dd787c125fddb5f2b6ae54525695f1ca2513b6634e5d11083143` | 432 | 17602 | True |
+| `tests/test_task_queue_concurrency.py` | `1f87e6dce5452fda46228afada56053a9c69a9eec0949442d8f248029b184397` | 437 | 17989 | True |
 | `tests/test_task_queue_persistence.py` | `c436014da0c923ceb7588a47ebdaf94798d7078bdb108ca6286391b90413410e` | 162 | 6184 | True |
 | `tests/test_tool_manifest_registry.py` | `6bfa7bdd37966e0fad5f2d16b354b0e6a6b7501fd0c0b247a18593943ecfa1ed` | 159 | 5842 | True |
 | `tests/test_trace_viewer.py` | `abbefcdd03f8d602fc67636fb16511e010d22f3890d14b68b97940724c837b55` | 145 | 5315 | True |

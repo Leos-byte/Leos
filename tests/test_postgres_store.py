@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import shutil
 import sqlite3
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -89,15 +90,11 @@ class PostgresStoreContractTests(RuntimeStoreContract, unittest.TestCase):
 
 class PostgresStoreConnectionTests(unittest.TestCase):
     def test_missing_psycopg_raises_runtime_store_error(self) -> None:
-        real_import = __import__
-
-        def fake_import(name: str, *args: Any, **kwargs: Any) -> Any:
-            if name == "psycopg":
-                raise ImportError("no psycopg")
-            return real_import(name, *args, **kwargs)
-
+        # importlib.import_module bypasses builtins.__import__, so simulate the
+        # missing package via sys.modules; this holds whether or not the real
+        # psycopg is installed (the CI integration job installs it).
         with (
-            mock.patch("builtins.__import__", side_effect=fake_import),
+            mock.patch.dict(sys.modules, {"psycopg": None}),
             self.assertRaises(RuntimeStoreError) as ctx,
         ):
             PostgresRuntimeStore(dsn="postgresql://localhost/none")
@@ -138,6 +135,20 @@ class PostgresStoreConnectionTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("LEOS_TEST_POSTGRES_DSN"), "requires a live PostgreSQL server")
 class PostgresStoreRealServerTests(RuntimeStoreContract, unittest.TestCase):
+    def setUp(self) -> None:
+        # The store schema is append-friendly and never dropped, so a shared
+        # database accumulates rows across tests and runs. Start each test
+        # from empty tables to keep the contract's global-count assertions
+        # meaningful against a persistent server.
+        store = PostgresRuntimeStore(os.environ["LEOS_TEST_POSTGRES_DSN"])
+        try:
+            store._execute("DELETE FROM runtime_events", ())
+            store._execute("DELETE FROM checkpoints", ())
+            store._execute("DELETE FROM plans", ())
+            store._execute("DELETE FROM goals", ())
+        finally:
+            store.close()
+
     def make_store(self) -> Any:
         return PostgresRuntimeStore(os.environ["LEOS_TEST_POSTGRES_DSN"])
 

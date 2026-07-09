@@ -32,10 +32,14 @@ runtime is available it raises `SandboxUnavailable`. This complements the
 `TransactionManager` guard, which already blocks a `CONTAINER`/`MICROVM` tool
 when no matching runner is registered in `sandbox_runners` (it never downgrades).
 
-The container backends are unit-tested for command construction. CI does not
-prove full container/microVM isolation because it may not have `runsc`, `podman`,
-`docker`, or `firecracker` available; real-runtime integration tests are gated
-with `skipUnless`.
+The container backends are unit-tested for command construction, and
+`tests/test_sandbox_backends_integration.py` additionally executes real
+containers where a runtime is present: the CI `integration` job runs the
+rootless-podman cases (echo round-trip, non-root uid, timeout kill, output
+truncation, `--network none` egress denial, read-only rootfs with tmpfs `/tmp`)
+on every push. Backends whose runtime is absent (`runsc`, `firecracker`) skip
+with an explicit reason, and the job publishes a skip report so every remaining
+skip names the missing runtime.
 
 High-risk code execution remains opt-in and policy-gated. Under
 `production_locked_down`, any `EXECUTE_CODE` tool using `SandboxPolicy.WORKSPACE`
