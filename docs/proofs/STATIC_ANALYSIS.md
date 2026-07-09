@@ -20,13 +20,13 @@ All checks passed!
 - Command: `ruff format --check .`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.008`
+- Duration seconds: `0.012`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-154 files already formatted
+158 files already formatted
 
 ```
 
@@ -35,7 +35,7 @@ All checks passed!
 - Command: `mypy src`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.207`
+- Duration seconds: `0.203`
 - Truncated: `False`
 
 ### stdout

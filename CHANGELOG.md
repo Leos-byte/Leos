@@ -69,6 +69,18 @@ This project follows semantic versioning once public releases begin.
   package is installed), and made the real-server Postgres tests deterministic
   against a persistent database by starting from empty tables. No kernel
   gating semantics changed.
+- Added commit-bound backend smoke evidence: `scripts/sandbox_smoke.py`
+  (real-container isolation: egress denial, non-root uid, read-only rootfs,
+  pids/memory limits configured and trigger-enforced, timeout kill, microVM
+  fail-closed) and `scripts/queue_smoke.py` (multi-process exactly-once
+  consumption against live Postgres: no double claims, killed-worker lease
+  reap and rescue, idempotency dedupe; the DSN never enters the evidence).
+  Both run in the CI `integration` job and upload exact-SHA artifacts after
+  in-job validation. `check_production_readiness.py` gained opt-in
+  `--require-sandbox-evidence` / `--require-queue-evidence` gates (default
+  off; existing behavior unchanged) and asserts the CI wiring;
+  `download_smoke_evidence.py` is parametrized by artifact prefix, filename,
+  and event. No kernel gating semantics changed.
 
 ## 0.1.0
 

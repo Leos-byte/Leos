@@ -127,3 +127,51 @@ jobs:
             grep "skipped" integration-tests.log | sed "s/ \\.\\.\\. skipped / => skipped: /" | sort || echo "(no skips)"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Sandbox isolation smoke evidence
+        env:
+          LEOS_SANDBOX_SMOKE_EVIDENCE_OUT: ${{ runner.temp }}/sandbox_smoke_latest.json
+        run: python scripts/sandbox_smoke.py
+
+      - name: Queue concurrency smoke evidence
+        env:
+          LEOS_QUEUE_SMOKE_EVIDENCE_OUT: ${{ runner.temp }}/queue_smoke_latest.json
+        run: python scripts/queue_smoke.py
+
+      - name: Validate smoke evidence documents
+        env:
+          LEOS_SANDBOX_SMOKE_EVIDENCE_OUT: ${{ runner.temp }}/sandbox_smoke_latest.json
+          LEOS_QUEUE_SMOKE_EVIDENCE_OUT: ${{ runner.temp }}/queue_smoke_latest.json
+        run: |
+          python - <<'EOF'
+          import os
+          from pathlib import Path
+
+          from scripts.check_production_readiness import _queue_evidence_check, _sandbox_evidence_check
+
+          head = os.environ["GITHUB_SHA"]
+          for check, env_name in (
+              (_sandbox_evidence_check, "LEOS_SANDBOX_SMOKE_EVIDENCE_OUT"),
+              (_queue_evidence_check, "LEOS_QUEUE_SMOKE_EVIDENCE_OUT"),
+          ):
+              result = check(Path("."), Path(os.environ[env_name]), expected_head=head)
+              print(result)
+              if not result["ok"]:
+                  raise SystemExit(1)
+          EOF
+
+      - name: Upload sandbox smoke evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-sandbox-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/sandbox_smoke_latest.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload queue smoke evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-queue-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/queue_smoke_latest.json
+          if-no-files-found: error
+          retention-days: 14

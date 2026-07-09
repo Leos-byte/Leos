@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-07-09T03:01:38.435868+00:00`
+Generated: `2026-07-09T08:45:35.417721+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -51,6 +51,7 @@ Generated: `2026-07-09T03:01:38.435868+00:00`
 | `tests/test_proof_generation.py` | `8a2284c47645ac450e0074e796e5fcddb066c85244990a3011beaf63230b0b20` | 202 | 8432 | True |
 | `tests/test_properties.py` | `c79e170732b4853a1404712a485b85cca756b49ec0e0fe201f9f7080daa0a558` | 173 | 6762 | True |
 | `tests/test_public_api.py` | `39dfce3674a9b69ba168c2d30742ef391cf64eaaa9733a309f23fb5b417cfe31` | 239 | 9323 | True |
+| `tests/test_queue_smoke_evidence.py` | `7e1083649310c7caab86842dcb5835f9a3b50e67a454afd3b5f84f18fdfad4fc` | 120 | 5024 | True |
 | `tests/test_recipes.py` | `9822fc93c15a7fb59dd094dae63a94bfec20a324c1af724752ed116f0ff4f1d7` | 127 | 5020 | True |
 | `tests/test_recovery.py` | `cd2e83ca67da4a15d42b5e70aae882544e666548063c0f3feacfbab073a109d4` | 34 | 1108 | True |
 | `tests/test_release_proof_check.py` | `c9c8d90b241fcede87b7af58019a31bddeb816c0a3d078e0634b183ac36f1dc5` | 152 | 6898 | True |
@@ -61,6 +62,7 @@ Generated: `2026-07-09T03:01:38.435868+00:00`
 | `tests/test_sandbox_backends.py` | `68fae0411bba7e770eec725e9dd637db9ecb662f1be3f2d7516ddf3acd69ffb0` | 192 | 8776 | True |
 | `tests/test_sandbox_backends_integration.py` | `1023e1eb4896737b9c051238ffec1fe3e4ab7919c3d143658f02d36c6ba3dc41` | 154 | 5789 | True |
 | `tests/test_sandbox_docker.py` | `df07664945d4f4b5f9e7969bcb2a1336c9e813469fabb85c45fa97175b134492` | 36 | 1389 | True |
+| `tests/test_sandbox_smoke_evidence.py` | `dce837a74c5d711837d711ee694032c5e66297b0ee9958769f6f71ef087c657d` | 180 | 7676 | True |
 | `tests/test_sanitization.py` | `8579ffbae5ff45dd061c81009db714dd9ab162f81f062a23993d09de5983be29` | 87 | 3085 | True |
 | `tests/test_schema_validation.py` | `0fe536c7ee23e63e3b1598d9d5d235fbb922fe7903c61971451cfb2063327dff` | 234 | 9134 | True |
 | `tests/test_secret_scan_script.py` | `77a24a7b7bc4c987532fcd7c2a176ea01a30fd13f4ca5150450b76d207354ffc` | 100 | 4368 | True |

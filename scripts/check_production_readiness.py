@@ -46,6 +46,16 @@ def main() -> int:
         "--smoke-evidence-path",
         default="docs/proofs/real_github_smoke_latest.json",
     )
+    parser.add_argument("--require-sandbox-evidence", action="store_true")
+    parser.add_argument(
+        "--sandbox-evidence-path",
+        default="docs/proofs/sandbox_smoke_latest.json",
+    )
+    parser.add_argument("--require-queue-evidence", action="store_true")
+    parser.add_argument(
+        "--queue-evidence-path",
+        default="docs/proofs/queue_smoke_latest.json",
+    )
     args = parser.parse_args()
     results = run_checks(
         ROOT,
@@ -53,6 +63,10 @@ def main() -> int:
         include_release_proof=True,
         require_smoke_evidence=args.require_smoke_evidence,
         smoke_evidence_path=Path(args.smoke_evidence_path),
+        require_sandbox_evidence=args.require_sandbox_evidence,
+        sandbox_evidence_path=Path(args.sandbox_evidence_path),
+        require_queue_evidence=args.require_queue_evidence,
+        queue_evidence_path=Path(args.queue_evidence_path),
     )
     failed = [item for item in results if not item["ok"]]
     for item in results:
@@ -72,6 +86,10 @@ def run_checks(
     include_release_proof: bool = True,
     require_smoke_evidence: bool = False,
     smoke_evidence_path: Path = Path("docs/proofs/real_github_smoke_latest.json"),
+    require_sandbox_evidence: bool = False,
+    sandbox_evidence_path: Path = Path("docs/proofs/sandbox_smoke_latest.json"),
+    require_queue_evidence: bool = False,
+    queue_evidence_path: Path = Path("docs/proofs/queue_smoke_latest.json"),
 ) -> list[dict[str, Any]]:
     checks: list[dict[str, Any]] = []
     if include_release_proof:
@@ -88,6 +106,10 @@ def run_checks(
     )
     if require_smoke_evidence:
         checks.append(_smoke_evidence_check(root, smoke_evidence_path))
+    if require_sandbox_evidence:
+        checks.append(_sandbox_evidence_check(root, sandbox_evidence_path))
+    if require_queue_evidence:
+        checks.append(_queue_evidence_check(root, queue_evidence_path))
     return checks
 
 
@@ -231,6 +253,16 @@ def _ci_check(root: Path) -> dict[str, Any]:
     forbidden_triggers = ("pull_request:", "push:")
     if any(trigger in real_write for trigger in forbidden_triggers):
         return _fail("ci", "real-write workflow must not run on push or pull_request")
+    integration_markers = (
+        "LEOS_TEST_POSTGRES_DSN",
+        "sandbox_smoke.py",
+        "queue_smoke.py",
+        "production-sandbox-evidence-${{ github.sha }}",
+        "production-queue-evidence-${{ github.sha }}",
+    )
+    missing_markers = [marker for marker in integration_markers if marker not in ci]
+    if missing_markers:
+        return _fail("ci", f"integration job is missing backend evidence wiring: {', '.join(missing_markers)}")
     return _ok("ci")
 
 
@@ -365,6 +397,109 @@ def _smoke_evidence_check(
     if missing:
         return _fail("smoke evidence", f"smoke evidence checks are not true: {', '.join(missing)}")
     return _ok("smoke evidence")
+
+
+_BACKEND_FORBIDDEN_PATTERNS = {
+    **_SMOKE_FORBIDDEN_PATTERNS,
+    "credentialed_url": re.compile(r"://[^\s\"]+:[^\s\"]+@"),
+}
+_SANDBOX_EVIDENCE_TYPE = "container_sandbox_isolation_smoke"
+_SANDBOX_REQUIRED_CHECKS = (
+    "runtime_available",
+    "non_root_user_enforced",
+    "network_egress_blocked",
+    "read_only_rootfs_enforced",
+    "tmpfs_tmp_writable",
+    "pids_limit_configured",
+    "pids_limit_enforced",
+    "memory_limit_configured",
+    "memory_limit_enforced",
+    "timeout_kill_enforced",
+    "microvm_fails_closed",
+)
+_QUEUE_EVIDENCE_TYPE = "postgres_task_queue_concurrency_smoke"
+_QUEUE_REQUIRED_CHECKS = (
+    "postgres_available",
+    "all_tasks_completed",
+    "exactly_once_execution",
+    "no_double_claim",
+    "killed_worker_lease_reaped",
+    "reaped_task_completed_by_other_worker",
+    "idempotency_dedupe_enforced",
+)
+
+
+def _sandbox_evidence_check(root: Path, evidence_path: Path, *, expected_head: str | None = None) -> dict[str, Any]:
+    return _backend_evidence_check(
+        "sandbox evidence",
+        root,
+        evidence_path,
+        evidence_type=_SANDBOX_EVIDENCE_TYPE,
+        required_checks=_SANDBOX_REQUIRED_CHECKS,
+        expected_head=expected_head,
+    )
+
+
+def _queue_evidence_check(root: Path, evidence_path: Path, *, expected_head: str | None = None) -> dict[str, Any]:
+    return _backend_evidence_check(
+        "queue evidence",
+        root,
+        evidence_path,
+        evidence_type=_QUEUE_EVIDENCE_TYPE,
+        required_checks=_QUEUE_REQUIRED_CHECKS,
+        expected_head=expected_head,
+    )
+
+
+def _backend_evidence_check(
+    name: str,
+    root: Path,
+    evidence_path: Path,
+    *,
+    evidence_type: str,
+    required_checks: tuple[str, ...],
+    expected_head: str | None = None,
+) -> dict[str, Any]:
+    """Validate CI-produced backend smoke evidence (sandbox/queue)."""
+    path = evidence_path if evidence_path.is_absolute() else root / evidence_path
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return _fail(name, f"could not read evidence: {type(exc).__name__}")
+    findings = [marker for marker, pattern in _BACKEND_FORBIDDEN_PATTERNS.items() if pattern.search(raw)]
+    if findings:
+        return _fail(name, f"evidence contains forbidden marker(s): {', '.join(findings)}")
+    try:
+        evidence = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        return _fail(name, f"invalid evidence JSON: {exc.msg}")
+    if not isinstance(evidence, dict):
+        return _fail(name, "evidence must be a JSON object")
+    if evidence.get("schema_version") != 1:
+        return _fail(name, "schema_version must be 1")
+    if evidence.get("evidence_type") != evidence_type:
+        return _fail(name, f"evidence_type must be {evidence_type!r}")
+    if evidence.get("status") != "passed":
+        return _fail(name, "status must be 'passed'")
+    current_head = expected_head or _git_head(root)
+    if not current_head:
+        return _fail(name, "current git HEAD could not be determined")
+    if evidence.get("leos_commit_sha") != current_head:
+        return _fail(name, "leos_commit_sha must match current git HEAD")
+    if not str(evidence.get("workflow_run_id", "")).strip():
+        return _fail(name, "workflow_run_id is required")
+    if evidence.get("run_id") != evidence.get("workflow_run_id"):
+        return _fail(name, "run_id must match workflow_run_id")
+    generated_at = str(evidence.get("generated_at", ""))
+    if not generated_at or not generated_at.endswith("Z"):
+        return _fail(name, "generated_at must be a UTC timestamp")
+    checks = evidence.get("checks")
+    if not isinstance(checks, dict):
+        return _fail(name, "evidence checks must be an object")
+    missing = [check for check in required_checks if checks.get(check) is not True]
+    if missing:
+        return _fail(name, f"evidence checks are not true: {', '.join(missing)}")
+    return _ok(name)
 
 
 def _git_head(root: Path) -> str:
