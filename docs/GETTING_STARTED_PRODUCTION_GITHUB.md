@@ -35,7 +35,30 @@ limited to the single target repository:
 Do not grant administration, Actions write, workflows, secrets, deployments,
 organization access, or all-repositories access. PAT support is acceptable for
 this private beta and smoke boundary; a repository-installed GitHub App with
-short-lived installation tokens is the recommended next authentication model.
+short-lived installation tokens is the recommended authentication model, and
+is now supported directly:
+
+```bash
+pip install "leos-agent[github-app]"   # PyJWT + cryptography
+export LEOS_GITHUB_APP_ID=12345
+export LEOS_GITHUB_APP_INSTALLATION_ID=678
+export LEOS_GITHUB_APP_PRIVATE_KEY_PATH=/secure/leos-app.pem   # chmod 600
+```
+
+With these set (and no `LEOS_GITHUB_TOKEN`), the CLI and the HTTP service
+mint short-lived installation tokens automatically
+(`leos_agent.github_app_auth.GitHubAppTokenProvider`): an RS256 App JWT is
+exchanged for an installation token, cached, and refreshed shortly before
+expiry. Tokens are `Secret`-wrapped end to end and the private key never
+appears in logs, audit records, or error messages.
+
+**Precedence**: an explicit `LEOS_GITHUB_TOKEN` (PAT) always wins over the
+App configuration; a *partially* configured App fails loudly instead of
+silently falling back. `leos doctor` reports the active mode
+(`github_auth_mode`: `pat` / `github_app` / `none`) and flags incomplete App
+configuration or a group/world-readable private key file. Install the App on
+the single target repository only, with the same minimal permissions listed
+above.
 
 Set credentials without putting values in plan, approval, audit, or shell
 arguments:

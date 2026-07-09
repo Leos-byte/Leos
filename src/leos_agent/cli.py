@@ -812,12 +812,9 @@ def _doctor(profile: str) -> int:
 
 
 def _github_token(*, required: bool) -> Secret | None:
-    value = os.environ.get("LEOS_GITHUB_TOKEN")
-    if value:
-        return Secret(value)
-    if required:
-        raise ValueError("LEOS_GITHUB_TOKEN is required")
-    return None
+    from .github_app_auth import resolve_github_credential
+
+    return resolve_github_credential(required=required)
 
 
 def _github_dry_run(repo: str, issue: int, *, audit: str | None) -> int:

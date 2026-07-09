@@ -105,7 +105,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install package with optional backend extras
-        run: pip install -e ".[dev,postgres,server,observability,keyring,vault]"
+        run: pip install -e ".[dev,postgres,server,observability,keyring,vault,github-app]"
 
       - name: Dependency vulnerability audit
         run: |

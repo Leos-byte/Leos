@@ -105,6 +105,20 @@ This project follows semantic versioning once public releases begin.
   at both layers, traversal identifiers, missing-HMAC no-side-effects) and
   an HTTP-service threat model section in `SECURITY.md`. No kernel gating
   semantics changed.
+- Added GitHub App installation-token authentication
+  (`github_app_auth.py`, optional `github-app` extra with PyJWT +
+  cryptography): `GitHubAppTokenProvider` signs an RS256 App JWT, exchanges
+  it for a short-lived installation token, and caches it with pre-expiry
+  refresh; tokens are `Secret`-wrapped and the private key never enters
+  logs, audit records, or error messages. `resolve_github_credential`
+  gives explicit `LEOS_GITHUB_TOKEN` (PAT) precedence over the App
+  configuration (`LEOS_GITHUB_APP_ID` / `LEOS_GITHUB_APP_INSTALLATION_ID` /
+  `LEOS_GITHUB_APP_PRIVATE_KEY_PATH`) and fails loudly on partial App
+  configuration; the CLI and `/apply` both use it, with zero changes to
+  `GitHubRESTClient` request handling (auth was already per-request).
+  `leos doctor` reports `github_auth_mode` and flags incomplete App
+  configuration or lax private-key file permissions. No kernel gating
+  semantics changed.
 
 ## 0.1.0
 

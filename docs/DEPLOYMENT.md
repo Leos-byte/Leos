@@ -51,7 +51,8 @@ startup summary prints secret *presence* only, never values.
 | --- | --- | --- |
 | `LEOS_SERVER_API_KEY` | yes | Boundary auth for every non-health endpoint (`X-Leos-Api-Key`, constant-time compare). Comma-separate multiple keys (each 32+ chars) for zero-downtime rotation: add the new key, migrate clients, remove the old |
 | `LEOS_APPROVAL_HMAC_SECRET` | for decisions | Signs approval decisions (`/approvals/decide`, `/apply`, inbox decide) |
-| `LEOS_GITHUB_TOKEN` | for `/apply` | Fine-grained PAT used by the bounded GitHub operator |
+| `LEOS_GITHUB_TOKEN` | for `/apply` | Fine-grained PAT used by the bounded GitHub operator (wins over the App config) |
+| `LEOS_GITHUB_APP_ID` / `LEOS_GITHUB_APP_INSTALLATION_ID` / `LEOS_GITHUB_APP_PRIVATE_KEY_PATH` | PAT alternative | GitHub App short-lived installation tokens (`github-app` extra); all three required together |
 | `LEOS_ENABLE_REAL_GITHUB_WRITES` | for `/apply` | Explicit opt-in gate for real writes |
 | `LEOS_SERVER_HOST` / `LEOS_SERVER_PORT` / `LEOS_SERVER_WORKERS` | no | Bind address, port, worker count |
 | `LEOS_SERVER_DATA_DIR` / `LEOS_SERVER_INBOX_DIR` | no | Audits/receipts directory; approval inbox directory |
