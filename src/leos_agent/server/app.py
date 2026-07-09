@@ -37,6 +37,7 @@ from ..approval_exchange import (
     write_approval_decision,
 )
 from ..errors import LeosError
+from ..github_app_auth import resolve_github_credential
 from ..github_operator import (
     PROFILE,
     apply_operator_plan,
@@ -47,7 +48,6 @@ from ..github_operator import (
 )
 from ..github_tools import GitHubClient
 from ..policy import PolicyEngine
-from ..tools import Secret
 from ..trace_viewer import render_trace_html
 
 _SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -243,9 +243,12 @@ def create_app(
         if not isinstance(plan, dict) or not isinstance(approval, dict) or not isinstance(decision, dict):
             raise HTTPException(status_code=400, detail="plan, approval, and decision objects are required")
         plan_id = _safe_plan_id(str(plan.get("plan_id", "")))
-        token_value = os.environ.get("LEOS_GITHUB_TOKEN")
-        if not token_value:
-            raise HTTPException(status_code=403, detail="LEOS_GITHUB_TOKEN is required")
+        try:
+            token = resolve_github_credential(required=False)
+        except LeosError as exc:
+            raise HTTPException(status_code=403, detail=f"GitHub App credential error: {type(exc).__name__}") from exc
+        if token is None:
+            raise HTTPException(status_code=403, detail="LEOS_GITHUB_TOKEN or a GitHub App configuration is required")
         secret = os.environ.get("LEOS_APPROVAL_HMAC_SECRET")
         if not secret:
             raise HTTPException(status_code=403, detail="LEOS_APPROVAL_HMAC_SECRET is required")
@@ -254,7 +257,7 @@ def create_app(
             plan,
             approval,
             decision,
-            token=Secret(token_value),
+            token=token,
             signature_secret=secret,
             audit_path=audit_path,
             receipt_dir=receipts_dir,

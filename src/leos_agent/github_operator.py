@@ -71,6 +71,8 @@ def production_github_doctor(profile: str) -> OperatorResult:
         tool = registry.get(name)
         if not tool.spec.network_access or tool.spec.egress_host != GITHUB_HOST:
             failures.append(f"{name} has invalid network metadata")
+    auth_mode, app_failures = _github_auth_mode()
+    failures.extend(app_failures)
     data = {
         "profile": profile,
         "runtime_egress_enforced": client.runtime_egress_enforced,
@@ -79,8 +81,38 @@ def production_github_doctor(profile: str) -> OperatorResult:
         "signed_approval_required": policy.require_signed_approval,
         "real_writes_enabled": os.environ.get("LEOS_ENABLE_REAL_GITHUB_WRITES") == "1",
         "tool_count": len(registry.names()),
+        "github_auth_mode": auth_mode,
     }
     return OperatorResult(not failures, "; ".join(failures) if failures else "production GitHub doctor passed", data)
+
+
+def _github_auth_mode() -> tuple[str, list[str]]:
+    """Classify the configured GitHub credential source and flag misconfigurations.
+
+    Precedence matches ``resolve_github_credential``: an explicit PAT wins over
+    a GitHub App. A partially configured App is an error, not a silent
+    fallback; a present private key file must not be group/world readable.
+    """
+    from .github_app_auth import APP_ID_ENV, INSTALLATION_ID_ENV, PAT_ENV, PRIVATE_KEY_PATH_ENV
+
+    failures: list[str] = []
+    pat_set = bool(os.environ.get(PAT_ENV))
+    app_values = {name: os.environ.get(name, "") for name in (APP_ID_ENV, INSTALLATION_ID_ENV, PRIVATE_KEY_PATH_ENV)}
+    missing = sorted(name for name, value in app_values.items() if not value)
+    if missing and len(missing) < len(app_values):
+        failures.append(f"incomplete GitHub App configuration; missing: {', '.join(missing)}")
+    app_configured = not missing
+    if app_configured:
+        key_path = Path(app_values[PRIVATE_KEY_PATH_ENV])
+        if not key_path.is_file():
+            failures.append("GitHub App private key file does not exist")
+        elif os.name == "posix" and (key_path.stat().st_mode & 0o077):
+            failures.append("GitHub App private key file must not be group/world accessible")
+    if pat_set:
+        return "pat", failures
+    if app_configured:
+        return "github_app", failures
+    return "none", failures
 
 
 def github_issue_dry_run(

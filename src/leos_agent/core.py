@@ -100,6 +100,12 @@ from .evaluator_registry import (
     EvaluatorRegistry,
 )
 from .github_agent import GitHubIssuePlanConfig, GitHubIssuePlanProvider
+from .github_app_auth import (  # noqa: F401
+    GitHubAppAuthError,
+    GitHubAppTokenProvider,
+    GitHubAppUnavailable,
+    resolve_github_credential,
+)
 from .github_client import (
     GitHubAPIError,
     GitHubAuthError,
@@ -360,7 +366,11 @@ __all__ = [
     "GitHubIssuePlanProvider",
     "GitHubNotFoundError",
     "GitHubOpenPRTool",
+    "GitHubAppAuthError",
+    "GitHubAppTokenProvider",
+    "GitHubAppUnavailable",
     "GitHubRESTClient",
+    "resolve_github_credential",
     "GitHubRateLimitError",
     "GitHubReadIssueTool",
     "GitHubTransport",
