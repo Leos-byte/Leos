@@ -49,13 +49,15 @@ startup summary prints secret *presence* only, never values.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `LEOS_SERVER_API_KEY` | yes | Boundary auth for every non-health endpoint (`X-Leos-Api-Key`, constant-time compare) |
+| `LEOS_SERVER_API_KEY` | yes | Boundary auth for every non-health endpoint (`X-Leos-Api-Key`, constant-time compare). Comma-separate multiple keys (each 32+ chars) for zero-downtime rotation: add the new key, migrate clients, remove the old |
 | `LEOS_APPROVAL_HMAC_SECRET` | for decisions | Signs approval decisions (`/approvals/decide`, `/apply`, inbox decide) |
 | `LEOS_GITHUB_TOKEN` | for `/apply` | Fine-grained PAT used by the bounded GitHub operator |
 | `LEOS_ENABLE_REAL_GITHUB_WRITES` | for `/apply` | Explicit opt-in gate for real writes |
 | `LEOS_SERVER_HOST` / `LEOS_SERVER_PORT` / `LEOS_SERVER_WORKERS` | no | Bind address, port, worker count |
 | `LEOS_SERVER_DATA_DIR` / `LEOS_SERVER_INBOX_DIR` | no | Audits/receipts directory; approval inbox directory |
 | `LEOS_SERVER_CONFIG` | no | Path to `leos-server.toml` |
+| `LEOS_SERVER_RATE_LIMIT_PER_MINUTE` | no | Write-endpoint token bucket (default 60; 0 disables; over budget → 429) |
+| `LEOS_SERVER_MAX_BODY_BYTES` | no | Request body cap (default 1000000; 0 disables; oversized → 413) |
 
 Generate strong secrets:
 

@@ -105,7 +105,13 @@ jobs:
           python-version: "3.12"
 
       - name: Install package with optional backend extras
-        run: pip install -e ".[dev,postgres,server,observability,keyring]"
+        run: pip install -e ".[dev,postgres,server,observability,keyring,vault]"
+
+      - name: Dependency vulnerability audit
+        run: |
+          pip install --upgrade pip
+          pip install pip-audit
+          pip-audit --skip-editable
 
       - name: Verify container runtime for sandbox tests
         run: podman info

@@ -23,7 +23,9 @@ import hmac
 import json
 import os
 import re
+import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -59,41 +61,114 @@ class ServerConfigurationError(LeosError):
     """Raised when the service is started without required configuration."""
 
 
+MIN_API_KEY_LENGTH = 32
+
+
+class _TokenBucket:
+    """Thread-safe in-memory token bucket (no external dependencies)."""
+
+    def __init__(self, capacity: float, refill_per_second: float, clock: Callable[[], float] = time.monotonic) -> None:
+        self._capacity = capacity
+        self._refill_per_second = refill_per_second
+        self._clock = clock
+        self._tokens = capacity
+        self._updated = clock()
+        self._lock = threading.Lock()
+
+    def allow(self) -> bool:
+        with self._lock:
+            now = self._clock()
+            self._tokens = min(self._capacity, self._tokens + (now - self._updated) * self._refill_per_second)
+            self._updated = now
+            if self._tokens >= 1.0:
+                self._tokens -= 1.0
+                return True
+            return False
+
+
+def _parse_api_keys(raw: str) -> tuple[str, ...]:
+    """Split a comma-separated key list and enforce minimum strength.
+
+    Multiple keys enable zero-downtime rotation: serve old + new together,
+    move clients over, then drop the old key.
+    """
+    keys = tuple(candidate.strip() for candidate in raw.split(",") if candidate.strip())
+    if not keys:
+        raise ServerConfigurationError("an API key is required (api_key= or LEOS_SERVER_API_KEY); refusing to start")
+    weak = sum(1 for candidate in keys if len(candidate) < MIN_API_KEY_LENGTH)
+    if weak:
+        raise ServerConfigurationError(
+            f"{weak} API key(s) are shorter than {MIN_API_KEY_LENGTH} characters; refusing to start with weak keys"
+        )
+    return keys
+
+
 def create_app(
     *,
     api_key: str | None = None,
     data_dir: Path,
     github_client: GitHubClient | None = None,
     inbox_dir: Path | None = None,
+    rate_limit_per_minute: int = 60,
+    max_body_bytes: int = 1_000_000,
 ) -> Any:
     """Build the FastAPI app.
 
     ``api_key`` (or ``LEOS_SERVER_API_KEY``) is mandatory — the service fails
-    closed rather than starting unauthenticated. ``data_dir`` holds audit logs
-    and approval receipts. ``github_client`` is injectable for tests and for
+    closed rather than starting unauthenticated. Multiple comma-separated keys
+    are accepted for zero-downtime rotation; every key must be at least
+    ``MIN_API_KEY_LENGTH`` characters. ``data_dir`` holds audit logs and
+    approval receipts. ``github_client`` is injectable for tests and for
     callers that manage their own transport. ``inbox_dir`` (optional) enables
     the web approval inbox over a ``FileApprovalGate``-compatible exchange
     directory (``packets/`` and ``decisions/`` inside it).
+    ``rate_limit_per_minute`` throttles the write endpoints (0 disables);
+    ``max_body_bytes`` rejects oversized request bodies with 413 (0 disables).
     """
     try:
-        from fastapi import Depends, FastAPI, Header, HTTPException
-        from fastapi.responses import HTMLResponse
+        from fastapi import Depends, FastAPI, Header, HTTPException, Request
+        from fastapi.responses import HTMLResponse, JSONResponse
     except ImportError as exc:
         raise ServerUnavailable("the service layer requires the optional 'fastapi' package") from exc
 
-    key = api_key or os.environ.get("LEOS_SERVER_API_KEY")
-    if not key:
+    raw_keys = api_key or os.environ.get("LEOS_SERVER_API_KEY")
+    if not raw_keys:
         raise ServerConfigurationError("an API key is required (api_key= or LEOS_SERVER_API_KEY); refusing to start")
-    expected_key = key
+    api_keys = _parse_api_keys(raw_keys)
     audits_dir = data_dir / "audits"
     receipts_dir = data_dir / "receipts"
 
     def require_api_key(x_leos_api_key: str | None = Header(default=None)) -> None:
-        if not x_leos_api_key or not hmac.compare_digest(x_leos_api_key, expected_key):
+        provided = x_leos_api_key or ""
+        # Compare against every configured key so timing does not reveal
+        # which key (if any) matched.
+        matched = False
+        for candidate in api_keys:
+            if hmac.compare_digest(provided, candidate):
+                matched = True
+        if not matched:
             raise HTTPException(status_code=401, detail="invalid or missing API key")
+
+    write_bucket = (
+        _TokenBucket(float(rate_limit_per_minute), rate_limit_per_minute / 60.0) if rate_limit_per_minute > 0 else None
+    )
+
+    def require_write_budget() -> None:
+        if write_bucket is not None and not write_bucket.allow():
+            raise HTTPException(status_code=429, detail="write rate limit exceeded; retry later")
 
     app = FastAPI(title="Leos Operator Service", docs_url=None, redoc_url=None, openapi_url=None)
     authed = [Depends(require_api_key)]
+    write_guarded = [Depends(require_api_key), Depends(require_write_budget)]
+
+    if max_body_bytes > 0:
+
+        @app.middleware("http")
+        async def limit_body_size(request: Request, call_next: Callable[[Request], Any]) -> Any:
+            length = request.headers.get("content-length")
+            if length is not None and length.isdigit() and int(length) > max_body_bytes:
+                return JSONResponse(status_code=413, content={"detail": "request body too large"})
+            return await call_next(request)
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:
@@ -130,7 +205,7 @@ def create_app(
         issues = validate_operator_plan(plan)
         return {"ready": not issues, "issues": issues}
 
-    @app.post("/approvals", dependencies=authed)
+    @app.post("/approvals", dependencies=write_guarded)
     def post_approvals(body: dict[str, Any]) -> dict[str, Any]:
         plan = body.get("plan")
         if not isinstance(plan, dict):
@@ -141,7 +216,7 @@ def create_app(
         except (LeosError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=f"approval bundle failed: {exc}") from exc
 
-    @app.post("/approvals/decide", dependencies=authed)
+    @app.post("/approvals/decide", dependencies=write_guarded)
     def post_approvals_decide(body: dict[str, Any]) -> dict[str, Any]:
         approval = body.get("approval")
         if not isinstance(approval, dict):
@@ -160,7 +235,7 @@ def create_app(
         except (LeosError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=f"decision bundle failed: {exc}") from exc
 
-    @app.post("/apply", dependencies=authed)
+    @app.post("/apply", dependencies=write_guarded)
     def post_apply(body: dict[str, Any]) -> dict[str, Any]:
         plan = body.get("plan")
         approval = body.get("approval")
@@ -236,7 +311,7 @@ def create_app(
             packet = _read_packet(approval_id)
             return HTMLResponse(render_approval_packet_html(packet))
 
-        @app.post("/inbox/{approval_id}/decide", dependencies=authed)
+        @app.post("/inbox/{approval_id}/decide", dependencies=write_guarded)
         def post_inbox_decide(approval_id: str, body: dict[str, Any]) -> dict[str, Any]:
             packet = _read_packet(approval_id)
             secret = os.environ.get("LEOS_APPROVAL_HMAC_SECRET")

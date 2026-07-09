@@ -1,10 +1,11 @@
 # Test Inventory
 
-Generated: `2026-07-09T09:03:12.373172+00:00`
+Generated: `2026-07-09T09:23:45.295199+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
 | `tests/redteam/test_goal_drift.py` | `9d7d67d0b68fc9c9d23b961fa03737b26fc7a629ae9f93f98e88a9b2a35dd651` | 50 | 1886 | True |
+| `tests/redteam/test_inbox_redteam.py` | `5b561453648535b4c8439487422cb398b4204ab19adf5ab14d6ee397b122a122` | 201 | 8467 | True |
 | `tests/redteam/test_policy_bypass.py` | `abba248e833f680c9c5e030e7669df0617ecebfbb7a6259d78fa85a8b27c78d8` | 162 | 6295 | True |
 | `tests/redteam/test_prompt_injection.py` | `1da32058e0177f676f368c4872f30ff29ee9b30957c0468fdf28aba7a7609360` | 58 | 2023 | True |
 | `tests/redteam/test_secret_boundary.py` | `e4af0e26b8134aeae18f645f4bf18c50dab92b9ec1f561d199397cbed15c5553` | 86 | 2993 | True |
@@ -67,9 +68,10 @@ Generated: `2026-07-09T09:03:12.373172+00:00`
 | `tests/test_schema_validation.py` | `0fe536c7ee23e63e3b1598d9d5d235fbb922fe7903c61971451cfb2063327dff` | 234 | 9134 | True |
 | `tests/test_secret_scan_script.py` | `77a24a7b7bc4c987532fcd7c2a176ea01a30fd13f4ca5150450b76d207354ffc` | 100 | 4368 | True |
 | `tests/test_serialization.py` | `9651dac861120406fb8b313c0ae149500f68984f5204b21d4c8689863769aefe` | 120 | 5421 | True |
-| `tests/test_server.py` | `7afdf387764ac2abc81e4d4c73826c01b796afde1730d23c2dd4f1dbb1ecc519` | 300 | 13141 | True |
+| `tests/test_server.py` | `cf9f2b169b4ef563f393ba55723d38add74c81fab3aa7b5735a4ab7977bd6f0f` | 300 | 13158 | True |
 | `tests/test_server_config.py` | `3fcdc68fe6e9d6a18b438f6364ddddbd86665f19f353dd41d79487b7c25a1721` | 162 | 6585 | True |
-| `tests/test_server_inbox.py` | `7f2cc0342ab6ea5596e78b9dd05c9f6f54fe4db84ab265b310c4df5b4d34f296` | 181 | 7902 | True |
+| `tests/test_server_hardening.py` | `da7a1a1b14a95a4839d236ebffb49801c9d9975ab83e0ea912985ba474dfd879` | 106 | 4677 | True |
+| `tests/test_server_inbox.py` | `f9f6bcca57d474cbb910506a64a26202753a925bd9c1ad31c2856bae4f3590ff` | 181 | 7919 | True |
 | `tests/test_simulation_conflicts.py` | `cb122f66293bc8096ed8f44598da24c521516dc97cfd4c15f14d3a70cfbf6734` | 110 | 4694 | True |
 | `tests/test_sqlite_store.py` | `cceba5cbf062a6a8066dc92417c45c37934872b26e789f04ad08794f4b5bf56f` | 90 | 4109 | True |
 | `tests/test_store_contract.py` | `e520d8905a5ddfca962f570fec029cd8d2bf493e038bbd4863ca9884a3adcbb1` | 44 | 1364 | True |

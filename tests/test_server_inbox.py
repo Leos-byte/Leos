@@ -29,7 +29,7 @@ try:
 except ImportError:  # pragma: no cover - exercised only without fastapi installed
     HAVE_FASTAPI = False
 
-_KEY = "test-service-key"
+_KEY = "test-service-key-0123456789abcdef"
 _AUTH = {"x-leos-api-key": _KEY}
 
 
