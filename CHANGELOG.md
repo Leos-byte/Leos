@@ -6,10 +6,10 @@ This project follows semantic versioning once public releases begin.
 
 ## Unreleased
 
-- Added a safety-first runtime kernel with policy gates, causal verification,
-  rollback, replay, memory, task queue, sandbox, and CLI inspection utilities.
-- Added red-team tests, benchmark cases, coverage threshold, security checks,
-  mutation smoke checks, and fuzz smoke checks.
+- Nothing yet.
+
+## 0.1.0-beta.2 — 2026-07-09
+
 - Added production sandbox isolation backends (`sandbox_backends.py`):
   `GvisorSandboxRunner` (gVisor `runsc`), `RootlessPodmanSandboxRunner`
   (user-namespace remap + optional seccomp), and `FirecrackerSandboxRunner`
@@ -119,6 +119,21 @@ This project follows semantic versioning once public releases begin.
   `leos doctor` reports `github_auth_mode` and flags incomplete App
   configuration or lax private-key file permissions. No kernel gating
   semantics changed.
+- Added operations documentation for the beta.2 release: `docs/RUNBOOK.md`
+  (health-check semantics, alert guidance on the built-in audit counters,
+  audit-chain integrity patrol, stuck-lease recovery, backup/restore order,
+  API-key and HMAC rotation procedures) and `docs/QUICKSTART.md` (15 minutes
+  from `docker compose up` through `leos policy init` to a fully gated
+  recipe dry run, verified end to end). Updated the honest-maturity
+  statements in `README.md` and `docs/PROJECT_POSITIONING.md` to distinguish
+  CI-integration-verified capabilities from unit-level-only ones.
+
+## 0.1.0-beta.1 — 2026-06-12
+
+- Added a safety-first runtime kernel with policy gates, causal verification,
+  rollback, replay, memory, task queue, sandbox, and CLI inspection utilities.
+- Added red-team tests, benchmark cases, coverage threshold, security checks,
+  mutation smoke checks, and fuzz smoke checks.
 
 ## 0.1.0
 

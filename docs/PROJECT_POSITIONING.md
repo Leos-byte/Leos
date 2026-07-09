@@ -57,3 +57,25 @@ Leos is production-shaped, not broadly production-complete.
 
 It is strongest today as a scoped GitHub-only bounded software-engineering
 runtime prototype.
+
+As of `v0.1.0-beta.2` the claim boundary is explicit:
+
+- **Implemented and CI-integration-verified** (real backends on every push,
+  with commit-bound smoke evidence): `PostgresRuntimeStore` and
+  `PostgresTaskQueue` against live PostgreSQL — including a multi-process
+  smoke proving exactly-once claims, killed-worker lease reaping, and
+  idempotency dedupe; rootless-podman sandbox isolation observed in real
+  containers (network egress denial, non-root uid, read-only rootfs,
+  pids/memory limits both configured and trigger-enforced, timeout kill);
+  the HTTP service (auth, rate limits, inbox, red-teamed) and its container
+  image; and the private disposable GitHub real-write smoke.
+- **Implemented with unit-level verification only**: gVisor (`runsc`) and
+  Firecracker runners (hardened command construction is tested; no such
+  runtime exists on CI runners — Firecracker deliberately fails closed),
+  keyring/HashiCorp Vault credential backends (contract-tested against
+  fakes), structlog/OpenTelemetry sinks (injected fakes), and the GitHub App
+  token flow (RS256 signing round-trips for real; the installation-token
+  exchange is tested against an injected transport, not a live App).
+
+Neither list establishes general production autonomy; the evidence covers the
+deliberately narrow boundaries described above.

@@ -202,12 +202,31 @@ Leos is production-shaped, not broadly production-complete. Its strongest
 current use case is a scoped, human-gated GitHub software-engineering runtime
 prototype with auditable real-write evidence.
 
+**Verified in CI against real backends on every push** (integration job +
+commit-bound smoke evidence): the Postgres runtime store and task queue
+against a live PostgreSQL server (including multi-process exactly-once
+consumption, lease reaping, and idempotency dedupe), rootless-podman
+container isolation (real containers: egress denial, non-root uid, read-only
+rootfs, pids/memory limits trigger-enforced, timeout kill), the HTTP service
+and its container image (fail-closed startup, auth, healthz), and the bounded
+GitHub real-write path (manual smoke against a private disposable
+repository).
+
+**Unit-level verification only so far**: gVisor and Firecracker backends
+(argv/spec construction; no runtime on CI runners), keyring/HashiCorp Vault
+credential backends (fake backends), structlog/OpenTelemetry sinks (injected
+fakes), and GitHub App token exchange (real RS256 signing verified; the
+exchange itself runs against an injected transport, not a live GitHub App).
+
 High-risk tools are not enabled by default. General browser automation,
 open-ended code execution, distributed state, enterprise identity, and
 open-world autonomy are outside the current production boundary.
 
 ## Further reading
 
+- [Quickstart (15 minutes to a gated dry run)](docs/QUICKSTART.md)
+- [Deployment (compose, TLS, backups)](docs/DEPLOYMENT.md)
+- [Operations runbook](docs/RUNBOOK.md)
 - [Project positioning](docs/PROJECT_POSITIONING.md)
 - [Design philosophy](docs/DESIGN_PHILOSOPHY.md)
 - [Architecture](docs/ARCHITECTURE.md)
