@@ -2,11 +2,11 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-07-09T13:42:49.185955+00:00`
-- Package version: `0.1.0b1`
+- Generated at: `2026-07-09T14:08:42.930909+00:00`
+- Package version: `0.1.0b2`
 - Unit tests: `1099`
-- Commit SHA: `d89b7731526b59431aab822dcbab1458e33f574a`
-- Branch: `feat/plan2-phase5-github-app`
+- Commit SHA: `d2f8350f134bee358bd555214c381e084eec6d69`
+- Branch: `feat/plan2-phase6-release-beta2`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 
