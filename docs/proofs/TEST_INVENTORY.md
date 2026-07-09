@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-07-09T08:45:35.417721+00:00`
+Generated: `2026-07-09T09:03:12.373172+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -68,6 +68,7 @@ Generated: `2026-07-09T08:45:35.417721+00:00`
 | `tests/test_secret_scan_script.py` | `77a24a7b7bc4c987532fcd7c2a176ea01a30fd13f4ca5150450b76d207354ffc` | 100 | 4368 | True |
 | `tests/test_serialization.py` | `9651dac861120406fb8b313c0ae149500f68984f5204b21d4c8689863769aefe` | 120 | 5421 | True |
 | `tests/test_server.py` | `7afdf387764ac2abc81e4d4c73826c01b796afde1730d23c2dd4f1dbb1ecc519` | 300 | 13141 | True |
+| `tests/test_server_config.py` | `3fcdc68fe6e9d6a18b438f6364ddddbd86665f19f353dd41d79487b7c25a1721` | 162 | 6585 | True |
 | `tests/test_server_inbox.py` | `7f2cc0342ab6ea5596e78b9dd05c9f6f54fe4db84ab265b310c4df5b4d34f296` | 181 | 7902 | True |
 | `tests/test_simulation_conflicts.py` | `cb122f66293bc8096ed8f44598da24c521516dc97cfd4c15f14d3a70cfbf6734` | 110 | 4694 | True |
 | `tests/test_sqlite_store.py` | `cceba5cbf062a6a8066dc92417c45c37934872b26e789f04ad08794f4b5bf56f` | 90 | 4109 | True |

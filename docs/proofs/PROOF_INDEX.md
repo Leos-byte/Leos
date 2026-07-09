@@ -2,11 +2,11 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-07-09T08:45:35.417721+00:00`
+- Generated at: `2026-07-09T09:03:12.373172+00:00`
 - Package version: `0.1.0b1`
-- Unit tests: `1048`
-- Commit SHA: `0915b0ba5aa0bc2d8dd0658bafb507efddfbc2ef`
-- Branch: `feat/plan2-phase2-smoke-evidence`
+- Unit tests: `1064`
+- Commit SHA: `2aba013b689454828137506549de9e2caa1a394b`
+- Branch: `feat/plan2-phase3-deploy`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 
