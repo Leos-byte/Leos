@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import sys
 import tempfile
 import threading
 import unittest
@@ -368,15 +369,11 @@ class PostgresTaskQueueRunnerTests(_QueueTestBase):
 
 class PostgresTaskQueueGuardTests(_QueueTestBase):
     def test_missing_psycopg_raises_runtime_store_error(self) -> None:
-        real_import = __import__
-
-        def fake_import(name: str, *args: Any, **kwargs: Any) -> Any:
-            if name == "psycopg":
-                raise ImportError("no psycopg")
-            return real_import(name, *args, **kwargs)
-
+        # importlib.import_module bypasses builtins.__import__, so simulate the
+        # missing package via sys.modules; this holds whether or not the real
+        # psycopg is installed (the CI integration job installs it).
         with (
-            mock.patch("builtins.__import__", side_effect=fake_import),
+            mock.patch.dict(sys.modules, {"psycopg": None}),
             self.assertRaises(RuntimeStoreError),
         ):
             PostgresTaskQueue(dsn="postgresql://localhost/none")
@@ -417,6 +414,14 @@ class PostgresTaskQueueGuardTests(_QueueTestBase):
 
 @unittest.skipUnless(os.environ.get("LEOS_TEST_POSTGRES_DSN"), "requires a live PostgreSQL server")
 class PostgresTaskQueueRealServerTests(unittest.TestCase):
+    def setUp(self) -> None:
+        # A persistent server keeps rows across runs; claim() takes the oldest
+        # queued task, so start from an empty table to keep this deterministic.
+        with PostgresTaskQueue(os.environ["LEOS_TEST_POSTGRES_DSN"]) as queue:
+            with queue._conn.cursor() as cur:
+                cur.execute("DELETE FROM leos_tasks")
+            queue._conn.commit()
+
     def test_enqueue_claim_complete_round_trip(self) -> None:
         queue = PostgresTaskQueue(os.environ["LEOS_TEST_POSTGRES_DSN"])
         self.addCleanup(queue.close)
