@@ -1,0 +1,17 @@
+.git
+.github
+.claude
+docs
+tests
+benchmarks
+examples
+scripts
+htmlcov
+dist
+build
+*.egg-info
+__pycache__
+.leos-workspace
+.sandbox-smoke-ws
+leos-server.env
+CLAUDE.md

@@ -81,6 +81,19 @@ This project follows semantic versioning once public releases begin.
   off; existing behavior unchanged) and asserts the CI wiring;
   `download_smoke_evidence.py` is parametrized by artifact prefix, filename,
   and event. No kernel gating semantics changed.
+- Added one-command deployment: `leos serve` CLI (uvicorn wrapper in
+  `server/run.py` with `--check` validation mode, multi-worker via an app
+  factory), a unified configuration loader (`server/config.py`:
+  `leos-server.toml` < `LEOS_SERVER_*` env < CLI flags; secret-shaped keys in
+  the TOML file abort startup so credentials stay environment-only; startup
+  summary prints secret presence, never values), a multi-stage non-root
+  `Dockerfile` (fails closed without `LEOS_SERVER_API_KEY`),
+  `docker-compose.yml` (app + optional Postgres, healthchecks, volumes,
+  env_file secrets), `docs/DEPLOYMENT.md` (quick start, reverse-proxy TLS,
+  backup/upgrade guidance), and a CI `deploy-smoke` job (image builds, refuses
+  to start keyless naming the missing variable, `/healthz` 200, keyless write
+  401). `tomli` joins the `server` extra for Python 3.10. No kernel gating
+  semantics changed.
 
 ## 0.1.0
 

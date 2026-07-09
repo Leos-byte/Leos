@@ -248,6 +248,15 @@ def main() -> int:
     policy_init.add_argument("--output", required=True, help="Where to write the policy JSON.")
     policy_init.add_argument("--non-interactive", action="store_true", help="Fail instead of prompting.")
 
+    serve_parser = sub.add_parser("serve", help="Run the HTTP service (requires the 'server' extra).")
+    serve_parser.add_argument("--host", help="Bind address (default 127.0.0.1).")
+    serve_parser.add_argument("--port", type=int, help="Bind port (default 8080).")
+    serve_parser.add_argument("--workers", type=int, help="Worker process count (default 1).")
+    serve_parser.add_argument("--data-dir", help="Directory for audits and receipts (default leos-data).")
+    serve_parser.add_argument("--inbox-dir", help="Approval inbox directory (inbox disabled when unset).")
+    serve_parser.add_argument("--config", help="Path to leos-server.toml (or set LEOS_SERVER_CONFIG).")
+    serve_parser.add_argument("--check", action="store_true", help="Validate configuration and exit.")
+
     parser.add_argument("--workspace", default=".leos-workspace", help="Sandbox workspace for reversible file actions.")
     parser.add_argument("--auto-approve", action="store_true", help="Approve demo actions that require human approval.")
     args = parser.parse_args()
@@ -321,6 +330,8 @@ def main() -> int:
             )
         print("Error: missing policy subcommand", file=sys.stderr)
         return 2
+    if args.command == "serve":
+        return _serve(args)
     if args.command == "doctor":
         return _doctor(args.profile)
     if args.command == "github":
@@ -770,6 +781,28 @@ def _approval_render(file_path: str, *, output_format: str, output: str | None) 
     else:
         sys.stdout.write(rendered)
     return 0
+
+
+def _serve(args: Any) -> int:
+    from .errors import LeosError
+    from .server.config import load_server_config
+    from .server.run import check_config, run_server
+
+    overrides = {
+        "host": args.host,
+        "port": args.port,
+        "workers": args.workers,
+        "data_dir": args.data_dir,
+        "inbox_dir": args.inbox_dir,
+    }
+    try:
+        config = load_server_config(Path(args.config) if args.config else None, overrides=overrides)
+        if args.check:
+            return check_config(config)
+        return run_server(config)
+    except LeosError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
 
 
 def _doctor(profile: str) -> int:

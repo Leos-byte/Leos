@@ -1,0 +1,34 @@
+# One-command Leos service: docker compose up --build
+# Copy leos-server.env.example to leos-server.env and fill in the secrets first.
+# TLS terminates at a reverse proxy in front of this service (see docs/DEPLOYMENT.md).
+services:
+  leos:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file: leos-server.env
+    environment:
+      LEOS_SERVER_INBOX_DIR: /inbox
+    volumes:
+      - leos-data:/data
+      - leos-inbox:/inbox
+    restart: unless-stopped
+
+  # Backing store for PostgresRuntimeStore / PostgresTaskQueue consumers.
+  # The HTTP service itself does not require it; remove if unused.
+  postgres:
+    image: postgres:16
+    env_file: leos-server.env
+    volumes:
+      - leos-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  leos-data:
+  leos-inbox:
+  leos-pgdata:

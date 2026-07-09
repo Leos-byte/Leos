@@ -30,6 +30,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Deployment secrets
+leos-server.env
+
 # Leos runtime artifacts
 .leos-workspace/
 *.leos-audit.jsonl
