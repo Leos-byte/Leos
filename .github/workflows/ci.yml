@@ -175,3 +175,38 @@ jobs:
           path: ${{ runner.temp }}/queue_smoke_latest.json
           if-no-files-found: error
           retention-days: 14
+
+  deploy-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build server image
+        run: docker build -t leos-server:ci .
+
+      - name: Container refuses to start without an API key
+        run: |
+          set +e
+          output=$(docker run --rm leos-server:ci --check 2>&1)
+          code=$?
+          set -e
+          echo "$output"
+          test "$code" -ne 0
+          echo "$output" | grep -q "LEOS_SERVER_API_KEY"
+
+      - name: Healthz responds and endpoints require the API key
+        run: |
+          KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
+          docker run -d --name leos-serve -p 127.0.0.1:8080:8080 \
+            -e LEOS_SERVER_API_KEY="$KEY" leos-server:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8080/healthz >/dev/null 2>&1 && break
+            sleep 1
+          done
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/healthz)" = "200"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/readyz)" = "200"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8080/plans \
+            -H 'content-type: application/json' -d '{}')" = "401"
+          docker logs leos-serve
+          docker rm -f leos-serve

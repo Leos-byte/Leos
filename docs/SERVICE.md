@@ -20,6 +20,18 @@ Without it, `create_app` raises a typed `ServerUnavailable` (mirroring
 
 ## Starting the service
 
+The CLI wraps uvicorn and the unified configuration loader (defaults <
+`leos-server.toml` < `LEOS_SERVER_*` env < flags; secrets are environment-only
+— see `docs/DEPLOYMENT.md` for Docker Compose, TLS, and backups):
+
+```bash
+pip install "leos-agent[server]"
+LEOS_SERVER_API_KEY=... leos serve --port 8080 --data-dir /var/lib/leos
+leos serve --check   # validate configuration and exit
+```
+
+Or embed it directly:
+
 ```python
 from pathlib import Path
 from leos_agent.server import create_app
