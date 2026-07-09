@@ -1,6 +1,6 @@
 # Test Inventory
 
-Generated: `2026-07-09T09:23:45.295199+00:00`
+Generated: `2026-07-09T13:42:49.185955+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -32,6 +32,7 @@ Generated: `2026-07-09T09:23:45.295199+00:00`
 | `tests/test_examples.py` | `605bee79614b3f0c5396d202e7807137012f53bf5f03a52e8e95302982f72099` | 56 | 2066 | True |
 | `tests/test_extensibility_demo.py` | `e073cceedcb66772b2328dc8a48aa9664c738eab597237774229692172f0d3b0` | 28 | 917 | True |
 | `tests/test_github_agent_orchestration.py` | `dd82d5ae345fb27a8822a79ad66981225c94d6a44a5ff19fc897f1974d3e01b9` | 320 | 12502 | True |
+| `tests/test_github_app_auth.py` | `d917bc2492bd152a8decf27e1b63a1b16d5c351185f5093dbf7ef501c498776c` | 292 | 11631 | True |
 | `tests/test_github_operator.py` | `eda28bd9b0f070f37945e66b0b2868a44d15fa3f0a68b4df8c9125b763fc03f5` | 268 | 10652 | True |
 | `tests/test_github_real_write_gated.py` | `ea56965f7be50ec46518b1e34e772fc3880b71c3ae5ad8e1cbe30113e41146f5` | 311 | 12670 | True |
 | `tests/test_github_rest_client.py` | `9238c8da835f7549c03780da56165d0d2537c69a28fd573bc1b6f672a2d24084` | 518 | 21404 | True |

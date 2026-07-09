@@ -5,15 +5,15 @@
 - Command: `python -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `37.365`
+- Duration seconds: `51.642`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Approval packets written to /tmp/tmp3n92yydb/approval.json
-Expected signed decision path: /tmp/tmp3n92yydb/approval.decision.json
-Signed approval decisions written to /tmp/tmp3n92yydb/approval.decision.json
+Approval packets written to /tmp/tmpi2if070y/approval.json
+Expected signed decision path: /tmp/tmpi2if070y/approval.decision.json
+Signed approval decisions written to /tmp/tmpi2if070y/approval.decision.json
 No anomalies detected.
 OK: Would echo: hi
 echo                  risk=low       rev=irreversible  perm=none
@@ -37,7 +37,7 @@ rollback_failure_manual_recovery: passed severity=high
 container_without_runner_blocked: passed severity=critical
 container_command_hardening: passed severity=high
 {"status": "passed", "message": "observed", "writes_performed": false}
-Draft plan written to /tmp/tmp3t73ss8b/plan.json; complete the operator fields and set status to ready.
+Draft plan written to /tmp/tmpw11apbz_/plan.json; complete the operator fields and set status to ready.
 Integrity: OK
 Applied events: 1
 Anomalies: none
@@ -116,7 +116,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: cd77eb19-d865-49a6-8844-f8a7a9882154
+Enqueued: c41b2dd0-d56b-4e54-8445-6118b566c593
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -128,7 +128,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=59d685a1a2aa24a3885e183fdc283a3918c0d3d35b2f21dc694a8d9d29e791d5 observed=031fb7e97226e7afd29e6d5b8bfafe099800deea81878371133d70fcacdbe320
+  [0] event_hash_mismatch: expected=3943fba87410a6e95280f548509237be225f9e7e290e1e2619c39768d772b1d8 observed=b697857038d98f8657c47342186fc132442d608227473d64f14d5eae639382d0
 Integrity: OK
 Applied events: 1
 Facts:
@@ -142,16 +142,16 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmp0h6n063q/signed.json
+Signed manifest written to /tmp/tmpimgceh5i/signed.json
 Policy configuration is valid. Signature verified.
-Wrote deny-by-default policy profile 'p' to /tmp/tmpzzamphwb/policy.json
-Review the file, then validate with: leos validate-policy /tmp/tmpzzamphwb/policy.json
+Wrote deny-by-default policy profile 'p' to /tmp/tmpd_lgt7rq/policy.json
+Review the file, then validate with: leos validate-policy /tmp/tmpd_lgt7rq/policy.json
 Policy configuration is valid.
-Wrote deny-by-default policy profile 'wizard_profile' to /tmp/tmplg5yefaw/policy.json
-Review the file, then validate with: leos validate-policy /tmp/tmplg5yefaw/policy.json
-Wrote deny-by-default policy profile 'team_profile' to /tmp/tmpaawz_298/policy.json
-Review the file, then validate with: leos validate-policy /tmp/tmpaawz_298/policy.json
-Error: refusing to overwrite existing file: /tmp/tmpqu9ctae1/policy.json
+Wrote deny-by-default policy profile 'wizard_profile' to /tmp/tmp8zoqkh7_/policy.json
+Review the file, then validate with: leos validate-policy /tmp/tmp8zoqkh7_/policy.json
+Wrote deny-by-default policy profile 'team_profile' to /tmp/tmpwh91aqc6/policy.json
+Review the file, then validate with: leos validate-policy /tmp/tmpwh91aqc6/policy.json
+Error: refusing to overwrite existing file: /tmp/tmpq7pkxfvv/policy.json
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
 <redacted> pattern=github-fine-grained-token
@@ -172,7 +172,7 @@ leos server configuration:
   host: 127.0.0.1
   port: 8080
   workers: 1
-  data_dir: /tmp/tmpdecebw7g
+  data_dir: /tmp/tmp5q2jn997
   inbox_dir: (inbox disabled)
   api_key: <redacted> (required) (from LEOS_SERVER_API_KEY)
   approval_hmac_secret: <redacted> (from LEOS_APPROVAL_HMAC_SECRET)
@@ -181,13 +181,13 @@ leos server configuration:
   host: 127.0.0.1
   port: 8080
   workers: 1
-  data_dir: /tmp/tmpbdf6gd4g
+  data_dir: /tmp/tmp0x28fri_
   inbox_dir: (inbox disabled)
   api_key: <redacted> (from LEOS_SERVER_API_KEY)
   approval_hmac_secret: <redacted> (from LEOS_APPROVAL_HMAC_SECRET)
   github_token: <redacted> (from LEOS_GITHUB_TOKEN)
 configuration ok
-Trace written to /tmp/tmp6lagm61v/trace.html
+Trace written to /tmp/tmp0up9_e71/trace.html
 
 ```
 
@@ -197,7 +197,7 @@ Trace written to /tmp/tmp6lagm61v/trace.html
 /home/leo/.local/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
   from starlette.testclient import TestClient as TestClient  # noqa
 .............................................................................................................Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
-...Error: file not found: /tmp/tmpcwevldxp/nonexistent.txt
+...Error: file not found: /tmp/tmp6c2kpnx9/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -221,13 +221,12 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-................................................................................................................................................................................................................................................................................................................ssssssss../usr/lib64/python3.14/dataclasses.py:1468: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f06f42ee4d0>
-  return tuple(f for f in fields.values() if f._field_type is _FIELD)
+.................................................................................................................................................................................................................................................................................................................................ssssssss................................................................................<frozen importlib._bootstrap>:415: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fc0e8043970>
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-......................................................................................................................................s........................................................................................................s....................................................................................................................Error: an API key is required (api_key= <redacted> LEOS_SERVER_API_KEY); refusing to start
+........................................................s........................................................................................................s....................................................................................................................Error: an API key is required (api_key= <redacted> LEOS_SERVER_API_KEY); refusing to start
 ................................................................................................s..................................................
 ----------------------------------------------------------------------
-Ran 1082 tests in 36.770s
+Ran 1099 tests in 51.028s
 
 OK (skipped=11)
 

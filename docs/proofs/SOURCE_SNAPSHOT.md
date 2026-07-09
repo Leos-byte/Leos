@@ -1,6 +1,6 @@
 # Source Snapshot
 
-Generated: `2026-07-09T09:23:45.295199+00:00`
+Generated: `2026-07-09T13:42:49.185955+00:00`
 
 | Path | SHA256 | Lines | Size | Exists |
 |---|---|---:|---:|---|
@@ -23,4 +23,4 @@ Generated: `2026-07-09T09:23:45.295199+00:00`
 | `src/leos_agent/audit.py` | `a912c668cba77abb57dddd4ef8f9f5234a9a5f73686dd708642a28fdf7d7018a` | 247 | 9976 | True |
 | `src/leos_agent/memory.py` | `2d10444c30446f9d705a2875cadb694d51b7006be4f35d67c3cad26e9e6b6147` | 183 | 6177 | True |
 | `src/leos_agent/trace_viewer.py` | `5931813b2a6ca2d6d9a89220ed2848b907e36ebe2789ab11b067202e6b771de9` | 164 | 6019 | True |
-| `src/leos_agent/cli.py` | `b3f645a4ba01122c3781057304d934d79201dc14a4248fe12ec8b3b170d5599d` | 993 | 40311 | True |
+| `src/leos_agent/cli.py` | `774f0600a7e7d5023309d2433bf6252985d81b11082dd43cafac6cd4d9b961ba` | 990 | 40245 | True |

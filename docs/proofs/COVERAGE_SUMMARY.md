@@ -5,15 +5,15 @@
 - Command: `coverage run -m unittest discover -s tests`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `41.278`
+- Duration seconds: `47.322`
 - Truncated: `False`
 
 ### stdout
 
 ```text
-Approval packets written to /tmp/tmphe5rd0us/approval.json
-Expected signed decision path: /tmp/tmphe5rd0us/approval.decision.json
-Signed approval decisions written to /tmp/tmphe5rd0us/approval.decision.json
+Approval packets written to /tmp/tmpd4whu6fq/approval.json
+Expected signed decision path: /tmp/tmpd4whu6fq/approval.decision.json
+Signed approval decisions written to /tmp/tmpd4whu6fq/approval.decision.json
 No anomalies detected.
 OK: Would echo: hi
 echo                  risk=low       rev=irreversible  perm=none
@@ -37,7 +37,7 @@ rollback_failure_manual_recovery: passed severity=high
 container_without_runner_blocked: passed severity=critical
 container_command_hardening: passed severity=high
 {"status": "passed", "message": "observed", "writes_performed": false}
-Draft plan written to /tmp/tmpoh805xpq/plan.json; complete the operator fields and set status to ready.
+Draft plan written to /tmp/tmp20ryq6pv/plan.json; complete the operator fields and set status to ready.
 Integrity: OK
 Applied events: 1
 Anomalies: none
@@ -116,7 +116,7 @@ Facts: 1 key(s)
 ]
 Policy configuration is valid.
 proof_status=release_grade release_grade=True
-Enqueued: cee7df35-f368-4b38-a25f-a87da470bbe7
+Enqueued: c726d5b0-5caf-49a7-a197-ae1beb8245a6
 Status: failed
 Task file is valid.
 echo: verified risk=low
@@ -128,7 +128,7 @@ echo                  risk=low       rev=irreversible  perm=none
 safe_file_write       risk=medium    rev=reversible    perm=write_files
   Write a UTF-8 file inside the configured workspace root.
 Integrity: FAIL (1 issue(s))
-  [0] event_hash_mismatch: expected=9b0b067a9149de23f23123600b324278fbfc6b2bb1d521b7cacca25de94dc044 observed=b572c58b1e6bf30491946e9cce7c476f5cd8195c9eb0a43868afc5afebe08ae1
+  [0] event_hash_mismatch: expected=a3b112a76d6c6d31f56e099d54d5034e96e56b24d1fbfb34d8fc1bf20d461306 observed=ae71d584da73ecd1b964eb819c75649594ad7eaedf6f3a756ccf8f4de22f688c
 Integrity: OK
 Applied events: 1
 Facts:
@@ -142,16 +142,16 @@ echo: blocked risk=low
 Progress: 0/1 verified, 1 blocked, 0 failed, 0 rolled-back [blocked]
 echo: verified risk=low
 Progress: 1/1 verified, 0 blocked, 0 failed, 0 rolled-back [complete]
-Signed manifest written to /tmp/tmp039hx7mg/signed.json
+Signed manifest written to /tmp/tmpa1j_7xsb/signed.json
 Policy configuration is valid. Signature verified.
-Wrote deny-by-default policy profile 'p' to /tmp/tmpa84qu2nc/policy.json
-Review the file, then validate with: leos validate-policy /tmp/tmpa84qu2nc/policy.json
+Wrote deny-by-default policy profile 'p' to /tmp/tmpxap_hlqz/policy.json
+Review the file, then validate with: leos validate-policy /tmp/tmpxap_hlqz/policy.json
 Policy configuration is valid.
-Wrote deny-by-default policy profile 'wizard_profile' to /tmp/tmpi37_aher/policy.json
-Review the file, then validate with: leos validate-policy /tmp/tmpi37_aher/policy.json
-Wrote deny-by-default policy profile 'team_profile' to /tmp/tmp569kxuw7/policy.json
-Review the file, then validate with: leos validate-policy /tmp/tmp569kxuw7/policy.json
-Error: refusing to overwrite existing file: /tmp/tmpax274jdi/policy.json
+Wrote deny-by-default policy profile 'wizard_profile' to /tmp/tmphtli57nz/policy.json
+Review the file, then validate with: leos validate-policy /tmp/tmphtli57nz/policy.json
+Wrote deny-by-default policy profile 'team_profile' to /tmp/tmpt4k1rfmv/policy.json
+Review the file, then validate with: leos validate-policy /tmp/tmpt4k1rfmv/policy.json
+Error: refusing to overwrite existing file: /tmp/tmp7a978avo/policy.json
 report.md: pattern=aws-access-key
 report.md: pattern=bearer-token
 <redacted> pattern=github-fine-grained-token
@@ -172,7 +172,7 @@ leos server configuration:
   host: 127.0.0.1
   port: 8080
   workers: 1
-  data_dir: /tmp/tmpvfm86s00
+  data_dir: /tmp/tmp84wxf8lc
   inbox_dir: (inbox disabled)
   api_key: <redacted> (required) (from LEOS_SERVER_API_KEY)
   approval_hmac_secret: <redacted> (from LEOS_APPROVAL_HMAC_SECRET)
@@ -181,13 +181,13 @@ leos server configuration:
   host: 127.0.0.1
   port: 8080
   workers: 1
-  data_dir: /tmp/tmp9t4tomlb
+  data_dir: /tmp/tmpio3d9ali
   inbox_dir: (inbox disabled)
   api_key: <redacted> (from LEOS_SERVER_API_KEY)
   approval_hmac_secret: <redacted> (from LEOS_APPROVAL_HMAC_SECRET)
   github_token: <redacted> (from LEOS_GITHUB_TOKEN)
 configuration ok
-Trace written to /tmp/tmpxgjadrjw/trace.html
+Trace written to /tmp/tmp6wcyca5k/trace.html
 
 ```
 
@@ -197,7 +197,7 @@ Trace written to /tmp/tmpxgjadrjw/trace.html
 /home/leo/.local/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
   from starlette.testclient import TestClient as TestClient  # noqa
 .............................................................................................................Error: LEOS_APPROVAL_HMAC_SECRET <redacted> required
-...Error: file not found: /tmp/tmps0bhgbch/nonexistent.txt
+...Error: file not found: /tmp/tmpi488ij1l/nonexistent.txt
 ..Error: invalid --args JSON: Expecting value: line 1 column 1 (char 0)
 .Error: unknown tool 'nonexistent'. Available: echo, safe_file_write
 ...Error: invalid JSON: Expecting value: line 1 column 1 (char 0)
@@ -221,13 +221,13 @@ Issue: /goal: 'not_an_object' is not of type 'object'
 .Issue: policy_config_invalid: Policy-as-code rules cannot directly approve actions
 .Error: file not found: /tmp/nonexistent_policy_test.json
 ....................................Signature verification failed: Policy signature verification failed — manifest may have been tampered
-................................................................................................................................................................................................................................................................................................................ssssssss......................................................................./usr/lib64/python3.14/pathlib/__init__.py:330: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f1ea9cd9120>
+.................................................................................................................................................................................................................................................................................................................................ssssssss......................................................................./usr/lib64/python3.14/pathlib/__init__.py:330: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fbdb9aa2890>
   @property
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 .................................................................s........................................................................................................s....................................................................................................................Error: an API key is required (api_key= <redacted> LEOS_SERVER_API_KEY); refusing to start
 ................................................................................................s..................................................
 ----------------------------------------------------------------------
-Ran 1082 tests in 40.324s
+Ran 1099 tests in 46.320s
 
 OK (skipped=11)
 
@@ -238,7 +238,7 @@ OK (skipped=11)
 - Command: `coverage report --fail-under=83`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.951`
+- Duration seconds: `0.949`
 - Truncated: `False`
 
 ### stdout
@@ -253,9 +253,9 @@ src/leos_agent/approval_exchange.py          133      9     38      3    92%
 src/leos_agent/audit.py                      148      7     48     11    91%
 src/leos_agent/causal.py                      92      1     18      1    98%
 src/leos_agent/causal_contract.py            112     17     44      9    81%
-src/leos_agent/cli.py                        661    168    236     52    69%
+src/leos_agent/cli.py                        657    167    232     51    69%
 src/leos_agent/conflicts.py                   37      0     14      0   100%
-src/leos_agent/core.py                        56      0      0      0   100%
+src/leos_agent/core.py                        57      0      0      0   100%
 src/leos_agent/credential_backends.py        101      3     28     12    88%
 src/leos_agent/credentials.py                 61      1     16      8    88%
 src/leos_agent/dev_tools.py                  188     29     38     13    81%
@@ -265,8 +265,9 @@ src/leos_agent/errors.py                      24      0      0      0   100%
 src/leos_agent/eval_runner.py                354     18     10      2    94%
 src/leos_agent/evaluator_registry.py         213     22     86     14    85%
 src/leos_agent/github_agent.py                74      6     18      4    89%
+src/leos_agent/github_app_auth.py            111      4     18      2    95%
 src/leos_agent/github_client.py              285      8     76      7    96%
-src/leos_agent/github_operator.py            291     26     94     27    86%
+src/leos_agent/github_operator.py            313     34    106     31    84%
 src/leos_agent/github_tools.py               477     58    138     56    81%
 src/leos_agent/goal_evaluator.py              29      1      4      2    91%
 src/leos_agent/goals.py                       92      8     18      3    88%
@@ -297,7 +298,7 @@ src/leos_agent/sandbox_backends.py            77      1     24      1    98%
 src/leos_agent/sanitization.py                74      2     38      2    96%
 src/leos_agent/serialization.py               67      1      6      1    97%
 src/leos_agent/server/__init__.py              3      0      0      0   100%
-src/leos_agent/server/app.py                 213     15     62     11    91%
+src/leos_agent/server/app.py                 216     17     62     11    90%
 src/leos_agent/server/config.py               91     10     28      3    89%
 src/leos_agent/server/run.py                  29      2      2      1    90%
 src/leos_agent/simulation.py                  65      0      6      1    99%
@@ -310,6 +311,6 @@ src/leos_agent/tools.py                      161      7     40     10    92%
 src/leos_agent/trace_viewer.py                68      0     20      0   100%
 src/leos_agent/transactions.py               502     47    188     17    90%
 ----------------------------------------------------------------------------
-TOTAL                                       8274    782   2234    460    87%
+TOTAL                                       8407    795   2260    465    87%
 
 ```

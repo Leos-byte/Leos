@@ -2,11 +2,11 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-07-09T09:23:45.295199+00:00`
+- Generated at: `2026-07-09T13:42:49.185955+00:00`
 - Package version: `0.1.0b1`
-- Unit tests: `1082`
-- Commit SHA: `083613465d40239b36416e97d6847631a29dd247`
-- Branch: `feat/plan2-phase4-hardening`
+- Unit tests: `1099`
+- Commit SHA: `d89b7731526b59431aab822dcbab1458e33f574a`
+- Branch: `feat/plan2-phase5-github-app`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 
