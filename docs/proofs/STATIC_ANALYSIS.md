@@ -5,7 +5,7 @@
 - Command: `ruff check .`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.01`
+- Duration seconds: `0.011`
 - Truncated: `False`
 
 ### stdout
@@ -26,7 +26,7 @@ All checks passed!
 ### stdout
 
 ```text
-153 files already formatted
+158 files already formatted
 
 ```
 
@@ -35,7 +35,7 @@ All checks passed!
 - Command: `mypy src`
 - Exit code: `0`
 - Status: `passed`
-- Duration seconds: `0.209`
+- Duration seconds: `0.204`
 - Truncated: `False`
 
 ### stdout

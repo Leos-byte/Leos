@@ -34,6 +34,9 @@ Thumbs.db
 .leos-workspace/
 *.leos-audit.jsonl
 docs/proofs/real_github_smoke_latest.json
+docs/proofs/sandbox_smoke_latest.json
+docs/proofs/queue_smoke_latest.json
+.sandbox-smoke-ws/
 
 # Claude Code
 .claude/

@@ -2,11 +2,11 @@
 
 - Proof status: `release_grade`
 - Release grade: `True`
-- Generated at: `2026-07-08T11:00:06.371552+00:00`
+- Generated at: `2026-07-09T08:37:30.768037+00:00`
 - Package version: `0.1.0b1`
-- Unit tests: `1014`
-- Commit SHA: `93ab90a40277ef26c81da915d79c6af9eb17cab4`
-- Branch: `feat/phase6-ergonomics`
+- Unit tests: `1048`
+- Commit SHA: `31c04bb0e86bfa075cdec55e22f081764b4b1ad8`
+- Branch: `feat/plan2-phase2-smoke-evidence`
 - Dirty worktree: `False`
 - Summary: {'total': 12, 'passed': 12, 'failed': 0, 'skipped': 0}
 

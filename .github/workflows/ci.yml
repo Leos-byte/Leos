@@ -77,3 +77,101 @@ jobs:
 
       - name: Scan artifacts for secret literals
         run: python scripts/scan_artifacts_for_secrets.py --root .
+
+  integration:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      LEOS_TEST_POSTGRES_DSN: postgresql://postgres:postgres@localhost:5432/postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package with optional backend extras
+        run: pip install -e ".[dev,postgres,server,observability,keyring]"
+
+      - name: Verify container runtime for sandbox tests
+        run: podman info
+
+      - name: Integration tests (real Postgres and container runtimes)
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests -v 2>&1 | tee integration-tests.log
+
+      - name: Report remaining skips
+        if: always()
+        run: |
+          {
+            echo "## Integration job skip report"
+            echo ""
+            echo "Every remaining skip must name the missing runtime it is gated on:"
+            echo ""
+            echo '```'
+            grep "skipped" integration-tests.log | sed "s/ \\.\\.\\. skipped / => skipped: /" | sort || echo "(no skips)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Sandbox isolation smoke evidence
+        env:
+          LEOS_SANDBOX_SMOKE_EVIDENCE_OUT: ${{ runner.temp }}/sandbox_smoke_latest.json
+        run: python scripts/sandbox_smoke.py
+
+      - name: Queue concurrency smoke evidence
+        env:
+          LEOS_QUEUE_SMOKE_EVIDENCE_OUT: ${{ runner.temp }}/queue_smoke_latest.json
+        run: python scripts/queue_smoke.py
+
+      - name: Validate smoke evidence documents
+        env:
+          LEOS_SANDBOX_SMOKE_EVIDENCE_OUT: ${{ runner.temp }}/sandbox_smoke_latest.json
+          LEOS_QUEUE_SMOKE_EVIDENCE_OUT: ${{ runner.temp }}/queue_smoke_latest.json
+        run: |
+          python - <<'EOF'
+          import os
+          from pathlib import Path
+
+          from scripts.check_production_readiness import _queue_evidence_check, _sandbox_evidence_check
+
+          head = os.environ["GITHUB_SHA"]
+          for check, env_name in (
+              (_sandbox_evidence_check, "LEOS_SANDBOX_SMOKE_EVIDENCE_OUT"),
+              (_queue_evidence_check, "LEOS_QUEUE_SMOKE_EVIDENCE_OUT"),
+          ):
+              result = check(Path("."), Path(os.environ[env_name]), expected_head=head)
+              print(result)
+              if not result["ok"]:
+                  raise SystemExit(1)
+          EOF
+
+      - name: Upload sandbox smoke evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-sandbox-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/sandbox_smoke_latest.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload queue smoke evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-queue-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/queue_smoke_latest.json
+          if-no-files-found: error
+          retention-days: 14

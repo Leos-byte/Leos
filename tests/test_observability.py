@@ -8,6 +8,7 @@ affect recording. Audit output must be byte-identical with and without a sink.
 from __future__ import annotations
 
 import functools
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -144,15 +145,11 @@ class StructlogSinkTests(unittest.TestCase):
         self.assertIn("sequence", fields)
 
     def test_missing_structlog_raises_typed_error(self) -> None:
-        real_import = __import__
-
-        def fake_import(name: str, *args: Any, **kwargs: Any) -> Any:
-            if name == "structlog":
-                raise ImportError("no structlog")
-            return real_import(name, *args, **kwargs)
-
+        # importlib.import_module bypasses builtins.__import__, so simulate the
+        # missing package via sys.modules; this holds whether or not the real
+        # structlog is installed (the CI integration job installs it).
         with (
-            mock.patch("builtins.__import__", side_effect=fake_import),
+            mock.patch.dict(sys.modules, {"structlog": None}),
             self.assertRaises(ObservabilitySinkUnavailable),
         ):
             StructlogAuditSink()
@@ -202,15 +199,11 @@ class OTelSinkTests(unittest.TestCase):
         self.assertIsInstance(tracer.spans[0].attributes["leos.payload.data"], str)
 
     def test_missing_opentelemetry_raises_typed_error(self) -> None:
-        real_import = __import__
-
-        def fake_import(name: str, *args: Any, **kwargs: Any) -> Any:
-            if name == "opentelemetry" or name.startswith("opentelemetry."):
-                raise ImportError("no opentelemetry")
-            return real_import(name, *args, **kwargs)
-
+        # importlib.import_module bypasses builtins.__import__, so simulate the
+        # missing package via sys.modules; this holds whether or not the real
+        # opentelemetry is installed (the CI integration job installs it).
         with (
-            mock.patch("builtins.__import__", side_effect=fake_import),
+            mock.patch.dict(sys.modules, {"opentelemetry.trace": None}),
             self.assertRaises(ObservabilitySinkUnavailable),
         ):
             OTelAuditSink()

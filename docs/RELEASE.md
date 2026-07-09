@@ -41,6 +41,34 @@ and `leos_commit_sha` before running the readiness checker. The evidence is not
 kept as a moving tracked file because a tracked evidence file cannot truthfully
 bind itself to the commit that adds it.
 
+## Backend Smoke Evidence (Sandbox Isolation, Queue Concurrency)
+
+Two further smoke suites produce commit-bound evidence with the same model
+(gitignored JSON, uploaded as an exact-SHA CI artifact, never a tracked file):
+
+- `scripts/sandbox_smoke.py` executes real hardened rootless-podman containers
+  and asserts every isolation property end to end: network egress denial,
+  non-root uid, read-only rootfs with writable tmpfs `/tmp`, pids and memory
+  limits (cgroup-configured **and** trigger-enforced), timeout kill, and the
+  fail-closed microVM path. Output: `docs/proofs/sandbox_smoke_latest.json`
+  (override with `LEOS_SANDBOX_SMOKE_EVIDENCE_OUT`).
+- `scripts/queue_smoke.py` spawns real worker processes against a live
+  PostgreSQL server (`LEOS_TEST_POSTGRES_DSN`) and asserts exactly-once
+  consumption: no double claims, every task completed once, a killed worker's
+  expired lease reaped and its task rescued by another worker, and idempotency
+  dedupe. Output: `docs/proofs/queue_smoke_latest.json` (override with
+  `LEOS_QUEUE_SMOKE_EVIDENCE_OUT`). The DSN never enters the evidence.
+
+Both run in the CI `integration` job on every push and upload
+`production-sandbox-evidence-<commit-sha>` / `production-queue-evidence-<commit-sha>`
+artifacts after in-job validation. `check_production_readiness.py` accepts
+opt-in gates `--require-sandbox-evidence` / `--require-queue-evidence`
+(with `--sandbox-evidence-path` / `--queue-evidence-path`) that verify commit
+binding, run id, freshness format, all checks true, and the absence of secret
+or credentialed-URL markers. `scripts/download_smoke_evidence.py` now takes
+`--artifact-prefix`, `--filename`, and `--event` so the same exact-HEAD
+download flow works for all three evidence kinds.
+
 ## Private Disposable GitHub Smoke Evidence
 
 The optional real-write evidence check is intentionally scoped to one bounded

@@ -23,6 +23,13 @@ def main() -> int:
     parser.add_argument("--sha", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--workflow", default="GitHub Real Write Smoke")
+    parser.add_argument("--artifact-prefix", default="production-smoke-evidence")
+    parser.add_argument("--filename", default="real_github_smoke_latest.json")
+    parser.add_argument(
+        "--event",
+        default="workflow_dispatch",
+        help="Workflow event that produced the evidence (e.g. workflow_dispatch, push).",
+    )
     args = parser.parse_args()
     try:
         download_exact_head_evidence(
@@ -30,6 +37,9 @@ def main() -> int:
             sha=args.sha,
             output=Path(args.output),
             workflow=args.workflow,
+            artifact_prefix=args.artifact_prefix,
+            filename=args.filename,
+            event=args.event,
         )
     except SmokeEvidenceDownloadError as exc:
         print(f"smoke evidence download failed: {exc}", file=sys.stderr)
@@ -44,6 +54,9 @@ def download_exact_head_evidence(
     sha: str,
     output: Path,
     workflow: str = "GitHub Real Write Smoke",
+    artifact_prefix: str = "production-smoke-evidence",
+    filename: str = "real_github_smoke_latest.json",
+    event: str = "workflow_dispatch",
 ) -> None:
     runs = _gh_json(
         [
@@ -55,7 +68,7 @@ def download_exact_head_evidence(
             "--workflow",
             workflow,
             "--event",
-            "workflow_dispatch",
+            event,
             "--commit",
             sha,
             "--status",
@@ -74,14 +87,14 @@ def download_exact_head_evidence(
         if isinstance(run, dict)
         and run.get("headSha") == sha
         and run.get("conclusion") == "success"
-        and run.get("event") == "workflow_dispatch"
+        and run.get("event") == event
     ]
     if not matching:
-        raise SmokeEvidenceDownloadError("no successful workflow_dispatch smoke run exists for current HEAD")
+        raise SmokeEvidenceDownloadError(f"no successful {event} smoke run exists for current HEAD")
     run_id = str(matching[0].get("databaseId", ""))
     if not run_id:
         raise SmokeEvidenceDownloadError("matching smoke run did not include a run id")
-    artifact_name = f"production-smoke-evidence-{sha}"
+    artifact_name = f"{artifact_prefix}-{sha}"
     with tempfile.TemporaryDirectory() as tmp:
         directory = Path(tmp)
         _gh(
@@ -98,7 +111,7 @@ def download_exact_head_evidence(
                 str(directory),
             ]
         )
-        candidates = list(directory.rglob("real_github_smoke_latest.json"))
+        candidates = list(directory.rglob(filename))
         if len(candidates) != 1:
             raise SmokeEvidenceDownloadError("smoke artifact did not contain exactly one evidence JSON file")
         evidence = _load_evidence(candidates[0])
